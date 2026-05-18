@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -22,6 +23,8 @@
     "@types/ramda": "^0.30.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@typescript-eslint/parser": "^8.59.3",
+    "eslint": "^10.4.0",
     "sass": "^1.77.0",
     "typescript": "6.0.0-dev.20260416",
     "vitest": "^2.0.0"
