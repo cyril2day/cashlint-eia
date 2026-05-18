@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { bindResult, failure, isFailure, isSuccess, mapError, mapResult, sequenceResults, success } from '@/shared/result'
+import {
+  bindResult,
+  failure,
+  isFailure,
+  isSuccess,
+  mapError,
+  mapResult,
+  sequenceResults,
+  success,
+  traverseResults,
+} from '@/shared/result'
 import type { Result } from '@/shared/result'
 
 describe('Result', () => {
@@ -212,5 +222,35 @@ describe('Result', () => {
       error: 'first problem',
     })
     expect(results).toEqual([failure('first problem'), success(2), failure('second problem')])
+  })
+
+  it('traverses successful collections', () => {
+    const values: readonly number[] = [1, 2, 3]
+
+    const traversed = traverseResults(values, value => success(value * 2))
+
+    expect(traversed).toEqual({
+      ok: true,
+      value: [2, 4, 6],
+    })
+    expect(values).toEqual([1, 2, 3])
+  })
+
+  it('traverses collections that contain failures', () => {
+    const values: readonly [0, 1, 2] = [0, 1, 2]
+    const results: readonly [Result<number, string>, Result<number, string>, Result<number, string>] = [
+      success(1),
+      failure('missing data'),
+      success(3),
+    ]
+
+    const traversed = traverseResults(values, index => results[index])
+
+    expect(traversed).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
+    expect(values).toEqual([0, 1, 2])
+    expect(results).toEqual([success(1), failure('missing data'), success(3)])
   })
 })

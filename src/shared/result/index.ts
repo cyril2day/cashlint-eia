@@ -76,3 +76,8 @@ export const sequenceResults = <SuccessValue, FailureValue>(
       bindResult(accumulator, values => mapResult(candidate, value => [...values, value])),
     success<readonly SuccessValue[]>([]),
   )
+
+export const traverseResults = <InputValue, FailureValue, SuccessValue>(
+  values: readonly InputValue[],
+  mapper: (value: InputValue) => Result<SuccessValue, FailureValue>,
+): Result<readonly SuccessValue[], FailureValue> => sequenceResults(values.map(mapper))
