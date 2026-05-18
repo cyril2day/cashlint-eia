@@ -1,4 +1,4 @@
-import { foundationPillars } from '@/app/foundation';
+import { foundationPillars } from '@/app/foundation'
 export default function HomePage() {
   return (
     <main className="app-shell">
@@ -31,5 +31,5 @@ export default function HomePage() {
         </section>
       </section>
     </main>
-  );
+  )
 }

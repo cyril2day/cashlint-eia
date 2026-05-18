@@ -6,4 +6,4 @@ export const foundationPillars = [
   'Ramda',
   'D3',
   'Pristine Styles'
-];
+]
