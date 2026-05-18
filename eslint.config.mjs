@@ -90,6 +90,25 @@ const restrictedSyntaxRules = [
     message:
       'Logical NOT (!) is not allowed. Use Ramda complement or named predicates.',
   },
+
+  // -----------------------------
+  // 8. Imperative branching NOT allowed
+  // -----------------------------
+  {
+    selector: 'IfStatement',
+    message:
+      'Imperative if/else statements are not allowed. Use Ramda ifElse for two-way branching or when/unless for one-way branching.',
+  },
+  {
+    selector: 'ConditionalExpression',
+    message:
+      'Ternaries are not allowed. Use Ramda ifElse for two-way branching or when/unless for one-way branching.',
+  },
+  {
+    selector: 'SwitchStatement',
+    message:
+      'Switch statements are not allowed. Use Ramda cond to manage multiple conditions.',
+  },
 ];
 
 export default [
@@ -110,6 +129,29 @@ export default [
     },
     rules: {
       'no-restricted-syntax': ['error', ...restrictedSyntaxRules],
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'ramda',
+              message: 'Import Ramda utilities through @/shared/fp instead.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['ramda/*'],
+              message: 'Import Ramda utilities through @/shared/fp instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/shared/fp/index.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ];

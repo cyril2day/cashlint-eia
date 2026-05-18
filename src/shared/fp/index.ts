@@ -1,0 +1,1 @@
+export { allPass, anyPass, both, complement, cond, either, ifElse, unless, when } from 'ramda'
