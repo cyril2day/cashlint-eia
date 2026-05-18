@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { failure, isFailure, isSuccess, mapResult, success } from '@/shared/result'
+import { bindResult, failure, isFailure, isSuccess, mapError, mapResult, sequenceResults, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 
 describe('Result', () => {
@@ -102,5 +102,115 @@ describe('Result', () => {
       ok: false,
       error: 'missing data',
     })
+  })
+
+  it('binds successful results into another result', () => {
+    const result = success(21)
+
+    const bound = bindResult(result, value => success(value * 2))
+
+    expect(bound).toEqual({
+      ok: true,
+      value: 42,
+    })
+    expect(result).toEqual({
+      ok: true,
+      value: 21,
+    })
+  })
+
+  it('skips binding after failure', () => {
+    const result: Result<number, string> = failure('missing data')
+    let calls = 0
+
+    const bound = bindResult<number, string, number>(result, value => {
+      calls += 1
+
+      return success(value * 2)
+    })
+
+    expect(calls).toBe(0)
+    expect(bound).toEqual(result)
+    expect(bound).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
+  })
+
+  it('maps failure values', () => {
+    const result = failure('missing data')
+    let calls = 0
+
+    const mapped = mapError<number, string, string>(result, (error: string) => {
+      calls += 1
+
+      return error.toUpperCase()
+    })
+
+    expect(calls).toBe(1)
+    expect(mapped).toEqual({
+      ok: false,
+      error: 'MISSING DATA',
+    })
+    expect(result).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
+  })
+
+  it('leaves successful results unchanged when mapping errors', () => {
+    const result = success(21)
+    let calls = 0
+
+    const errorMapper: (error: string) => string = error => {
+      calls += 1
+
+      return error.toUpperCase()
+    }
+
+    const mapped = mapError(result, errorMapper)
+
+    expect(calls).toBe(0)
+    expect(mapped).toEqual(result)
+    expect(mapped).toEqual({
+      ok: true,
+      value: 21,
+    })
+  })
+
+  it('sequences all successful results', () => {
+    const results: readonly Result<number, string>[] = [success(1), success(2), success(3)]
+
+    const sequenced = sequenceResults(results)
+
+    expect(sequenced).toEqual({
+      ok: true,
+      value: [1, 2, 3],
+    })
+    expect(results).toEqual([success(1), success(2), success(3)])
+  })
+
+  it('returns the only failure when sequencing one failure', () => {
+    const results: readonly Result<number, string>[] = [success(1), failure('missing data'), success(3)]
+
+    const sequenced = sequenceResults(results)
+
+    expect(sequenced).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
+    expect(results).toEqual([success(1), failure('missing data'), success(3)])
+  })
+
+  it('returns the first failure when sequencing multiple failures', () => {
+    const results: readonly Result<number, string>[] = [failure('first problem'), success(2), failure('second problem')]
+
+    const sequenced = sequenceResults(results)
+
+    expect(sequenced).toEqual({
+      ok: false,
+      error: 'first problem',
+    })
+    expect(results).toEqual([failure('first problem'), success(2), failure('second problem')])
   })
 })

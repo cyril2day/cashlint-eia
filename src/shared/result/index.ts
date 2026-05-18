@@ -43,3 +43,36 @@ export const mapResult = <SuccessValue, FailureValue, NextSuccessValue>(
     (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
       success(mapper(Reflect.get(candidate, 'value'))),
   )(result)
+
+export const bindResult = <SuccessValue, FailureValue, NextSuccessValue>(
+  result: Result<SuccessValue, FailureValue>,
+  binder: (value: SuccessValue) => Result<NextSuccessValue, FailureValue>,
+): Result<NextSuccessValue, FailureValue> =>
+  ifElse(
+    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
+    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
+      failure(Reflect.get(candidate, 'error')),
+    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
+      binder(Reflect.get(candidate, 'value')),
+  )(result)
+
+export const mapError = <SuccessValue, FailureValue, NextFailureValue>(
+  result: Result<SuccessValue, FailureValue>,
+  mapper: (error: FailureValue) => NextFailureValue,
+): Result<SuccessValue, NextFailureValue> =>
+  ifElse(
+    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
+    (candidate: Result<SuccessValue, FailureValue>): Result<SuccessValue, NextFailureValue> =>
+      failure(mapper(Reflect.get(candidate, 'error'))),
+    (candidate: Result<SuccessValue, FailureValue>): Result<SuccessValue, NextFailureValue> =>
+      success(Reflect.get(candidate, 'value')),
+  )(result)
+
+export const sequenceResults = <SuccessValue, FailureValue>(
+  results: readonly Result<SuccessValue, FailureValue>[],
+): Result<readonly SuccessValue[], FailureValue> =>
+  results.reduce<Result<readonly SuccessValue[], FailureValue>>(
+    (accumulator, candidate) =>
+      bindResult(accumulator, values => mapResult(candidate, value => [...values, value])),
+    success<readonly SuccessValue[]>([]),
+  )
