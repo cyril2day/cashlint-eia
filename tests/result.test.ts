@@ -1,36 +1,37 @@
 import { describe, expect, it } from 'vitest'
 
-import { failure, isFailure, isSuccess, success } from '@/shared/result'
+import { failure, isFailure, isSuccess, mapResult, success } from '@/shared/result'
+import type { Result } from '@/shared/result'
 
 describe('Result', () => {
   it('represents success values', () => {
     const result = success(42)
 
+    expect(result).toEqual({
+      ok: true,
+      value: 42,
+    })
     expect(result.ok).toBe(true)
-
-    if (result.ok) {
-      expect(result.value).toBe(42)
-    }
   })
 
   it('represents failure values', () => {
     const result = failure('missing data')
 
+    expect(result).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
     expect(result.ok).toBe(false)
-
-    if (result.ok === false) {
-      expect(result.error).toBe('missing data')
-    }
   })
 
   it('supports array errors', () => {
     const result = failure(['first problem', 'second problem'])
 
+    expect(result).toEqual({
+      ok: false,
+      error: ['first problem', 'second problem'],
+    })
     expect(result.ok).toBe(false)
-
-    if (result.ok === false) {
-      expect(result.error).toEqual(['first problem', 'second problem'])
-    }
   })
 
   it('preserves the supplied success value', () => {
@@ -60,10 +61,6 @@ describe('Result', () => {
 
     expect(isSuccess(result)).toBe(true)
     expect(isFailure(result)).toBe(false)
-
-    if (isSuccess(result)) {
-      expect(result.value).toBe(42)
-    }
   })
 
   it('identifies failed results', () => {
@@ -71,9 +68,39 @@ describe('Result', () => {
 
     expect(isSuccess(result)).toBe(false)
     expect(isFailure(result)).toBe(true)
+  })
 
-    if (isFailure(result)) {
-      expect(result.error).toBe('missing data')
+  it('maps successful results', () => {
+    const result = success(21)
+
+    const mapped = mapResult(result, value => value * 2)
+
+    expect(mapped).toEqual({
+      ok: true,
+      value: 42,
+    })
+    expect(result).toEqual({
+      ok: true,
+      value: 21,
+    })
+  })
+
+  it('leaves failed results unchanged', () => {
+    const result: Result<number, string> = failure('missing data')
+    let calls = 0
+    const mapper = (value: number) => {
+      calls += 1
+
+      return value * 2
     }
+
+    const mapped = mapResult(result, mapper)
+
+    expect(calls).toBe(0)
+    expect(mapped).toEqual(result)
+    expect(mapped).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
   })
 })

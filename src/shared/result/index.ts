@@ -1,3 +1,5 @@
+import { ifElse } from '@/shared/fp'
+
 export type SuccessResult<SuccessValue> = {
   readonly ok: true
   readonly value: SuccessValue
@@ -29,3 +31,15 @@ export const isSuccess = <SuccessValue, FailureValue>(
 export const isFailure = <SuccessValue, FailureValue>(
   result: Result<SuccessValue, FailureValue>,
 ): result is FailureResult<FailureValue> => result.ok === false
+
+export const mapResult = <SuccessValue, FailureValue, NextSuccessValue>(
+  result: Result<SuccessValue, FailureValue>,
+  mapper: (value: SuccessValue) => NextSuccessValue,
+): Result<NextSuccessValue, FailureValue> =>
+  ifElse(
+    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
+    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
+      failure(Reflect.get(candidate, 'error')),
+    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
+      success(mapper(Reflect.get(candidate, 'value'))),
+  )(result)
