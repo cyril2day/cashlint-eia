@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { bindAsyncResult, mapAsyncResult } from '@/shared/async-result'
+import { bindAsyncResult, mapAsyncError, mapAsyncResult } from '@/shared/async-result'
 import { failure, success } from '@/shared/result'
 import type { AsyncResult } from '@/shared/async-result'
 import type { Result } from '@/shared/result'
@@ -92,6 +92,44 @@ describe('AsyncResult', () => {
     expect(bound).toEqual({
       ok: true,
       value: 42,
+    })
+  })
+
+  it('maps failed async results', async () => {
+    const asyncResult: AsyncResult<number, string> = Promise.resolve(failure('missing data'))
+    let calls = 0
+
+    const errorMapper: (error: string) => string = error => {
+      calls += 1
+
+      return error.toUpperCase()
+    }
+
+    const mapped = await mapAsyncError(asyncResult, errorMapper)
+
+    expect(calls).toBe(1)
+    expect(mapped).toEqual({
+      ok: false,
+      error: 'MISSING DATA',
+    })
+  })
+
+  it('leaves successful async results unchanged when mapping errors', async () => {
+    const asyncResult: AsyncResult<number, string> = Promise.resolve(success(21))
+    let calls = 0
+
+    const errorMapper: (error: string) => string = error => {
+      calls += 1
+
+      return error.toUpperCase()
+    }
+
+    const mapped = await mapAsyncError(asyncResult, errorMapper)
+
+    expect(calls).toBe(0)
+    expect(mapped).toEqual({
+      ok: true,
+      value: 21,
     })
   })
 })
