@@ -1,4 +1,5 @@
 import tsParser from '@typescript-eslint/parser';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
 
 const restrictedSyntaxRules = [
   // -----------------------------
@@ -187,6 +188,7 @@ export default [
         },
       },
     },
+    plugins: { '@typescript-eslint': tsPlugin },
     rules: {
       'no-restricted-syntax': ['error', ...restrictedSyntaxRules],
       'no-restricted-imports': [
@@ -214,6 +216,7 @@ export default [
           ],
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   {

@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const analysisConfidenceBrand = Symbol('AnalysisConfidence')
 
@@ -15,10 +16,7 @@ export type AnalysisConfidence = Readonly<{
 
 export type AnalysisConfidenceParseError = Readonly<{ readonly kind: 'InvalidAnalysisConfidenceInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasAnalysisConfidenceBrand = (candidate: object): boolean => Reflect.get(candidate, analysisConfidenceBrand) === true
+const hasAnalysisConfidenceBrand = hasBrand(analysisConfidenceBrand)
 const isAnalysisConfidenceLabel = (input: unknown): input is AnalysisConfidenceLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidConfidence = (candidate: object): boolean => isAnalysisConfidenceL
 const createAnalysisConfidence = (confidence: AnalysisConfidenceLabel): AnalysisConfidence => ({
   confidence,
   [analysisConfidenceBrand]: true,
+  ...brand(analysisConfidenceBrand),
 })
 
 export const isAnalysisConfidence = (input: unknown): input is AnalysisConfidence =>

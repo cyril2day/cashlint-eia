@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const comparisonWindowBrand = Symbol('ComparisonWindow')
 
@@ -15,10 +16,7 @@ export type ComparisonWindow = Readonly<{
 
 export type ComparisonWindowParseError = Readonly<{ readonly kind: 'InvalidComparisonWindowInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasComparisonWindowBrand = (candidate: object): boolean => Reflect.get(candidate, comparisonWindowBrand) === true
+const hasComparisonWindowBrand = hasBrand(comparisonWindowBrand)
 const isComparisonWindowLabel = (input: unknown): input is ComparisonWindowLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidWindow = (candidate: object): boolean => isComparisonWindowLabel(R
 const createComparisonWindow = (window: ComparisonWindowLabel): ComparisonWindow => ({
   window,
   [comparisonWindowBrand]: true,
+  ...brand(comparisonWindowBrand),
 })
 
 export const isComparisonWindow = (input: unknown): input is ComparisonWindow =>

@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const petroleumSliceBrand = Symbol('PetroleumSlice')
 
@@ -18,10 +19,7 @@ export type PetroleumSliceParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasPetroleumSliceBrand = (candidate: object): boolean => Reflect.get(candidate, petroleumSliceBrand) === true
+const hasPetroleumSliceBrand = hasBrand(petroleumSliceBrand)
 const isPetroleumSliceLabel = (input: unknown): input is PetroleumSliceLabel =>
   ifElse(
     isStringInput,
@@ -34,6 +32,7 @@ const hasValidSlice = (candidate: object): boolean => isPetroleumSliceLabel(Refl
 const createPetroleumSlice = (slice: PetroleumSliceLabel): PetroleumSlice => ({
   slice,
   [petroleumSliceBrand]: true,
+  ...brand(petroleumSliceBrand),
 })
 
 export const isPetroleumSlice = (input: unknown): input is PetroleumSlice =>

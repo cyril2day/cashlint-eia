@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const balanceStateBrand = Symbol('BalanceState')
 
@@ -15,10 +16,7 @@ export type BalanceState = Readonly<{
 
 export type BalanceStateParseError = Readonly<{ readonly kind: 'InvalidBalanceStateInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasBalanceStateBrand = (candidate: object): boolean => Reflect.get(candidate, balanceStateBrand) === true
+const hasBalanceStateBrand = hasBrand(balanceStateBrand)
 const isBalanceStateLabel = (input: unknown): input is BalanceStateLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidState = (candidate: object): boolean => isBalanceStateLabel(Reflec
 const createBalanceState = (state: BalanceStateLabel): BalanceState => ({
   state,
   [balanceStateBrand]: true,
+  ...brand(balanceStateBrand),
 })
 
 export const isBalanceState = (input: unknown): input is BalanceState =>

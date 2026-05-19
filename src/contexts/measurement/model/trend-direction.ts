@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const trendDirectionBrand = Symbol('TrendDirection')
 
@@ -15,10 +16,7 @@ export type TrendDirection = Readonly<{
 
 export type TrendDirectionParseError = Readonly<{ readonly kind: 'InvalidTrendDirectionInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasTrendDirectionBrand = (candidate: object): boolean => Reflect.get(candidate, trendDirectionBrand) === true
+const hasTrendDirectionBrand = hasBrand(trendDirectionBrand)
 const isTrendDirectionLabel = (input: unknown): input is TrendDirectionLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidDirection = (candidate: object): boolean => isTrendDirectionLabel(
 const createTrendDirection = (direction: TrendDirectionLabel): TrendDirection => ({
   direction,
   [trendDirectionBrand]: true,
+  ...brand(trendDirectionBrand),
 })
 
 export const isTrendDirection = (input: unknown): input is TrendDirection =>

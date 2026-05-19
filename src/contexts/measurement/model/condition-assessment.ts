@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const conditionAssessmentBrand = Symbol('ConditionAssessment')
 
@@ -15,10 +16,7 @@ export type ConditionAssessment = Readonly<{
 
 export type ConditionAssessmentParseError = Readonly<{ readonly kind: 'InvalidConditionAssessmentInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasConditionAssessmentBrand = (candidate: object): boolean => Reflect.get(candidate, conditionAssessmentBrand) === true
+const hasConditionAssessmentBrand = hasBrand(conditionAssessmentBrand)
 const isConditionAssessmentLabel = (input: unknown): input is ConditionAssessmentLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidAssessment = (candidate: object): boolean => isConditionAssessment
 const createConditionAssessment = (assessment: ConditionAssessmentLabel): ConditionAssessment => ({
   assessment,
   [conditionAssessmentBrand]: true,
+  ...brand(conditionAssessmentBrand),
 })
 
 export const isConditionAssessment = (input: unknown): input is ConditionAssessment =>

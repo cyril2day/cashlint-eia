@@ -1,6 +1,7 @@
 import { allPass, cond, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const measurementUnitBrand = Symbol('MeasurementUnit')
 
@@ -29,10 +30,7 @@ export type MeasurementUnitParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasMeasurementUnitBrand = (candidate: object): boolean => Reflect.get(candidate, measurementUnitBrand) === true
+const hasMeasurementUnitBrand = hasBrand(measurementUnitBrand)
 const isMeasurementUnitLabel = (input: unknown): input is MeasurementUnitLabel =>
   ifElse(
     isStringInput,

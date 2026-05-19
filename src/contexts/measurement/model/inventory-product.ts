@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const inventoryProductBrand = Symbol('InventoryProduct')
 
@@ -15,10 +16,7 @@ export type InventoryProduct = Readonly<{
 
 export type InventoryProductParseError = Readonly<{ readonly kind: 'InvalidInventoryProductInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasInventoryProductBrand = (candidate: object): boolean => Reflect.get(candidate, inventoryProductBrand) === true
+const hasInventoryProductBrand = hasBrand(inventoryProductBrand)
 const isInventoryProductLabel = (input: unknown): input is InventoryProductLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidProduct = (candidate: object): boolean => isInventoryProductLabel(
 const createInventoryProduct = (product: InventoryProductLabel): InventoryProduct => ({
   product,
   [inventoryProductBrand]: true,
+  ...brand(inventoryProductBrand),
 })
 
 export const isInventoryProduct = (input: unknown): input is InventoryProduct =>

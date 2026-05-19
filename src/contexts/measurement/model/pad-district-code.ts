@@ -1,6 +1,7 @@
 import { allPass, cond, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const padDistrictCodeBrand = Symbol('PADDistrictCode')
 
@@ -18,12 +19,7 @@ export type PADDistrictCodeParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasPADDistrictCodeBrand = (candidate: object): boolean =>
-  Reflect.get(candidate, padDistrictCodeBrand) === true
+const hasPADDistrictCodeBrand = hasBrand(padDistrictCodeBrand)
 
 const isPADDistrictCodeLabel = (input: unknown): input is PADDistrictCodeLabel =>
   ifElse(
@@ -34,11 +30,11 @@ const isPADDistrictCodeLabel = (input: unknown): input is PADDistrictCodeLabel =
 
 const hasValidCode = (candidate: object): boolean => isPADDistrictCodeLabel(Reflect.get(candidate, 'code'))
 
-const createPADDistrictCode = (code: PADDistrictCodeLabel): PADDistrictCode =>
-  ({
-    code,
-    [padDistrictCodeBrand]: true,
-  })
+const createPADDistrictCode = (code: PADDistrictCodeLabel): PADDistrictCode => ({
+  code,
+  [padDistrictCodeBrand]: true,
+  ...brand(padDistrictCodeBrand),
+})
 
 const parsePADDistrictCodeFromString = (value: string): Result<PADDistrictCode, PADDistrictCodeParseError> => {
   return ifElse(

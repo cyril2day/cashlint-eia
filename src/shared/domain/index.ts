@@ -10,7 +10,17 @@ export const makeDomainConstructionError = (kind: string, input: unknown): Domai
 
 import { allPass, ifElse } from '@/shared/fp'
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
+export const isObjectInput = (input: unknown): input is object => input instanceof Object
+export const isStringInput = (input: unknown): input is string => typeof input === 'string'
+
+export const hasBrand = (brand: symbol) => (candidate: object): boolean =>
+  Reflect.get(candidate, brand) === true
+
+// Helper: generate per-brand factories that create properly typed, branded values.
+// Usage: const createX = makeBrandedFactory<LabelType, typeof brand>(brand)
+export const brand = (b: symbol) => ({ [b]: true })
+
+
 const hasKindProp = (candidate: object): boolean => typeof Reflect.get(candidate, 'kind') === 'string'
 const hasInputProp = (candidate: object): boolean => typeof Reflect.get(candidate, 'input') === 'string'
 

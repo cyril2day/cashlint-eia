@@ -1,6 +1,7 @@
 import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 const priceKindBrand = Symbol('PriceKind')
 
@@ -15,10 +16,7 @@ export type PriceKind = Readonly<{
 
 export type PriceKindParseError = Readonly<{ readonly kind: 'InvalidPriceKindInput'; readonly input: string }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasPriceKindBrand = (candidate: object): boolean => Reflect.get(candidate, priceKindBrand) === true
+const hasPriceKindBrand = hasBrand(priceKindBrand)
 const isPriceKindLabel = (input: unknown): input is PriceKindLabel =>
   ifElse(
     isStringInput,
@@ -31,6 +29,7 @@ const hasValidKind = (candidate: object): boolean => isPriceKindLabel(Reflect.ge
 const createPriceKind = (kind: PriceKindLabel): PriceKind => ({
   kind,
   [priceKindBrand]: true,
+  ...brand(priceKindBrand),
 })
 
 export const isPriceKind = (input: unknown): input is PriceKind =>

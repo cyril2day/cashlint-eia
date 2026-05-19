@@ -2,6 +2,7 @@ import { compareDates, formatDateIsoDate, isDateValue, parseDate, type DateValue
 import { allPass, ifElse } from '@/shared/fp'
 import { mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 
 const reportWeekBrand = Symbol('ReportWeek')
 
@@ -16,20 +17,18 @@ export type ReportWeekParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-
-const hasReportWeekBrand = (candidate: object): boolean => Reflect.get(candidate, reportWeekBrand) === true
+const hasReportWeekBrand = hasBrand(reportWeekBrand)
 
 const hasWeeklyFrequency = (candidate: object): boolean => Reflect.get(candidate, 'frequency') === 'weekly'
 
 const hasValidDate = (candidate: object): boolean => isDateValue(Reflect.get(candidate, 'date'))
 
-const createReportWeek = (date: DateValue): ReportWeek =>
-  ({
-    date,
-    frequency: 'weekly',
-    [reportWeekBrand]: true,
-  })
+const createReportWeek = (date: DateValue): ReportWeek => ({
+  date,
+  frequency: 'weekly',
+  [reportWeekBrand]: true,
+  ...brand(reportWeekBrand),
+})
 
 export const isReportWeek = (input: unknown): input is ReportWeek =>
   ifElse(

@@ -2,6 +2,7 @@ import { compareDates, formatDateIsoDate, isDateValue, parseDate, type DateValue
 import { allPass, ifElse } from '@/shared/fp'
 import { mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 
 const releaseDateBrand = Symbol('ReleaseDate')
 
@@ -15,17 +16,15 @@ export type ReleaseDateParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-
-const hasReleaseDateBrand = (candidate: object): boolean => Reflect.get(candidate, releaseDateBrand) === true
+const hasReleaseDateBrand = hasBrand(releaseDateBrand)
 
 const hasValidDate = (candidate: object): boolean => isDateValue(Reflect.get(candidate, 'date'))
 
-const createReleaseDate = (date: DateValue): ReleaseDate =>
-  ({
-    date,
-    [releaseDateBrand]: true,
-  })
+const createReleaseDate = (date: DateValue): ReleaseDate => ({
+  date,
+  [releaseDateBrand]: true,
+  ...brand(releaseDateBrand),
+})
 
 export const isReleaseDate = (input: unknown): input is ReleaseDate =>
   ifElse(

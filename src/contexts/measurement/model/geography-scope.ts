@@ -1,6 +1,7 @@
 import { anyPass, allPass, ifElse, cond } from '@/shared/fp'
 import { failure, mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
+import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
 
 import {
   formatPADDistrictCode,
@@ -34,11 +35,7 @@ export type GeographyScopeParseError = Readonly<{
   readonly input: string
 }>
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
-
-const isStringInput = (input: unknown): input is string => typeof input === 'string'
-
-const hasGeographyScopeBrand = (candidate: object): boolean => Reflect.get(candidate, geographyScopeBrand) === true
+const hasGeographyScopeBrand = hasBrand(geographyScopeBrand)
 
 const hasUSTotalKind = (candidate: object): boolean => Reflect.get(candidate, 'kind') === 'USTotal'
 
@@ -53,24 +50,24 @@ const isPADDistrictGeographyScope = allPass([hasPADDistrictKind, hasValidPADDist
 
 const isRecognizedGeographyScopeKind = anyPass([hasUSTotalKind, isPADDistrictGeographyScope, hasCushingKind])
 
-const createUSTotalGeographyScope = (): USTotalGeographyScope =>
-  ({
-    kind: 'USTotal',
-    [geographyScopeBrand]: true,
-  })
+const createUSTotalGeographyScope = (): USTotalGeographyScope => ({
+  kind: 'USTotal',
+  [geographyScopeBrand]: true,
+  ...brand(geographyScopeBrand),
+})
 
-const createCushingGeographyScope = (): CushingGeographyScope =>
-  ({
-    kind: 'Cushing',
-    [geographyScopeBrand]: true,
-  })
+const createCushingGeographyScope = (): CushingGeographyScope => ({
+  kind: 'Cushing',
+  [geographyScopeBrand]: true,
+  ...brand(geographyScopeBrand),
+})
 
-const createPADDistrictGeographyScope = (districtCode: PADDistrictCode): PADDistrictGeographyScope =>
-  ({
-    kind: 'PADDistrict',
-    districtCode,
-    [geographyScopeBrand]: true,
-  })
+const createPADDistrictGeographyScope = (districtCode: PADDistrictCode): PADDistrictGeographyScope => ({
+  kind: 'PADDistrict',
+  districtCode,
+  [geographyScopeBrand]: true,
+  ...brand(geographyScopeBrand),
+})
 
 const parsePADDistrictFromString = (
   value: string,
