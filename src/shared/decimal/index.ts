@@ -1,4 +1,4 @@
-import { ifElse } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 
@@ -26,16 +26,11 @@ const isFiniteStringInput = (input: string): boolean =>
   )(input)
 
 const isFiniteDecimalInput = (input: unknown): input is number | string =>
-  ifElse(
-    isNumberInput,
-    Number.isFinite,
-    (candidate: unknown) =>
-      ifElse(
-        isStringInput,
-        isFiniteStringInput,
-        () => false,
-      )(candidate),
-  )(input)
+  cond([
+    [(v: unknown) => isNumberInput(v), (v: unknown) => ifElse(isNumberInput, Number.isFinite, () => false)(v)],
+    [(v: unknown) => isStringInput(v), (v: unknown) => ifElse(isStringInput, isFiniteStringInput, () => false)(v)],
+    [() => true, () => false],
+  ])(input)
 
 const coerceDecimal = (input: number | string): Decimal =>
   ifElse(
