@@ -67,4 +67,7 @@ export const isDateValue = (input: unknown): input is DateValue =>
 
 export const formatDateIso = (date: DateValue): string => formatISO(date)
 
+export const formatDateIsoDate = (date: DateValue): string =>
+  formatISO(date, { representation: 'date' })
+
 export const compareDates = (left: DateValue, right: DateValue): number => compareAsc(left, right)

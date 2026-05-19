@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { compareDates, formatDateIso, isDateValue, parseDate } from '@/shared/date'
+import { compareDates, formatDateIso, formatDateIsoDate, isDateValue, parseDate } from '@/shared/date'
 
 describe('date', () => {
   it('parses ISO strings into Date values', () => {
@@ -50,5 +50,11 @@ describe('date', () => {
     expect(compareDates(earlier, later)).toBeLessThan(0)
     expect(compareDates(later, earlier)).toBeGreaterThan(0)
     expect(compareDates(later, later)).toBe(0)
+  })
+
+  it('formats dates into date-only ISO strings', () => {
+    const input = new Date('2026-05-19T12:34:56.000Z')
+
+    expect(formatDateIsoDate(input)).toBe('2026-05-19')
   })
 })

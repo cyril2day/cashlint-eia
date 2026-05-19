@@ -137,15 +137,29 @@ export default [
               name: 'ramda',
               message: 'Import Ramda utilities through @/shared/fp instead.',
             },
+            {
+              name: 'date-fns',
+              message: 'Import date helpers through @/shared/date instead.',
+            },
           ],
           patterns: [
             {
               group: ['ramda/*'],
               message: 'Import Ramda utilities through @/shared/fp instead.',
             },
+            {
+              group: ['date-fns/*'],
+              message: 'Import date helpers through @/shared/date instead.',
+            },
           ],
         },
       ],
+    },
+  },
+  {
+    files: ['src/shared/date/index.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
   {
