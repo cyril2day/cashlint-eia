@@ -1,12 +1,15 @@
 import { anyPass, allPass, ifElse, cond } from '@/shared/fp'
-import { failure, success } from '@/shared/result'
+import { failure, mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 
+import {
+  formatPADDistrictCode,
+  isPADDistrictCode,
+  parsePADDistrictCode,
+  type PADDistrictCode,
+} from './pad-district-code'
+
 const geographyScopeBrand = Symbol('GeographyScope')
-
-type PADDistrictCode = 'PADI' | 'PADII' | 'PADIII' | 'PADIV' | 'PADV'
-
-const padDistrictCodes: readonly PADDistrictCode[] = ['PADI', 'PADII', 'PADIII', 'PADIV', 'PADV']
 
 export type USTotalGeographyScope = Readonly<{
   readonly kind: 'USTotal'
@@ -43,14 +46,8 @@ const hasCushingKind = (candidate: object): boolean => Reflect.get(candidate, 'k
 
 const hasPADDistrictKind = (candidate: object): boolean => Reflect.get(candidate, 'kind') === 'PADDistrict'
 
-const isPADDistrictCode = (input: unknown): input is PADDistrictCode =>
-  ifElse(
-    isStringInput,
-    (candidate: string): boolean => padDistrictCodes.some(code => code === candidate),
-    () => false,
-  )(input)
-
-const hasValidPADDistrictCode = (candidate: object): boolean => isPADDistrictCode(Reflect.get(candidate, 'districtCode'))
+const hasValidPADDistrictCode = (candidate: object): boolean =>
+  isPADDistrictCode(Reflect.get(candidate, 'districtCode'))
 
 const isPADDistrictGeographyScope = allPass([hasPADDistrictKind, hasValidPADDistrictCode])
 
@@ -89,16 +86,13 @@ const parsePADDistrictFromString = (
 
   const candidateCode = extractCode(value)
 
-  return ifElse(
-    isPADDistrictCode,
-    (code: PADDistrictCode): Result<GeographyScope, GeographyScopeParseError> =>
-      success(createPADDistrictGeographyScope(code)),
-    (): Result<GeographyScope, GeographyScopeParseError> =>
-      failure({
-        kind: 'InvalidGeographyScopeInput',
-        input: value,
-      }),
-  )(candidateCode)
+  return mapError(
+    mapResult(parsePADDistrictCode(candidateCode), createPADDistrictGeographyScope),
+    error => ({
+      kind: 'InvalidGeographyScopeInput',
+      input: error.input,
+    }),
+  )
 }
 
 const isUSTotal = (value: string): boolean => value === 'USTotal'
@@ -119,7 +113,7 @@ const parseGeographyScopeFromString = (
   return cond([
     [isUSTotal, handleUSTotal],
     [isCushing, handleCushing],
-    [() => true, (_: string) => parsePADDistrictFromString(String(_))],
+    [() => true, (candidateValue: string) => parsePADDistrictFromString(candidateValue)],
   ])(value)
 }
 
@@ -164,6 +158,6 @@ export const formatGeographyScope = (geographyScope: GeographyScope): string =>
   ifElse(
     hasPADDistrictKind,
     (candidate: GeographyScope): string =>
-      'PADDistrict(' + String(Reflect.get(candidate, 'districtCode')) + ')',
+      'PADDistrict(' + formatPADDistrictCode(Reflect.get(candidate, 'districtCode')) + ')',
     (candidate: GeographyScope): string => String(Reflect.get(candidate, 'kind')),
   )(geographyScope)
