@@ -109,6 +109,66 @@ const restrictedSyntaxRules = [
     message:
       'Switch statements are not allowed. Use Ramda cond to manage multiple conditions.',
   },
+
+  // -----------------------------
+  // 9. Async and await NOT allowed
+  // -----------------------------
+  {
+    selector: 'AsyncFunctionDeclaration',
+    message:
+      'Async functions are not allowed. Use AsyncResult type and handle effects explicitly at boundaries.',
+  },
+  {
+    selector: 'AsyncFunctionExpression',
+    message:
+      'Async function expressions are not allowed. Use AsyncResult type and handle effects explicitly at boundaries.',
+  },
+  {
+    selector: 'ArrowFunctionExpression[async=true]',
+    message:
+      'Async arrow functions are not allowed. Use AsyncResult type and handle effects explicitly at boundaries.',
+  },
+  {
+    selector: 'AwaitExpression',
+    message:
+      'Await expressions are not allowed. Use AsyncResult and explicit effect handling instead.',
+  },
+
+  // -----------------------------
+  // 10. Nested pipes NOT allowed
+  // -----------------------------
+  {
+    selector: 'CallExpression[callee.name="pipe"] CallExpression[callee.name="pipe"]',
+    message:
+      'Nested pipes are not allowed. Compose multiple transformations into a single named function instead.',
+  },
+
+  // -----------------------------
+  // 11. Long inline functions in pipe NOT allowed
+  // -----------------------------
+  {
+    selector: 'CallExpression[callee.name="pipe"] ArrowFunctionExpression[expression=false]',
+    message:
+      'Long inline functions with blocks in pipes are not allowed. Extract into a named function.',
+  },
+
+  // -----------------------------
+  // 12. Long inline functions in ifElse NOT allowed
+  // -----------------------------
+  {
+    selector: 'CallExpression[callee.name="ifElse"] ArrowFunctionExpression[expression=false]',
+    message:
+      'Long inline functions with blocks in ifElse are not allowed. Extract into a named function.',
+  },
+
+  // -----------------------------
+  // 13. Nested ifElse NOT allowed
+  // -----------------------------
+  {
+    selector: 'CallExpression[callee.name="ifElse"] CallExpression[callee.name="ifElse"]',
+    message:
+      'Nested ifElse calls are not allowed. Use Ramda cond for multi-way branching instead.',
+  },
 ];
 
 export default [
@@ -166,6 +226,22 @@ export default [
     files: ['src/shared/fp/index.ts'],
     rules: {
       'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['tests/**/*.ts', 'tests/**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...restrictedSyntaxRules.filter(
+          rule =>
+            rule.selector !== 'AsyncFunctionDeclaration' &&
+            rule.selector !== 'AsyncFunctionExpression' &&
+            rule.selector !== 'ArrowFunctionExpression[async=true]' &&
+            rule.selector !== 'AwaitExpression' &&
+            rule.selector !== 'CallExpression[callee.name="ifElse"] ArrowFunctionExpression[expression=false]'
+        ),
+      ],
     },
   },
 ];

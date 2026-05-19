@@ -2,9 +2,9 @@
 
 This folder is the canonical Measurement-owned home for the foundational domain value types and canonical fact model code.
 
-ReportWeek is currently implemented here.
+ReportWeek, ReleaseDate, and GeographyScope are currently implemented here.
 
-Phase 3 will place ReleaseDate, GeographyScope, PADDistrictCode, MeasurementUnit, PetroleumSlice, and MeasurementKind here.
+Phase 3 will place PADDistrictCode, MeasurementUnit, PetroleumSlice, and MeasurementKind here.
 
 Import these types through `@/contexts/measurement/model` from later domain contexts.
 
