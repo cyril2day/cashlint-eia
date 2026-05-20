@@ -100,14 +100,14 @@ const validateValueCandidate = (
   ifElse(
     isWalkingSkeletonPriceNumericCandidate,
     () => success(valueCandidate),
-    (invalidCandidate: string) =>
+    (invalidCandidate: unknown) =>
       failure(
-        makeInvalidNumericValueError('value', invalidCandidate, {
+        makeInvalidNumericValueError('value', String(invalidCandidate), {
           endpoint: walkingSkeletonPriceEndpoint,
           seriesId,
         }),
       ),
-  )(String(valueCandidate))
+  )(valueCandidate)
 
 const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | number | null> => {
   const valueCandidate = unwrap(row.value)
@@ -127,6 +127,16 @@ const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<stri
         }),
       ),
   )(unitCandidate)
+
+const readPriceRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> =>
+  ifElse(
+    (candidate: readonly RawEiaRow[] | undefined) => candidate === undefined,
+    () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonPriceEndpoint })),
+    success,
+  )(dataRows)
+
+const translatePriceRows = (rows: readonly RawEiaRow[]): BR<readonly PriceBoundaryDto[]> =>
+  sequenceResults(rows.map(translatePriceRow))
 
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
@@ -191,5 +201,5 @@ export const translatePriceEnvelope = (
 ): BR<readonly PriceBoundaryDto[]> => {
   const dataRows = unwrap(envelope.data)
 
-  return bindResult(ifElse((candidate: readonly RawEiaRow[] | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonPriceEndpoint })), success)(dataRows), rows => sequenceResults(rows.map(translatePriceRow)))
+  return bindResult(readPriceRows(dataRows), translatePriceRows)
 }

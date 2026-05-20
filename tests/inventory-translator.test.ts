@@ -22,6 +22,33 @@ describe('inventory translator', () => {
     )
   })
 
+  it('accepts numeric inventory value candidates', () => {
+    const row: RawEiaRow = {
+      period: some('2026-01-09'),
+      date: some('2026-01-09'),
+      value: some(836125),
+      unit: some('MBBL'),
+      series_id: some('WCRSTUS1'),
+      series: some('WCRSTUS1'),
+      product: some('CrudeOil'),
+      geography: some('NUS'),
+      frequency: some('weekly'),
+      description: some('numeric value fixture'),
+      notes: some('sanitized fixture'),
+    }
+
+    expect(translateInventoryRow(row)).toEqual(
+      success({
+        kind: 'Inventory',
+        periodCandidate: some('2026-01-09'),
+        seriesId: some('WCRSTUS1'),
+        valueCandidate: some(836125),
+        unitCandidate: some('MBBL'),
+        source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+      }),
+    )
+  })
+
   it('rejects unsupported inventory series', () => {
     const row: RawEiaRow = {
       period: some('2026-01-09'),

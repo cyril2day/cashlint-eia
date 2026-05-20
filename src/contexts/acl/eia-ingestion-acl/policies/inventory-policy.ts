@@ -1,4 +1,5 @@
-import { ifElse } from '@/shared/fp'
+import { parseDecimal } from '@/shared/decimal'
+import { isSuccess } from '@/shared/result'
 
 export const walkingSkeletonInventorySeriesIds: readonly string[] = ['WCRSTUS1', 'W_EPC0_SAX_YCUOK_MBBL']
 
@@ -15,9 +16,5 @@ export const isWalkingSkeletonInventoryUnitCandidate = (unitCandidate: string): 
 export const isWalkingSkeletonInventoryPeriodCandidate = (periodCandidate: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/.test(periodCandidate)
 
-export const isWalkingSkeletonInventoryNumericCandidate = (valueCandidate: string | number): boolean =>
-  ifElse(
-    (candidate: string | number) => typeof candidate === 'number',
-    (candidate: number) => Number.isFinite(candidate),
-    (candidate: string) => /^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(candidate.trim()),
-  )(valueCandidate)
+export const isWalkingSkeletonInventoryNumericCandidate = (valueCandidate: unknown): boolean =>
+  isSuccess(parseDecimal(valueCandidate))

@@ -239,6 +239,12 @@ export default [
     },
   },
   {
+    files: ['src/contexts/acl/eia-ingestion-acl/**/*.ts'],
+    rules: {
+      'max-nested-callbacks': ['error', 2],
+    },
+  },
+  {
     files: ['src/shared/date/index.ts'],
     rules: {
       'no-restricted-imports': 'off',
@@ -250,7 +256,7 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
-  // translators are covered by the global restrictedSyntaxRules which now includes nested bindResult
+  // translators are covered by the global restrictedSyntaxRules and the ACL nesting-depth rule
   {
     files: ['tests/**/*.ts', 'tests/**/*.tsx'],
     rules: {

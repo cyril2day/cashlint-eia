@@ -98,14 +98,14 @@ const validateValueCandidate = (
   ifElse(
     isWalkingSkeletonInventoryNumericCandidate,
     () => success(valueCandidate),
-    (invalidCandidate: string) =>
+    (invalidCandidate: unknown) =>
       failure(
-        makeInvalidNumericValueError('value', invalidCandidate, {
+        makeInvalidNumericValueError('value', String(invalidCandidate), {
           endpoint: walkingSkeletonInventoryEndpoint,
           seriesId,
         }),
       ),
-  )(String(valueCandidate))
+  )(valueCandidate)
 
 const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | number | null> => {
   const valueCandidate = unwrap(row.value)
@@ -125,6 +125,17 @@ const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<stri
         }),
       ),
   )(unitCandidate)
+
+const readInventoryRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> =>
+  ifElse(
+    (candidate: readonly RawEiaRow[] | undefined) => candidate === undefined,
+    () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonInventoryEndpoint })),
+    success,
+  )(dataRows)
+
+const translateInventoryRows = (
+  rows: readonly RawEiaRow[],
+): BR<readonly InventoryBoundaryDto[]> => sequenceResults(rows.map(translateInventoryRow))
 
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
@@ -196,5 +207,5 @@ export const translateInventoryEnvelope = (
 ): BR<readonly InventoryBoundaryDto[]> => {
   const dataRows = unwrap(envelope.data)
 
-  return bindResult(ifElse((candidate: readonly RawEiaRow[] | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonInventoryEndpoint })), success)(dataRows), rows => sequenceResults(rows.map(translateInventoryRow)))
+  return bindResult(readInventoryRows(dataRows), translateInventoryRows)
 }

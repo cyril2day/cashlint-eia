@@ -23,6 +23,34 @@ describe('price translator', () => {
     )
   })
 
+  it('accepts numeric price value candidates', () => {
+    const row: RawEiaRow = {
+      period: some('2026-01-09'),
+      date: some('2026-01-09'),
+      value: some(76.31),
+      unit: some('USD/bbl'),
+      series_id: some('EPCWTIR'),
+      series: some('RWTC'),
+      product: some('EPCWTIR'),
+      geography: some('NUS'),
+      frequency: some('weekly'),
+      description: some('numeric value fixture'),
+      notes: some('sanitized fixture'),
+    }
+
+    expect(translatePriceRow(row)).toEqual(
+      success({
+        kind: 'Price',
+        periodCandidate: some('2026-01-09'),
+        seriesId: some('EPCWTIR'),
+        measureKindCandidate: some('WTISpotPrice'),
+        valueCandidate: some(76.31),
+        unitCandidate: some('USD/bbl'),
+        source: { endpoint: '/v2/petroleum/pri/spt/data/' },
+      }),
+    )
+  })
+
   it('rejects unsupported price identifiers', () => {
     const row: RawEiaRow = {
       period: some('2026-01-09'),
