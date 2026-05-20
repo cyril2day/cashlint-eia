@@ -1,6 +1,8 @@
 import { allPass, find, ifElse, pipeWith } from '@/shared/fp'
 import { isSome, some, unwrap } from '@/shared/maybe'
 import { bindResult, failure, mapError, sequenceResults, success } from '@/shared/result'
+import { requireFieldThen } from '@/contexts/acl/eia-ingestion-acl/helpers/requireField'
+import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
 import type { Result } from '@/shared/result'
 
 import type { PriceBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
@@ -11,7 +13,6 @@ import {
   makeInvalidDateOrPeriodError,
   makeInvalidNumericValueError,
   makeInvalidUnitError,
-  makeMissingRequiredFieldError,
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
@@ -69,7 +70,9 @@ const validateSeriesId = (seriesId: string): BR<string> =>
 const readSeriesId = (row: RawEiaRow): BR<string> => {
   const seriesId = selectSeriesId(row)
 
-  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('series', { endpoint: walkingSkeletonPriceEndpoint })), validateSeriesId)(seriesId)
+  const requireSeries = requireFieldThen<string, Result<string, BoundaryError>>('series', walkingSkeletonPriceEndpoint, validateSeriesId)
+
+  return requireSeries(seriesId)
 }
 
 const validatePeriodCandidate = (
@@ -97,7 +100,9 @@ const validatePeriodCandidate = (
 const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | number> => {
   const periodCandidate = unwrap(row.period)
 
-  return ifElse((candidate: string | number | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('period', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validatePeriodCandidate(candidate, seriesId))(periodCandidate)
+  const requirePeriod = requireFieldThen<string | number, Result<string | number, BoundaryError>>('period', walkingSkeletonPriceEndpoint, candidate => validatePeriodCandidate(candidate, seriesId))
+
+  return requirePeriod(periodCandidate)
 }
 
 const validateValueCandidate = (
@@ -119,7 +124,9 @@ const validateValueCandidate = (
 const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | number | null> => {
   const valueCandidate = unwrap(row.value)
 
-  return ifElse((candidate: string | number | null | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('value', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validateValueCandidate(candidate, seriesId))(valueCandidate)
+  const requireValue = requireFieldThen<string | number | null, Result<string | number | null, BoundaryError>>('value', walkingSkeletonPriceEndpoint, candidate => validateValueCandidate(candidate, seriesId))
+
+  return requireValue(valueCandidate)
 }
 
 const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<string> =>
@@ -135,12 +142,11 @@ const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<stri
       ),
   )(unitCandidate)
 
-const readPriceRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> =>
-  ifElse(
-    (candidate: readonly RawEiaRow[] | undefined) => candidate === undefined,
-    () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonPriceEndpoint })),
-    success,
-  )(dataRows)
+const readPriceRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> => {
+  const requireData = requireFieldThen<readonly RawEiaRow[], BR<readonly RawEiaRow[]>>('data', walkingSkeletonPriceEndpoint, success)
+
+  return requireData(dataRows)
+}
 
 const translatePriceRows = (rows: readonly RawEiaRow[]): BR<readonly PriceBoundaryDto[]> =>
   sequenceResults(rows.map(translatePriceRow))
@@ -148,7 +154,9 @@ const translatePriceRows = (rows: readonly RawEiaRow[]): BR<readonly PriceBounda
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
 
-  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('unit', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validateUnitCandidate(candidate, seriesId))(unitCandidate)
+  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonPriceEndpoint, candidate => validateUnitCandidate(candidate, seriesId))
+
+  return requireUnit(unitCandidate)
 }
 
 const hasUnsupportedWeeklyFrequency = allPass([(candidate: RawEiaRow) => isSome(candidate.frequency), (candidate: RawEiaRow) => unwrap(candidate.frequency) !== 'weekly'])
@@ -192,11 +200,13 @@ const toPriceBoundaryDto = (context: PriceUnitContext): Result<PriceBoundaryDto,
     source: { endpoint: walkingSkeletonPriceEndpoint },
   })
 
+// binder imported below is used with `pipeWith` to compose Result pipelines
+
 const translatePriceRowPipeline = pipeWith(
   <InputValue, FailureValue, OutputValue>(
     step: (value: InputValue) => Result<OutputValue, FailureValue>,
     result: Result<InputValue, FailureValue>,
-  ) => bindResult(result, step),
+  ) => binder(step, result),
   [withSeriesId, withWeeklyRow, withPeriodCandidate, withValueCandidate, withUnitCandidate, toPriceBoundaryDto],
 )
 
