@@ -40,7 +40,7 @@ const restrictedSyntaxRules = [
       'Direct empty-string comparison is not allowed. Use a named predicate (e.g. isNonEmptyString).',
   },
   {
-    selector: "BinaryExpression > TemplateLiteral:only-child[value.raw='']",
+    selector: "BinaryExpression > TemplateLiteral[value.raw='']",
     message: 'Empty template string comparison is not allowed.',
   },
 
@@ -170,6 +170,14 @@ const restrictedSyntaxRules = [
     message:
       'Nested ifElse calls are not allowed. Use Ramda cond for multi-way branching instead.',
   },
+  // -----------------------------
+  // 14. Nested bindResult NOT allowed
+  // -----------------------------
+  {
+    selector: 'CallExpression[callee.name="bindResult"] CallExpression[callee.name="bindResult"]',
+    message:
+      'Nested bindResult calls are not allowed. Use flatter pipelines, sequenceResults, or a pipeWith runner instead.',
+  },
 ];
 
 export default [
@@ -231,6 +239,7 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
+  // translators are covered by the global restrictedSyntaxRules which now includes nested bindResult
   {
     files: ['tests/**/*.ts', 'tests/**/*.tsx'],
     rules: {
