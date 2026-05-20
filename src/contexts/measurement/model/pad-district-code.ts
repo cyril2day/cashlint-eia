@@ -1,4 +1,4 @@
-import { allPass, cond, ifElse } from '@/shared/fp'
+import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'

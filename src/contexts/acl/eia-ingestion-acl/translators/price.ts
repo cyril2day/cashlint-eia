@@ -3,7 +3,7 @@ import { isSome, some, unwrap } from '@/shared/maybe'
 import { bindResult, failure, sequenceResults, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 
-import type { InventoryBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
+import type { PriceBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import type { RawEiaEnvelope, RawEiaRow } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
 import type { BoundaryError } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
@@ -15,49 +15,51 @@ import {
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
-  isWalkingSkeletonInventoryNumericCandidate,
-  isWalkingSkeletonInventoryPeriodCandidate,
-  isWalkingSkeletonInventorySeriesId,
-  isWalkingSkeletonInventoryUnitCandidate,
-  walkingSkeletonInventoryEndpoint,
+  isWalkingSkeletonPriceNumericCandidate,
+  isWalkingSkeletonPricePeriodCandidate,
+  isWalkingSkeletonPriceSeriesIdentifier,
+  isWalkingSkeletonPriceUnitCandidate,
+  walkingSkeletonPriceEndpoint,
 } from '@/contexts/acl/eia-ingestion-acl/policies'
 
-type InventoryRowContext = {
+type PriceRowContext = {
   readonly row: RawEiaRow
   readonly seriesId: string
 }
 
-type InventoryWeeklyContext = InventoryRowContext & {
+type PriceWeeklyContext = PriceRowContext & {
   readonly weeklyRow: RawEiaRow
 }
 
-type InventoryPeriodContext = InventoryWeeklyContext & {
+type PricePeriodContext = PriceWeeklyContext & {
   readonly periodCandidate: string | number
 }
 
-type InventoryValueContext = InventoryPeriodContext & {
+type PriceValueContext = PricePeriodContext & {
   readonly valueCandidate: string | number | null
 }
 
-type InventoryUnitContext = InventoryValueContext & {
+type PriceUnitContext = PriceValueContext & {
   readonly unitCandidate: string
 }
+const priceMeasureKindCandidate = 'WTISpotPrice'
 
 const selectSeriesId = (row: RawEiaRow): string | undefined =>
-  find((candidate: string | undefined): candidate is string => candidate !== undefined, [unwrap(row.series_id), unwrap(row.series)])
+  find(
+    (candidate: string | undefined): candidate is string => candidate !== undefined,
+    [unwrap(row.series_id), unwrap(row.series), unwrap(row.product)],
+  )
 
 type BR<T> = Result<T, BoundaryError>
 
-
-
 const validateSeriesId = (seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonInventorySeriesId,
+    isWalkingSkeletonPriceSeriesIdentifier,
     (validSeriesId: string) => success(validSeriesId),
     (invalidSeriesId: string) =>
       failure(
         makeUnsupportedSeriesError(invalidSeriesId, {
-          endpoint: walkingSkeletonInventoryEndpoint,
+          endpoint: walkingSkeletonPriceEndpoint,
           seriesId: invalidSeriesId,
         }),
       ),
@@ -66,7 +68,7 @@ const validateSeriesId = (seriesId: string): BR<string> =>
 const readSeriesId = (row: RawEiaRow): BR<string> => {
   const seriesId = selectSeriesId(row)
 
-  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('series', { endpoint: walkingSkeletonInventoryEndpoint })), validateSeriesId)(seriesId)
+  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('series', { endpoint: walkingSkeletonPriceEndpoint })), validateSeriesId)(seriesId)
 }
 
 const validatePeriodCandidate = (
@@ -74,12 +76,12 @@ const validatePeriodCandidate = (
   seriesId: string,
 ): BR<string | number> =>
   ifElse(
-    isWalkingSkeletonInventoryPeriodCandidate,
+    isWalkingSkeletonPricePeriodCandidate,
     () => success(periodCandidate),
     (invalidCandidate: string) =>
       failure(
         makeInvalidDateOrPeriodError('period', invalidCandidate, {
-          endpoint: walkingSkeletonInventoryEndpoint,
+          endpoint: walkingSkeletonPriceEndpoint,
           seriesId,
         }),
       ),
@@ -88,7 +90,7 @@ const validatePeriodCandidate = (
 const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | number> => {
   const periodCandidate = unwrap(row.period)
 
-  return ifElse((candidate: string | number | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('period', { endpoint: walkingSkeletonInventoryEndpoint, seriesId })), candidate => validatePeriodCandidate(candidate, seriesId))(periodCandidate)
+  return ifElse((candidate: string | number | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('period', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validatePeriodCandidate(candidate, seriesId))(periodCandidate)
 }
 
 const validateValueCandidate = (
@@ -96,12 +98,12 @@ const validateValueCandidate = (
   seriesId: string,
 ): BR<string | number | null> =>
   ifElse(
-    isWalkingSkeletonInventoryNumericCandidate,
+    isWalkingSkeletonPriceNumericCandidate,
     () => success(valueCandidate),
     (invalidCandidate: string) =>
       failure(
         makeInvalidNumericValueError('value', invalidCandidate, {
-          endpoint: walkingSkeletonInventoryEndpoint,
+          endpoint: walkingSkeletonPriceEndpoint,
           seriesId,
         }),
       ),
@@ -110,17 +112,17 @@ const validateValueCandidate = (
 const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | number | null> => {
   const valueCandidate = unwrap(row.value)
 
-  return ifElse((candidate: string | number | null | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('value', { endpoint: walkingSkeletonInventoryEndpoint, seriesId })), candidate => validateValueCandidate(candidate, seriesId))(valueCandidate)
+  return ifElse((candidate: string | number | null | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('value', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validateValueCandidate(candidate, seriesId))(valueCandidate)
 }
 
 const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonInventoryUnitCandidate,
+    isWalkingSkeletonPriceUnitCandidate,
     (validUnitCandidate: string) => success(validUnitCandidate),
     (invalidUnitCandidate: string) =>
       failure(
         makeInvalidUnitError('unit', invalidUnitCandidate, {
-          endpoint: walkingSkeletonInventoryEndpoint,
+          endpoint: walkingSkeletonPriceEndpoint,
           seriesId,
         }),
       ),
@@ -129,7 +131,7 @@ const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<stri
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
 
-  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('unit', { endpoint: walkingSkeletonInventoryEndpoint, seriesId })), candidate => validateUnitCandidate(candidate, seriesId))(unitCandidate)
+  return ifElse((candidate: string | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('unit', { endpoint: walkingSkeletonPriceEndpoint, seriesId })), candidate => validateUnitCandidate(candidate, seriesId))(unitCandidate)
 }
 
 const hasUnsupportedWeeklyFrequency = allPass([(candidate: RawEiaRow) => isSome(candidate.frequency), (candidate: RawEiaRow) => unwrap(candidate.frequency) !== 'weekly'])
@@ -137,64 +139,57 @@ const hasUnsupportedWeeklyFrequency = allPass([(candidate: RawEiaRow) => isSome(
 const readWeeklyFrequency = (row: RawEiaRow, seriesId: string): BR<RawEiaRow> =>
   ifElse(
     hasUnsupportedWeeklyFrequency,
-    () => failure(makeFrequencyMismatchError({ endpoint: walkingSkeletonInventoryEndpoint, seriesId })),
+    () => failure(makeFrequencyMismatchError({ endpoint: walkingSkeletonPriceEndpoint, seriesId })),
     () => success(row),
   )(row)
 
-const withSeriesId = (row: RawEiaRow): Result<InventoryRowContext, BoundaryError> =>
+const withSeriesId = (row: RawEiaRow): Result<PriceRowContext, BoundaryError> =>
   bindResult(readSeriesId(row), seriesId => success({ row, seriesId }))
 
-const withWeeklyRow = (context: InventoryRowContext): Result<InventoryWeeklyContext, BoundaryError> =>
+const withWeeklyRow = (context: PriceRowContext): Result<PriceWeeklyContext, BoundaryError> =>
   bindResult(readWeeklyFrequency(context.row, context.seriesId), weeklyRow => success({ ...context, weeklyRow }))
 
-const withPeriodCandidate = (
-  context: InventoryWeeklyContext,
-): Result<InventoryPeriodContext, BoundaryError> =>
+const withPeriodCandidate = (context: PriceWeeklyContext): Result<PricePeriodContext, BoundaryError> =>
   bindResult(readPeriodCandidate(context.weeklyRow, context.seriesId), periodCandidate =>
     success({ ...context, periodCandidate }),
   )
 
-const withValueCandidate = (
-  context: InventoryPeriodContext,
-): Result<InventoryValueContext, BoundaryError> =>
+const withValueCandidate = (context: PricePeriodContext): Result<PriceValueContext, BoundaryError> =>
   bindResult(readValueCandidate(context.weeklyRow, context.seriesId), valueCandidate =>
     success({ ...context, valueCandidate }),
   )
 
-const withUnitCandidate = (
-  context: InventoryValueContext,
-): Result<InventoryUnitContext, BoundaryError> =>
+const withUnitCandidate = (context: PriceValueContext): Result<PriceUnitContext, BoundaryError> =>
   bindResult(readUnitCandidate(context.weeklyRow, context.seriesId), unitCandidate =>
     success({ ...context, unitCandidate }),
   )
 
-const toInventoryBoundaryDto = (
-  context: InventoryUnitContext,
-): Result<InventoryBoundaryDto, BoundaryError> =>
+const toPriceBoundaryDto = (context: PriceUnitContext): Result<PriceBoundaryDto, BoundaryError> =>
   success({
-    kind: 'Inventory',
+    kind: 'Price',
     periodCandidate: some(context.periodCandidate),
     seriesId: some(context.seriesId),
+    measureKindCandidate: some(priceMeasureKindCandidate),
     valueCandidate: some(context.valueCandidate),
     unitCandidate: some(context.unitCandidate),
-    source: { endpoint: walkingSkeletonInventoryEndpoint },
+    source: { endpoint: walkingSkeletonPriceEndpoint },
   })
 
-const translateInventoryRowPipeline = pipeWith(
+const translatePriceRowPipeline = pipeWith(
   <InputValue, FailureValue, OutputValue>(
     step: (value: InputValue) => Result<OutputValue, FailureValue>,
     result: Result<InputValue, FailureValue>,
   ) => bindResult(result, step),
-  [withSeriesId, withWeeklyRow, withPeriodCandidate, withValueCandidate, withUnitCandidate, toInventoryBoundaryDto],
+  [withSeriesId, withWeeklyRow, withPeriodCandidate, withValueCandidate, withUnitCandidate, toPriceBoundaryDto],
 )
 
-export const translateInventoryRow = (row: RawEiaRow): Result<InventoryBoundaryDto, BoundaryError> =>
-  translateInventoryRowPipeline(row)
+export const translatePriceRow = (row: RawEiaRow): Result<PriceBoundaryDto, BoundaryError> =>
+  translatePriceRowPipeline(row)
 
-export const translateInventoryEnvelope = (
+export const translatePriceEnvelope = (
   envelope: RawEiaEnvelope,
-): BR<readonly InventoryBoundaryDto[]> => {
+): BR<readonly PriceBoundaryDto[]> => {
   const dataRows = unwrap(envelope.data)
 
-  return bindResult(ifElse((candidate: readonly RawEiaRow[] | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonInventoryEndpoint })), success)(dataRows), rows => sequenceResults(rows.map(translateInventoryRow)))
+  return bindResult(ifElse((candidate: readonly RawEiaRow[] | undefined) => candidate === undefined, () => failure(makeMissingRequiredFieldError('data', { endpoint: walkingSkeletonPriceEndpoint })), success)(dataRows), rows => sequenceResults(rows.map(translatePriceRow)))
 }
