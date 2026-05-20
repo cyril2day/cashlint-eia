@@ -1,6 +1,7 @@
 import { success, failure } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand } from '@/shared/domain'
+import { brand } from '@/shared/domain'
 import type { ReportWeek } from './report-week'
 import type { GeographyScope } from './geography-scope'
 import type { PetroleumSlice } from './petroleum-slice'
@@ -32,6 +33,26 @@ export type WeeklyFactParseError = Readonly<{
 const hasWeeklyFactBrand = hasBrand(weeklyFactBrand)
 
 // Intentionally minimal constructor omitted; parsing accepts only already-shaped WeeklyFact
+
+export const createWeeklyFact = (
+  reportWeek: ReportWeek,
+  geography: GeographyScope,
+  slice: PetroleumSlice,
+  measurementKind: MeasurementKind,
+  value: Decimal,
+  unit: MeasurementUnit,
+  source: Maybe<SourceIdentity>,
+): WeeklyFact => ({
+  reportWeek,
+  geography,
+  slice,
+  measurementKind,
+  value,
+  unit,
+  source,
+  [weeklyFactBrand]: true,
+  ...brand(weeklyFactBrand),
+})
 
 const makeInvalidWeeklyFactError = (input: unknown): WeeklyFactParseError => ({
   kind: 'InvalidWeeklyFactInput',
