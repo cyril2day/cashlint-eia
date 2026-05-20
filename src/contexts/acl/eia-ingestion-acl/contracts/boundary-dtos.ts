@@ -1,5 +1,6 @@
 import type { RawEiaRow, PeriodCandidate, ValueCandidate, MaybeString } from './raw-eia'
 import type { Maybe } from '@/shared/maybe'
+import { some } from '@/shared/maybe'
 
 export type InventoryBoundaryDto = Readonly<{
   readonly kind: 'Inventory'
@@ -14,6 +15,7 @@ export type PriceBoundaryDto = Readonly<{
   readonly kind: 'Price'
   readonly periodCandidate: Maybe<PeriodCandidate>
   readonly seriesId: MaybeString
+  readonly measureKindCandidate: MaybeString
   readonly valueCandidate: Maybe<ValueCandidate>
   readonly unitCandidate: MaybeString
   readonly source: { endpoint: string }
@@ -45,6 +47,7 @@ export const fromRawInventoryRow = (r: RawEiaRow): InventoryBoundaryDto => {
 export const fromRawPriceRow = (r: RawEiaRow): PriceBoundaryDto => {
   const periodCandidate = r.period
   const seriesId = r.series_id
+  const measureKindCandidate = some('WTISpotPrice')
   const valueCandidate = r.value
   const unitCandidate = r.unit
   const source = { endpoint: 'eia' }
@@ -53,6 +56,7 @@ export const fromRawPriceRow = (r: RawEiaRow): PriceBoundaryDto => {
     kind: 'Price',
     periodCandidate,
     seriesId,
+    measureKindCandidate,
     valueCandidate,
     unitCandidate,
     source,

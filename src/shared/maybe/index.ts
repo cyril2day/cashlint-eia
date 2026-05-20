@@ -19,4 +19,11 @@ export const map = <A, B>(fn: (a: A) => B) =>
     () => none()
   )
 
+export const unwrap = <T>(m: Maybe<T>): T | undefined =>
+  ifElse(
+    (candidate: Maybe<T>): candidate is Some<T> => candidate.kind === 'Some',
+    (candidate: Some<T>) => candidate.value,
+    () => undefined,
+  )(m)
+
 export default {}

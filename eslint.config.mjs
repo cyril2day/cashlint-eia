@@ -199,6 +199,17 @@ export default [
     plugins: { '@typescript-eslint': tsPlugin },
     rules: {
       'no-restricted-syntax': ['error', ...restrictedSyntaxRules],
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          vars: 'all',
+          args: 'after-used',
+          ignoreRestSiblings: true,
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_'
+        },
+      ],
       'no-restricted-imports': [
         'error',
         {
