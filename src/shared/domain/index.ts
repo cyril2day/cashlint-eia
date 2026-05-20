@@ -1,3 +1,5 @@
+import { allPass, ifElse } from '@/shared/fp'
+
 export type DomainConstructionError = Readonly<{
   readonly kind: string
   readonly input: string
@@ -7,8 +9,6 @@ export const makeDomainConstructionError = (kind: string, input: unknown): Domai
   kind,
   input: String(input),
 })
-
-import { allPass, ifElse } from '@/shared/fp'
 
 export const isObjectInput = (input: unknown): input is object => input instanceof Object
 export const isStringInput = (input: unknown): input is string => typeof input === 'string'

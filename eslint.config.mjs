@@ -84,6 +84,14 @@ const restrictedSyntaxRules = [
   },
 
   // -----------------------------
+  // Import declarations must be at the top
+  // -----------------------------
+  {
+    selector: "Program > :not(ImportDeclaration) ~ ImportDeclaration",
+    message: 'Import declarations must appear before any other statements in the file.',
+  },
+
+  // -----------------------------
   // 15. Direct Date usage NOT allowed — prefer date-fns and shared/date
   // -----------------------------
   {

@@ -2,6 +2,7 @@ import { allPass, find, ifElse, pipeWith } from '@/shared/fp'
 import { isSome, some, unwrap } from '@/shared/maybe'
 import { bindResult, failure, mapError, sequenceResults, success } from '@/shared/result'
 import { requireFieldThen } from '@/contexts/acl/eia-ingestion-acl/helpers/requireField'
+import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
 import type { Result } from '@/shared/result'
 
 import type { InventoryBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
@@ -204,8 +205,6 @@ const toInventoryBoundaryDto = (
     unitCandidate: some(context.unitCandidate),
     source: { endpoint: walkingSkeletonInventoryEndpoint },
   })
-
-import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
 
 const translateInventoryRowPipeline = pipeWith(
   <InputValue, FailureValue, OutputValue>(

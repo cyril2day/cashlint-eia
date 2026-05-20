@@ -1,3 +1,5 @@
+import { both, complement, includes, is, isEmpty, propEq } from 'ramda'
+
 export {
 	allPass,
 	anyPass,
@@ -55,8 +57,6 @@ export {
 	whereEq,
 	zipObj,
 } from 'ramda'
-
-import { both, complement, includes, is, isEmpty, propEq } from 'ramda'
 
 // Small named predicate helpers to make FP migrations easier.
 export const isNonEmptyString = both(is(String), complement(isEmpty))
