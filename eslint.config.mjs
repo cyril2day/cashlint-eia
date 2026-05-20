@@ -84,6 +84,18 @@ const restrictedSyntaxRules = [
   },
 
   // -----------------------------
+  // 15. Direct Date usage NOT allowed — prefer date-fns and shared/date
+  // -----------------------------
+  {
+    selector: 'NewExpression[callee.name="Date"]',
+    message: 'Do not construct Date directly. Use date-fns or @/shared/date helpers.',
+  },
+  {
+    selector: "MemberExpression[object.name='Date']",
+    message: 'Do not use Date static members directly. Use date-fns or @/shared/date helpers.',
+  },
+
+  // -----------------------------
   // 7. Logical NOT NOT allowed
   // -----------------------------
   {
@@ -268,7 +280,9 @@ export default [
             rule.selector !== 'AsyncFunctionExpression' &&
             rule.selector !== 'ArrowFunctionExpression[async=true]' &&
             rule.selector !== 'AwaitExpression' &&
-            rule.selector !== 'CallExpression[callee.name="ifElse"] ArrowFunctionExpression[expression=false]'
+            rule.selector !== 'CallExpression[callee.name="ifElse"] ArrowFunctionExpression[expression=false]' &&
+            rule.selector !== 'NewExpression[callee.name="Date"]' &&
+            rule.selector !== "MemberExpression[object.name='Date']"
         ),
       ],
     },

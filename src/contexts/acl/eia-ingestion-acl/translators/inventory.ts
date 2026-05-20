@@ -1,6 +1,6 @@
 import { allPass, find, ifElse, pipeWith } from '@/shared/fp'
 import { isSome, some, unwrap } from '@/shared/maybe'
-import { bindResult, failure, sequenceResults, success } from '@/shared/result'
+import { bindResult, failure, mapError, sequenceResults, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 
 import type { InventoryBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
@@ -21,6 +21,7 @@ import {
   isWalkingSkeletonInventoryUnitCandidate,
   walkingSkeletonInventoryEndpoint,
 } from '@/contexts/acl/eia-ingestion-acl/policies'
+import { parseIsoDate } from '@/shared/date'
 
 type InventoryRowContext = {
   readonly row: RawEiaRow
@@ -72,10 +73,16 @@ const readSeriesId = (row: RawEiaRow): BR<string> => {
 const validatePeriodCandidate = (
   periodCandidate: string | number,
   seriesId: string,
-): BR<string | number> =>
+): BR<string> =>
   ifElse(
     isWalkingSkeletonInventoryPeriodCandidate,
-    () => success(periodCandidate),
+    (candidate: string) =>
+      mapError(parseIsoDate(candidate), () =>
+        makeInvalidDateOrPeriodError('period', candidate, {
+          endpoint: walkingSkeletonInventoryEndpoint,
+          seriesId,
+        }),
+      ),
     (invalidCandidate: string) =>
       failure(
         makeInvalidDateOrPeriodError('period', invalidCandidate, {
