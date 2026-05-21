@@ -1,0 +1,1 @@
+export type WalkingSkeletonCommand = Readonly<{ readonly reportWeekIso: string }>
