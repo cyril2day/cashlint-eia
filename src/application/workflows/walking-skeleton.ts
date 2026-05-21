@@ -1,25 +1,21 @@
-import type { EiaClient, EiaRequest } from '@/application/ports/eia-client'
+import type { EiaClient } from '@/application/ports/eia-client'
 import type { WalkingSkeletonCommand } from '@/application/commands/walking-skeleton-command'
 import { bindAsyncResult, mapAsyncError } from '@/shared/async-result'
 import { bindResult, mapError, mapResult } from '@/shared/result'
-import { none } from '@/shared/maybe'
 import { translateInventoryEnvelope, translatePriceEnvelope } from '@/contexts/acl/eia-ingestion-acl'
 import { validateBoundaryInput } from '@/contexts/acl/eia-ingestion-acl/gates/trusted-boundary-input'
-import { walkingSkeletonInventoryEndpoint, walkingSkeletonPriceEndpoint } from '@/contexts/acl/eia-ingestion-acl/policies'
 import processTrustedBoundaryMeasurements from '@/contexts/measurement/workflows/measurement-input-workflow'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import type { ApplicationError } from '@/application/errors'
 import { toUpstreamAppError, toBoundaryAppError, toBoundaryArrayAppError, toMeasurementAppError } from '@/application/errors'
+import { buildWalkingSkeletonRequests } from '@/application/workflows/walking-skeleton-request-descriptions'
 
 export type WalkingSkeletonDependencies = Readonly<{ readonly eiaClient: EiaClient }>
 
-const buildRequest = (endpoint: string): EiaRequest => ({ endpoint, params: none() })
-
 export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
-  _cmd: WalkingSkeletonCommand,
+  command: WalkingSkeletonCommand,
 ): import('@/shared/async-result').AsyncResult<WeeklyPetroleumFacts, ApplicationError> => {
-  const inventoryRequest = buildRequest(walkingSkeletonInventoryEndpoint)
-  const priceRequest = buildRequest(walkingSkeletonPriceEndpoint)
+  const { inventoryRequest, priceRequest } = buildWalkingSkeletonRequests(command)
 
   const loadInventory = mapAsyncError(deps.eiaClient.loadRows(inventoryRequest), toUpstreamAppError)
 
