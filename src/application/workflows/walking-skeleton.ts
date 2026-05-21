@@ -1,5 +1,5 @@
-import type { EiaClient } from '@/application/ports/eia-client'
 import type { WalkingSkeletonCommand } from '@/application/commands/walking-skeleton-command'
+import type { AsyncResult } from '@/shared/async-result'
 import { bindAsyncResult, mapAsyncError } from '@/shared/async-result'
 import { bindResult, mapError, mapResult } from '@/shared/result'
 import { translateInventoryEnvelope, translatePriceEnvelope } from '@/contexts/acl/eia-ingestion-acl'
@@ -9,18 +9,16 @@ import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-p
 import type { ApplicationError } from '@/application/errors'
 import { toUpstreamAppError, toBoundaryAppError, toBoundaryArrayAppError, toMeasurementAppError } from '@/application/errors'
 import { buildWalkingSkeletonRequests } from '@/application/workflows/walking-skeleton-request-descriptions'
-
-export type WalkingSkeletonDependencies = Readonly<{ readonly eiaClient: EiaClient }>
+import type { WalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
 
 export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
   command: WalkingSkeletonCommand,
-): import('@/shared/async-result').AsyncResult<WeeklyPetroleumFacts, ApplicationError> => {
+): AsyncResult<WeeklyPetroleumFacts, ApplicationError> => {
   const { inventoryRequest, priceRequest } = buildWalkingSkeletonRequests(command)
 
   const loadInventory = mapAsyncError(deps.eiaClient.loadRows(inventoryRequest), toUpstreamAppError)
 
   const inventoryTranslated = bindAsyncResult(loadInventory, (invEnvelope) =>
-    // translate inventory envelope, map boundary error to ApplicationError
     Promise.resolve(mapError(translateInventoryEnvelope(invEnvelope), toBoundaryAppError)),
   )
 
@@ -30,10 +28,8 @@ export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
     return bindAsyncResult(loadPrice, (priceEnvelope) => {
       const priceTranslated = mapError(translatePriceEnvelope(priceEnvelope), toBoundaryAppError)
 
-      // combine inventory and price dtos
       const combinedDtosResult = mapResult(priceTranslated, (priceDtos) => [...invDtos, ...priceDtos])
 
-      // Actually run the validation and measurement assembly using Result helpers
       const validatedInputResult = bindResult(combinedDtosResult, (inputs) => mapError(validateBoundaryInput(inputs), toBoundaryArrayAppError))
 
       const processed = bindResult(validatedInputResult, (validInput) => mapError(processTrustedBoundaryMeasurements(validInput), toMeasurementAppError))
