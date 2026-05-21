@@ -1,27 +1,19 @@
-import type { EiaClient, EiaRequest, UpstreamError } from '@/application/ports/eia-client'
+import type { EiaClient, EiaRequest } from '@/application/ports/eia-client'
 import type { WalkingSkeletonCommand } from '@/application/commands/walking-skeleton-command'
 import { bindAsyncResult, mapAsyncError } from '@/shared/async-result'
 import { bindResult, mapError, mapResult } from '@/shared/result'
 import { none } from '@/shared/maybe'
-import { translateInventoryEnvelope, translatePriceEnvelope, type BoundaryError } from '@/contexts/acl/eia-ingestion-acl'
+import { translateInventoryEnvelope, translatePriceEnvelope } from '@/contexts/acl/eia-ingestion-acl'
 import { validateBoundaryInput } from '@/contexts/acl/eia-ingestion-acl/gates/trusted-boundary-input'
 import { walkingSkeletonInventoryEndpoint, walkingSkeletonPriceEndpoint } from '@/contexts/acl/eia-ingestion-acl/policies'
 import processTrustedBoundaryMeasurements from '@/contexts/measurement/workflows/measurement-input-workflow'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import type { ApplicationError } from '@/application/errors'
+import { toUpstreamAppError, toBoundaryAppError, toBoundaryArrayAppError, toMeasurementAppError } from '@/application/errors'
 
 export type WalkingSkeletonDependencies = Readonly<{ readonly eiaClient: EiaClient }>
 
-export type ApplicationError =
-  | Readonly<{ readonly kind: 'UpstreamFailure'; readonly error: UpstreamError }>
-  | Readonly<{ readonly kind: 'BoundaryFailure'; readonly error: readonly BoundaryError[] }>
-  | Readonly<{ readonly kind: 'MeasurementFailure'; readonly error: unknown }>
-
 const buildRequest = (endpoint: string): EiaRequest => ({ endpoint, params: none() })
-
-const toUpstreamAppError = (e: UpstreamError): ApplicationError => ({ kind: 'UpstreamFailure', error: e })
-const toBoundaryAppError = (e: BoundaryError): ApplicationError => ({ kind: 'BoundaryFailure', error: [e] })
-const toBoundaryArrayAppError = (errs: readonly BoundaryError[]): ApplicationError => ({ kind: 'BoundaryFailure', error: errs })
-const toMeasurementAppError = (e: unknown): ApplicationError => ({ kind: 'MeasurementFailure', error: e })
 
 export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
   _cmd: WalkingSkeletonCommand,
