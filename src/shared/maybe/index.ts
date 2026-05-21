@@ -26,4 +26,4 @@ export const unwrap = <T>(m: Maybe<T>): T | undefined =>
     () => undefined,
   )(m)
 
-export default {}
+
