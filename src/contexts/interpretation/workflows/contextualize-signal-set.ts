@@ -1,4 +1,4 @@
-import { bindResult, mapResult, type Result } from '@/shared/result'
+import { combineResults, type Result } from '@/shared/result'
 import type { ContextualizedSignalSet, CurrentSignalSet } from '../model/current-signal-set'
 import { contextualizeSignal } from './contextualize-signal'
 import { type PreviousObservationMap } from '../model/previous-observation-map'
@@ -10,10 +10,12 @@ export const contextualizeWalkingSkeletonSignalSet = (
   previousObservations: PreviousObservationMap,
   policies: InterpretationPolicies,
 ): Result<ContextualizedSignalSet, InterpretationError> => {
-  return bindResult(contextualizeSignal(signals.inventory, previousObservations, policies), (inventory) =>
-    mapResult(contextualizeSignal(signals.price, previousObservations, policies), (price) => ({
+  return combineResults(
+    contextualizeSignal(signals.inventory, previousObservations, policies),
+    contextualizeSignal(signals.price, previousObservations, policies),
+    (inventory, price) => ({
       inventory,
       price,
-    })),
+    }),
   )
 }

@@ -1,4 +1,4 @@
-import { bindResult, failure, mapResult, success, type Result } from '@/shared/result'
+import { combineResults, failure, success, type Result } from '@/shared/result'
 import { ifElse } from '@/shared/fp'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import { createInventorySignalIdentity, createPriceSignalIdentity } from '../model/signal-identity'
@@ -39,10 +39,8 @@ export const extractPriceSignal = (facts: WeeklyPetroleumFacts): Result<Signal, 
   )
 
 export const extractCurrentSignalSet = (facts: WeeklyPetroleumFacts): Result<CurrentSignalSet, InterpretationError> => {
-  return bindResult(extractInventorySignal(facts), (inventory) =>
-    mapResult(extractPriceSignal(facts), (price) => ({
-      inventory,
-      price,
-    })),
-  )
+  return combineResults(extractInventorySignal(facts), extractPriceSignal(facts), (inventory, price) => ({
+    inventory,
+    price,
+  }))
 }
