@@ -70,6 +70,10 @@ const restrictedSyntaxRules = [
     selector: 'TSOptionalType',
     message: 'Optional types are not allowed. Use Option/Maybe instead.',
   },
+  {
+    selector: 'TSImportType',
+    message: 'Inline import types are not allowed. Use top-level import type declarations instead.',
+  },
 
   // -----------------------------
   // 6. Composite boolean expressions NOT allowed
