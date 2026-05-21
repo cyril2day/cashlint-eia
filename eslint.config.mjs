@@ -92,6 +92,15 @@ const restrictedSyntaxRules = [
   },
 
   // -----------------------------
+  // Empty default object export NOT allowed
+  // -----------------------------
+  {
+    selector: "ExportDefaultDeclaration > ObjectExpression[properties.length=0]",
+    message:
+      'Default-exporting an empty object (export default {}) is not allowed. Use named exports or export a meaningful value.',
+  },
+
+  // -----------------------------
   // 15. Direct Date usage NOT allowed — prefer date-fns and shared/date
   // -----------------------------
   {
