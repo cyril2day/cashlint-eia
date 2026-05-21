@@ -162,4 +162,30 @@ describe('WeeklyPetroleumFacts assembly', () => {
 
     expect(assembled.ok).toBe(false)
   })
+
+  it('fails on duplicate price observations', () => {
+    const reportWeek = unwrapSuccess(parseReportWeek('2026-05-19T00:00:00.000Z'))
+    const geography = unwrapSuccess(parseGeographyScope('USTotal'))
+
+    const product = unwrapSuccess(parseInventoryProduct('CrudeOil'))
+    const invSlice = unwrapSuccess(parsePetroleumSlice('Inventory'))
+    const invKind = unwrapSuccess(parseMeasurementKind('CrudeStocks'))
+    const invValue = unwrapSuccess(parseDecimal('123'))
+    const invUnit = unwrapSuccess(parseMeasurementUnit('ThousandBarrels'))
+    const invFact = createWeeklyFact(reportWeek, geography, invSlice, invKind, invValue, invUnit, none())
+    const inv = createInventoryMeasurement(product, invFact)
+
+    const priceKind = unwrapSuccess(parsePriceKind('WTISpot'))
+    const priceSlice = unwrapSuccess(parsePetroleumSlice('Price'))
+    const priceKindFact = unwrapSuccess(parseMeasurementKind('WTISpotPrice'))
+    const priceValue = unwrapSuccess(parseDecimal('72'))
+    const priceUnit = unwrapSuccess(parseMeasurementUnit('USDPerBarrel'))
+    const priceFact = createWeeklyFact(reportWeek, geography, priceSlice, priceKindFact, priceValue, priceUnit, none())
+    const priceA = createPriceMeasurement(priceKind, priceFact)
+    const priceB = createPriceMeasurement(priceKind, priceFact)
+
+    const assembled = assembleWeeklyPetroleumFacts([inv], [priceA, priceB])
+
+    expect(assembled.ok).toBe(false)
+  })
 })
