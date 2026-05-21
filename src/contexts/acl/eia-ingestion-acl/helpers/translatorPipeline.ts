@@ -10,4 +10,4 @@ export const binder = <InputValue, FailureValue, OutputValue>(
   result: Result<InputValue, FailureValue>,
 ): Result<OutputValue, FailureValue> => bindResult(result, step)
 
-export default {}
+

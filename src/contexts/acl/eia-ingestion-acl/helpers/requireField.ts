@@ -20,4 +20,4 @@ export const requireFieldThen = <T, R>(
     (c: T) => next(c),
   )(candidate)
 
-export default {}
+

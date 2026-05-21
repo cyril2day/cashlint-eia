@@ -41,4 +41,4 @@ export const validateBoundaryInput = (
     (values: readonly BoundaryDto[]) => ({ inputs: values }),
   )
 
-export default {}
+

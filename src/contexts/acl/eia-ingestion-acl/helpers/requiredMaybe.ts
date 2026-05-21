@@ -36,4 +36,4 @@ export const validateRequiredMaybeFields = <Candidate>(
     () => candidate,
   )
 
-export default {}
+
