@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   bindResult,
+  combineResults,
   failure,
   isFailure,
   isSuccess,
@@ -142,6 +143,30 @@ describe('Result', () => {
     expect(calls).toBe(0)
     expect(bound).toEqual(result)
     expect(bound).toEqual({
+      ok: false,
+      error: 'missing data',
+    })
+  })
+
+  it('combines successful results', () => {
+    const first: Result<number, string> = success(21)
+    const second: Result<number, string> = success(2)
+
+    const combined = combineResults<number, string, number, number>(first, second, (left, right) => left * right)
+
+    expect(combined).toEqual({
+      ok: true,
+      value: 42,
+    })
+  })
+
+  it('short-circuits when combining a failure', () => {
+    const first: Result<number, string> = failure('missing data')
+    const second: Result<number, string> = success(2)
+
+    const combined = combineResults<number, string, number, number>(first, second, (left, right) => left * right)
+
+    expect(combined).toEqual({
       ok: false,
       error: 'missing data',
     })

@@ -56,6 +56,13 @@ export const bindResult = <SuccessValue, FailureValue, NextSuccessValue>(
       binder(Reflect.get(candidate, 'value')),
   )(result)
 
+export const combineResults = <FirstValue, FailureValue, SecondValue, CombinedValue>(
+  first: Result<FirstValue, FailureValue>,
+  second: Result<SecondValue, FailureValue>,
+  combiner: (firstValue: FirstValue, secondValue: SecondValue) => CombinedValue,
+): Result<CombinedValue, FailureValue> =>
+  bindResult(first, firstValue => mapResult(second, secondValue => combiner(firstValue, secondValue)))
+
 export const mapError = <SuccessValue, FailureValue, NextFailureValue>(
   result: Result<SuccessValue, FailureValue>,
   mapper: (error: FailureValue) => NextFailureValue,
