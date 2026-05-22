@@ -14,11 +14,9 @@ import { makeMissingPreviousObservationError, type InterpretationError } from '.
 import { type InterpretationPolicies } from '../policies'
 
 const createContextualizedSignalWithTrendResult =
-  (signal: Signal, policies: InterpretationPolicies) =>
+  (signal: Signal, anomalyContext: NotComputedAnomalyContext) =>
   (trend: Parameters<typeof createContextualizedSignalWithTrend>[1]): ContextualizedSignal =>
-    createContextualizedSignalWithTrend(signal, trend, createNotComputedAnomalyContext(signal, policies).anomaly, [
-      createNotComputedAnomalyContext(signal, policies).anomalyCaveat,
-    ])
+    createContextualizedSignalWithTrend(signal, trend, anomalyContext.anomaly, [anomalyContext.anomalyCaveat])
 
 const createNotComputedAnomalyContext = (signal: Signal, policies: InterpretationPolicies) => {
   const anomalyReason = policies.anomalyNotComputedReason
@@ -29,12 +27,14 @@ const createNotComputedAnomalyContext = (signal: Signal, policies: Interpretatio
   }
 }
 
+type NotComputedAnomalyContext = ReturnType<typeof createNotComputedAnomalyContext>
+
 const contextualizeTrendForMatchedObservation = (
   signal: Signal,
   policies: InterpretationPolicies,
   matched: HistoricalObservation,
 ): Result<ContextualizedSignal, InterpretationError> =>
-  mapResult(calculateOneWeekTrend(signal, matched, policies), createContextualizedSignalWithTrendResult(signal, policies))
+  mapResult(calculateOneWeekTrend(signal, matched, policies), createContextualizedSignalWithTrendResult(signal, createNotComputedAnomalyContext(signal, policies)))
 
 const contextualizeMatchedObservation = (
   signal: Signal,
@@ -48,12 +48,15 @@ const contextualizeMatchedObservation = (
 const buildMissingPreviousObservationContext = (
   signal: Signal,
   policies: InterpretationPolicies,
-): ContextualizedSignal =>
-  createContextualizedSignalWithoutTrend(signal, createNotComputedAnomalyContext(signal, policies).anomaly, [
+): ContextualizedSignal => {
+  const anomalyContext = createNotComputedAnomalyContext(signal, policies)
+
+  return createContextualizedSignalWithoutTrend(signal, anomalyContext.anomaly, [
     createMissingPreviousObservationCaveat(signal.identity),
     createTrendNotComputedCaveat(signal.identity),
-    createNotComputedAnomalyContext(signal, policies).anomalyCaveat,
+    anomalyContext.anomalyCaveat,
   ])
+}
 
 const createMissingPreviousObservationFailure = (signal: Signal): Result<ContextualizedSignal, InterpretationError> =>
   failure(makeMissingPreviousObservationError(signal.identity))

@@ -98,6 +98,16 @@ const hasRequestedSignal = (key: 'inventory' | 'price') =>
   (candidate: AnalysisSignalInput): candidate is AnalysisSignalInput & Record<typeof key, ContextualizedSignal> =>
     allPass([hasKey(key), (value: AnalysisSignalInput) => value[key] !== undefined])(candidate)
 
+const selectRequestedSignal = (
+  signals: AnalysisSignalInput,
+  key: 'inventory' | 'price',
+): Result<ContextualizedSignal, AnalysisError> =>
+  ifElse(
+    hasRequestedSignal(key),
+    (candidate: AnalysisSignalInput & Record<typeof key, ContextualizedSignal>) => success(candidate[key]),
+    () => failure(makeMissingContextualizedSignalError(key)),
+  )(signals)
+
 const validatePolicies = (policies: AnalysisPolicies): Result<AnalysisPolicies, AnalysisError> => {
   const isValidPolicies = allPass([
     (candidate: AnalysisPolicies) => candidate.preferredNarrativePhrases.length > 0,
@@ -115,17 +125,8 @@ const validatePolicies = (policies: AnalysisPolicies): Result<AnalysisPolicies, 
 }
 
 export const selectWalkingSkeletonSignals = (signals: AnalysisSignalInput): Result<AnalysisKeySignals, AnalysisError> => {
-  const inventoryResult: Result<ContextualizedSignal, AnalysisError> = ifElse(
-    hasRequestedSignal('inventory'),
-    (candidate: AnalysisSignalInput & { readonly inventory: ContextualizedSignal }) => success(candidate.inventory),
-    () => failure(makeMissingContextualizedSignalError('inventory')),
-  )(signals)
-
-  const priceResult: Result<ContextualizedSignal, AnalysisError> = ifElse(
-    hasRequestedSignal('price'),
-    (candidate: AnalysisSignalInput & { readonly price: ContextualizedSignal }) => success(candidate.price),
-    () => failure(makeMissingContextualizedSignalError('price')),
-  )(signals)
+  const inventoryResult = selectRequestedSignal(signals, 'inventory')
+  const priceResult = selectRequestedSignal(signals, 'price')
 
   return combineResults(inventoryResult, priceResult, (inventory, price) => ({ inventory, price }))
 }

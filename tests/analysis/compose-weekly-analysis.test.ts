@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { composeWeeklyAnalysis, createWalkingSkeletonAnalysisPolicies } from '@/contexts/analysis'
+import { composeWeeklyAnalysis, createWalkingSkeletonAnalysisPolicies, selectWalkingSkeletonSignals } from '@/contexts/analysis'
 import {
   buildPreviousObservationMap,
   contextualizeWalkingSkeletonSignalSet,
@@ -29,7 +29,7 @@ import { assembleWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekl
 import { parseDecimal } from '@/shared/decimal'
 import { none, isSome } from '@/shared/maybe'
 import { ifElse } from '@/shared/fp'
-import { isSuccess, type Result } from '@/shared/result'
+import { isFailure, isSuccess, type Result } from '@/shared/result'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
 import type { AnalysisError } from '@/contexts/analysis/errors'
 
@@ -95,6 +95,27 @@ const buildWalkingSkeletonInputs = () => {
 }
 
 describe('Walking-skeleton Analysis composition', () => {
+  it('selects the walking-skeleton key signals', () => {
+    const { contextualized } = buildWalkingSkeletonInputs()
+    const selected = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
+
+    expect(selected.inventory).toBe(contextualized.inventory)
+    expect(selected.price).toBe(contextualized.price)
+  })
+
+  it('fails when a required walking-skeleton key signal is missing', () => {
+    const { contextualized } = buildWalkingSkeletonInputs()
+    const missingPrice = selectWalkingSkeletonSignals({ inventory: contextualized.inventory })
+    const isFailureResult = (
+      candidate: Result<unknown, AnalysisError>,
+    ): candidate is Extract<Result<unknown, AnalysisError>, { readonly ok: false }> => candidate.ok === false
+
+    const missingKind = ifElse(isFailureResult, candidate => candidate.error.kind, () => undefined)(missingPrice)
+
+    expect(missingPrice.ok).toBe(false)
+    expect(missingKind).toBe('MissingContextualizedSignal')
+  })
+
   it('builds a cautious analysis from aligned inventory draw and price rise', () => {
     const { facts, contextualized } = buildWalkingSkeletonInputs()
     const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createWalkingSkeletonAnalysisPolicies()))
