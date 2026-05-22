@@ -10,7 +10,7 @@ import {
   createWalkingSkeletonAnalysisPolicies,
   selectWalkingSkeletonSignals,
 } from '@/contexts/analysis'
-import { createAnalysisSignalAlignment } from '@/contexts/analysis/model'
+import { createAnalysisSignalAlignment, createWeeklyAnalysis } from '@/contexts/analysis/model'
 import {
   buildPreviousObservationMap,
   contextualizeWalkingSkeletonSignalSet,
@@ -228,6 +228,35 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('AlignedLoosening'), policies)).confidence).toBe('Medium')
     expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Mixed'), policies)).confidence).toBe('Low')
     expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Insufficient'), policies)).confidence).toBe('Unknown')
+  })
+
+  it('composes a WeeklyAnalysis from aligned evidence', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis).toEqual(expect.objectContaining({
+      headline: expect.any(String),
+      summary: expect.any(String),
+      explanation: expect.any(String),
+    }))
+    expect(analysis.keySignals.inventory).toBe(contextualized.inventory)
+    expect(analysis.keySignals.price).toBe(contextualized.price)
+    expect(analysis.supportingSignals).toHaveLength(2)
+    expect(analysis.contradictorySignals).toHaveLength(0)
+    expect(analysis).toEqual(expect.objectContaining(createWeeklyAnalysis(
+      analysis.reportWeek,
+      analysis.geography,
+      analysis.condition,
+      analysis.headline,
+      analysis.summary,
+      analysis.explanation,
+      analysis.keySignals,
+      analysis.supportingSignals,
+      analysis.contradictorySignals,
+      analysis.caveats,
+      analysis.confidence,
+      analysis.alignment,
+    )))
   })
 
   it('writes a looser headline for aligned loosening', () => {
