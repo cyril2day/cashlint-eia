@@ -176,4 +176,18 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(analysis.ok).toBe(false)
     expect(errorKind).toBe('InsufficientEvidenceForNarrative')
   })
+
+  it('applies provisional condition labels when enabled in policies', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+
+    const provisionalPolicies = {
+      ...createWalkingSkeletonAnalysisPolicies(),
+      allowProvisionalConditionLabels: true,
+    }
+
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, provisionalPolicies))
+
+    expect(analysis.alignment.alignment).toBe('AlignedTightening')
+    expect(analysis.condition.condition).toBe('Tightening')
+  })
 })
