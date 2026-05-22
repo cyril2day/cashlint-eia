@@ -1,0 +1,157 @@
+import { describe, expect, it } from 'vitest'
+
+import { composeWeeklyAnalysis, createWalkingSkeletonAnalysisPolicies } from '@/contexts/analysis'
+import {
+  buildPreviousObservationMap,
+  contextualizeWalkingSkeletonSignalSet,
+  createHistoricalObservation,
+  createInventorySignal,
+  createInventorySignalIdentity,
+  createPriceSignal,
+  createPriceSignalIdentity,
+  createWalkingSkeletonInterpretationPolicies,
+} from '@/contexts/interpretation'
+import {
+  parseComparisonWindow,
+  parseGeographyScope,
+  parseInventoryProduct,
+  parseMeasurementKind,
+  parseMeasurementUnit,
+  parsePetroleumSlice,
+  parsePriceKind,
+  parseTrendDirection,
+  parseReportWeek,
+} from '@/contexts/measurement/model'
+import { createWeeklyFact } from '@/contexts/measurement/model/weekly-fact'
+import { createInventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
+import { createPriceMeasurement } from '@/contexts/measurement/model/price-measurement'
+import { assembleWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import { parseDecimal } from '@/shared/decimal'
+import { none, isSome } from '@/shared/maybe'
+import { ifElse } from '@/shared/fp'
+import { isSuccess, type Result } from '@/shared/result'
+import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
+
+const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue => {
+  return ifElse(isSuccess, candidate => candidate.value, () => {
+    throw new Error('expected success')
+  })(result)
+}
+
+const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
+  ifElse(
+    (candidate: AnalysisCaveat): candidate is Extract<AnalysisCaveat, { readonly kind: 'PropagatedInterpretationCaveat' }> =>
+      candidate.kind === 'PropagatedInterpretationCaveat',
+    candidate => candidate.source.kind === 'TrendNotComputed',
+    () => false,
+  )(caveat)
+
+const buildWalkingSkeletonInputs = () => {
+  const reportWeek = unwrapSuccess(parseReportWeek('2026-05-19T00:00:00.000Z'))
+  const previousWeek = unwrapSuccess(parseReportWeek('2026-05-12T00:00:00.000Z'))
+  const geography = unwrapSuccess(parseGeographyScope('USTotal'))
+  const inventoryProduct = unwrapSuccess(parseInventoryProduct('CrudeOil'))
+  const inventoryKind = unwrapSuccess(parseMeasurementKind('CrudeStocks'))
+  const inventorySlice = unwrapSuccess(parsePetroleumSlice('Inventory'))
+  const priceKind = unwrapSuccess(parsePriceKind('WTISpot'))
+  const priceMeasurementKind = unwrapSuccess(parseMeasurementKind('WTISpotPrice'))
+  const priceSlice = unwrapSuccess(parsePetroleumSlice('Price'))
+  const inventoryUnit = unwrapSuccess(parseMeasurementUnit('ThousandBarrels'))
+  const priceUnit = unwrapSuccess(parseMeasurementUnit('USDPerBarrel'))
+
+  const inventoryIdentity = createInventorySignalIdentity(geography, inventoryKind, inventorySlice, inventoryProduct)
+  const priceIdentity = createPriceSignalIdentity(geography, priceMeasurementKind, priceSlice, priceKind)
+
+  const inventoryMeasurement = createInventoryMeasurement(
+    inventoryProduct,
+    createWeeklyFact(reportWeek, geography, inventorySlice, inventoryKind, unwrapSuccess(parseDecimal('80')), inventoryUnit, none()),
+  )
+  const priceMeasurement = createPriceMeasurement(
+    priceKind,
+    createWeeklyFact(reportWeek, geography, priceSlice, priceMeasurementKind, unwrapSuccess(parseDecimal('72')), priceUnit, none()),
+  )
+
+  const facts = unwrapSuccess(assembleWeeklyPetroleumFacts([inventoryMeasurement], [priceMeasurement]))
+
+  const inventorySignal = createInventorySignal(inventoryIdentity, reportWeek, geography, 80, inventoryUnit, inventorySlice)
+  
+  const priceSignal = createPriceSignal(priceIdentity, reportWeek, geography, 72, priceUnit, priceSlice)
+
+  const previousObservations = buildPreviousObservationMap([
+    createHistoricalObservation(inventoryIdentity, previousWeek, 100, inventoryUnit),
+    createHistoricalObservation(priceIdentity, previousWeek, 68, priceUnit),
+  ])
+
+  const contextualized = unwrapSuccess(
+    contextualizeWalkingSkeletonSignalSet(
+      { inventory: inventorySignal, price: priceSignal },
+      previousObservations,
+      createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1),
+    ),
+  )
+
+  return { facts, contextualized }
+}
+
+describe('Walking-skeleton Analysis composition', () => {
+  it('builds a cautious analysis from aligned inventory draw and price rise', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis.alignment.alignment).toBe('AlignedTightening')
+    expect(analysis.condition.condition).toBe('Unknown')
+    expect(analysis.confidence.confidence).toBe('Medium')
+    expect(analysis.headline).toContain('suggests a tighter signal')
+    expect(analysis.summary).toContain('Full system balance is not computed')
+    expect(analysis.explanation).toContain('physical storage signal')
+    expect(analysis.caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
+    expect(analysis.caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
+    expect(analysis.caveats.some(caveat => caveat.kind === 'SupplyDataNotIncluded')).toBe(true)
+  })
+
+  it('keeps mixed signals conservative', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const priceTrend = ifElse(isSome, candidate => candidate.value, () => {
+      throw new Error('expected price trend')
+    })(contextualized.price.trend)
+
+    const mixedContextualized: typeof contextualized = {
+      ...contextualized,
+      price: {
+        ...contextualized.price,
+        trend: {
+          kind: 'Some',
+          value: { ...priceTrend, direction: unwrapSuccess(parseTrendDirection('Down')) },
+        },
+      },
+    }
+
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, mixedContextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis.alignment.alignment).toBe('Mixed')
+    expect(analysis.condition.condition).toBe('Mixed')
+    expect(analysis.confidence.confidence).toBe('Low')
+    expect(analysis.headline).toContain('mixed')
+  })
+
+  it('retains missing trend caveats without failing', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const missingTrendContextualized: typeof contextualized = {
+      ...contextualized,
+      inventory: { ...contextualized.inventory, trend: { kind: 'None' } },
+    }
+
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis.alignment.alignment).toBe('Insufficient')
+    expect(analysis.confidence.confidence).toBe('Unknown')
+    expect(analysis.caveats.some(isPropagatedTrendNotComputed)).toBe(true)
+  })
+
+  it('fails when a required contextualized signal is missing', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const analysis = composeWeeklyAnalysis(facts, { inventory: contextualized.inventory }, createWalkingSkeletonAnalysisPolicies())
+
+    expect(analysis.ok).toBe(false)
+  })
+})
