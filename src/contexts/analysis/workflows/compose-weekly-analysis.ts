@@ -1,4 +1,4 @@
-import { ifElse, allPass, anyPass, cond, pipeWith } from '@/shared/fp'
+import { allPass, anyPass, cond, converge, find, ifElse, pipe, pipeWith } from '@/shared/fp'
 import { bindResult, failure, mapResult, success, type Result, combineResults } from '@/shared/result'
 import { map as mapMaybe, unwrap } from '@/shared/maybe'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
@@ -225,26 +225,47 @@ export const assignWalkingSkeletonConfidence = (
   return success(createAnalysisConfidence(label))
 }
 
-const describeInventory = (signal: ContextualizedSignal): string => {
-  const trend = signal.trend
-  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(trend))
+type DirectionDescriptor = Readonly<{
+  readonly direction: Trend['direction']['direction']
+  readonly phrase: string
+}>
 
-  return cond<[], string>([
-    [() => direction === 'Down', () => 'Crude inventory drew'],
-    [() => direction === 'Up', () => 'Crude inventory built'],
-    [() => true, () => 'Crude inventory trend was not clear'],
-  ])()
+const inventoryDirectionDescriptors: readonly DirectionDescriptor[] = [
+  { direction: 'Down', phrase: 'Crude inventory drew' },
+  { direction: 'Up', phrase: 'Crude inventory built' },
+  { direction: 'Flat', phrase: 'Crude inventory trend was not clear' },
+]
+
+const priceDirectionDescriptors: readonly DirectionDescriptor[] = [
+  { direction: 'Up', phrase: 'WTI rose' },
+  { direction: 'Down', phrase: 'WTI fell' },
+  { direction: 'Flat', phrase: 'WTI trend was not clear' },
+]
+
+const resolveDirectionalPhrase = (
+  direction: Trend['direction']['direction'] | undefined,
+  descriptors: readonly DirectionDescriptor[],
+  fallback: string,
+): string =>
+  pipe(
+    find((candidate: DirectionDescriptor) => candidate.direction === direction),
+    ifElse(
+      (candidate: DirectionDescriptor | undefined): candidate is DirectionDescriptor => candidate !== undefined,
+      candidate => candidate.phrase,
+      () => fallback,
+    ),
+  )(descriptors)
+
+const describeInventory = (signal: ContextualizedSignal): string => {
+  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(signal.trend))
+
+  return resolveDirectionalPhrase(direction, inventoryDirectionDescriptors, 'Crude inventory trend was not clear')
 }
 
 const describePrice = (signal: ContextualizedSignal): string => {
-  const trend = signal.trend
-  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(trend))
+  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(signal.trend))
 
-  return cond<[], string>([
-    [() => direction === 'Up', () => 'WTI rose'],
-    [() => direction === 'Down', () => 'WTI fell'],
-    [() => true, () => 'WTI trend was not clear'],
-  ])()
+  return resolveDirectionalPhrase(direction, priceDirectionDescriptors, 'WTI trend was not clear')
 }
 
 const describeAlignment = (alignment: AnalysisSignalAlignment): string =>
@@ -254,6 +275,16 @@ const describeAlignment = (alignment: AnalysisSignalAlignment): string =>
     [() => alignment.alignment === 'Mixed', () => 'so the read stays mixed'],
     [() => true, () => 'so the read stays cautious'],
   ])()
+
+const headlineForSignals = converge(
+  (inventoryPhrase: string, pricePhrase: string, alignmentPhrase: string) =>
+    `${inventoryPhrase} and ${pricePhrase}, ${alignmentPhrase}.`,
+  [
+    (signals: AnalysisKeySignals) => describeInventory(signals.inventory),
+    (signals: AnalysisKeySignals) => describePrice(signals.price),
+    (_signals: AnalysisKeySignals, alignment: AnalysisSignalAlignment) => describeAlignment(alignment),
+  ],
+)
 
 
 const caveatKey = (caveat: AnalysisCaveat): string =>
@@ -309,7 +340,7 @@ export const buildWalkingSkeletonHeadline = (
   alignment: AnalysisSignalAlignment,
   policies: AnalysisPolicies,
 ): Result<string, AnalysisError> => {
-  const headline = `${describeInventory(signals.inventory)} and ${describePrice(signals.price)}, ${describeAlignment(alignment)}.`
+  const headline = headlineForSignals(signals, alignment)
 
   return bindResult(
     ifElse(

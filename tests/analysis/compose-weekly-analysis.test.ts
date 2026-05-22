@@ -26,8 +26,9 @@ import { createWeeklyFact } from '@/contexts/measurement/model/weekly-fact'
 import { createInventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
 import { createPriceMeasurement } from '@/contexts/measurement/model/price-measurement'
 import { assembleWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import type { Trend } from '@/contexts/interpretation/model/trend'
 import { parseDecimal } from '@/shared/decimal'
-import { none, isSome } from '@/shared/maybe'
+import { none, isSome, type Maybe } from '@/shared/maybe'
 import { ifElse } from '@/shared/fp'
 import { isSuccess, type Result } from '@/shared/result'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
@@ -46,6 +47,32 @@ const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
     candidate => candidate.source.kind === 'TrendNotComputed',
     () => false,
   )(caveat)
+
+const withTrendDirection = <SignalType extends { readonly trend: Maybe<Trend> }>(
+  signal: SignalType,
+  direction: 'Up' | 'Down' | 'Flat',
+): SignalType => {
+  const currentTrend = ifElse(
+    isSome,
+    candidate => candidate.value,
+    () => {
+      throw new Error('expected trend')
+    },
+  )(signal.trend)
+
+  return {
+    ...signal,
+    trend: {
+      kind: 'Some',
+      value: { ...currentTrend, direction: unwrapSuccess(parseTrendDirection(direction)) },
+    },
+  }
+}
+
+const withoutTrend = <SignalType extends { readonly trend: Maybe<Trend> }>(signal: SignalType): SignalType => ({
+  ...signal,
+  trend: { kind: 'None' },
+})
 
 const buildWalkingSkeletonInputs = () => {
   const reportWeek = unwrapSuccess(parseReportWeek('2026-05-19T00:00:00.000Z'))
@@ -132,6 +159,35 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(analysis.caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'SupplyDataNotIncluded')).toBe(true)
+  })
+
+  it('writes a looser headline for aligned loosening', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const loosenedContextualized: typeof contextualized = {
+      ...contextualized,
+      inventory: withTrendDirection(contextualized.inventory, 'Up'),
+      price: withTrendDirection(contextualized.price, 'Down'),
+    }
+
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, loosenedContextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis.alignment.alignment).toBe('AlignedLoosening')
+    expect(analysis.headline).toContain('Crude inventory built and WTI fell')
+    expect(analysis.headline).toContain('suggests a looser signal')
+  })
+
+  it('writes a cautious headline when trend context is missing', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const missingTrendContextualized: typeof contextualized = {
+      ...contextualized,
+      inventory: withoutTrend(contextualized.inventory),
+    }
+
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createWalkingSkeletonAnalysisPolicies()))
+
+    expect(analysis.alignment.alignment).toBe('Insufficient')
+    expect(analysis.headline).toContain('trend was not clear')
+    expect(analysis.headline).toContain('so the read stays cautious')
   })
 
   it('keeps mixed signals conservative', () => {
