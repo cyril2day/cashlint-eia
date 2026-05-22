@@ -1,6 +1,6 @@
 import { ifElse } from '@/shared/fp'
 import { failure, mapError, mapResult } from '@/shared/result'
-import type { Result } from '@/shared/result'
+import type { FailureResult, Result, SuccessResult } from '@/shared/result'
 
 export type AsyncResult<SuccessValue, FailureValue> = Promise<Result<SuccessValue, FailureValue>>
 
@@ -17,10 +17,10 @@ export const bindAsyncResult = <SuccessValue, FailureValue, NextSuccessValue>(
   asyncResult.then(result =>
     ifElse(
       (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
-      (candidate: Result<SuccessValue, FailureValue>): AsyncResult<NextSuccessValue, FailureValue> =>
-        Promise.resolve(failure(Reflect.get(candidate, 'error'))),
-      (candidate: Result<SuccessValue, FailureValue>): AsyncResult<NextSuccessValue, FailureValue> =>
-        Promise.resolve(binder(Reflect.get(candidate, 'value'))),
+      (candidate: FailureResult<FailureValue>): AsyncResult<NextSuccessValue, FailureValue> =>
+        Promise.resolve(failure(candidate.error)),
+      (candidate: SuccessResult<SuccessValue>): AsyncResult<NextSuccessValue, FailureValue> =>
+        Promise.resolve(binder(candidate.value)),
     )(result),
   )
 

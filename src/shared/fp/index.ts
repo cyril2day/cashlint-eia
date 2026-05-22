@@ -79,3 +79,4 @@ export const isNonEmptyArray = () => both(is(Array), complement(isEmpty))
 // Typed helper: checks for `undefined` while keeping precise generics for TS inference
 export const isUndefined = <T>(v: T | undefined): v is undefined => v === undefined
 
+

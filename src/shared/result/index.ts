@@ -37,11 +37,9 @@ export const mapResult = <SuccessValue, FailureValue, NextSuccessValue>(
   mapper: (value: SuccessValue) => NextSuccessValue,
 ): Result<NextSuccessValue, FailureValue> =>
   ifElse(
-    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
-    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
-      failure(Reflect.get(candidate, 'error')),
-    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
-      success(mapper(Reflect.get(candidate, 'value'))),
+    isFailure<SuccessValue, FailureValue>,
+    (failureResult: FailureResult<FailureValue>) => failure(failureResult.error),
+    (successResult: SuccessResult<SuccessValue>) => success(mapper(successResult.value)),
   )(result)
 
 export const bindResult = <SuccessValue, FailureValue, NextSuccessValue>(
@@ -49,11 +47,9 @@ export const bindResult = <SuccessValue, FailureValue, NextSuccessValue>(
   binder: (value: SuccessValue) => Result<NextSuccessValue, FailureValue>,
 ): Result<NextSuccessValue, FailureValue> =>
   ifElse(
-    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
-    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
-      failure(Reflect.get(candidate, 'error')),
-    (candidate: Result<SuccessValue, FailureValue>): Result<NextSuccessValue, FailureValue> =>
-      binder(Reflect.get(candidate, 'value')),
+    isFailure<SuccessValue, FailureValue>,
+    (failureResult: FailureResult<FailureValue>) => failure(failureResult.error),
+    (successResult: SuccessResult<SuccessValue>) => binder(successResult.value),
   )(result)
 
 export const combineResults = <FirstValue, FailureValue, SecondValue, CombinedValue>(
@@ -68,11 +64,9 @@ export const mapError = <SuccessValue, FailureValue, NextFailureValue>(
   mapper: (error: FailureValue) => NextFailureValue,
 ): Result<SuccessValue, NextFailureValue> =>
   ifElse(
-    (candidate: Result<SuccessValue, FailureValue>) => candidate.ok === false,
-    (candidate: Result<SuccessValue, FailureValue>): Result<SuccessValue, NextFailureValue> =>
-      failure(mapper(Reflect.get(candidate, 'error'))),
-    (candidate: Result<SuccessValue, FailureValue>): Result<SuccessValue, NextFailureValue> =>
-      success(Reflect.get(candidate, 'value')),
+    isFailure<SuccessValue, FailureValue>,
+    (failureResult: FailureResult<FailureValue>) => failure(mapper(failureResult.error)),
+    (successResult: SuccessResult<SuccessValue>) => success(successResult.value),
   )(result)
 
 export const sequenceResults = <SuccessValue, FailureValue>(

@@ -1,4 +1,5 @@
 import { allPass, ifElse } from '@/shared/fp'
+import { getKey, hasKey } from '@/shared/object'
 
 export type DomainConstructionError = Readonly<{
   readonly kind: string
@@ -14,15 +15,26 @@ export const isObjectInput = (input: unknown): input is object => input instance
 export const isStringInput = (input: unknown): input is string => typeof input === 'string'
 
 export const hasBrand = (brand: symbol) => (candidate: object): boolean =>
-  Reflect.get(candidate, brand) === true
+  ifElse(
+    (value: object) => getKey(brand)(value) === true,
+    () => true,
+    () => false,
+  )(candidate)
 
 // Helper: generate per-brand factories that create properly typed, branded values.
 // Usage: const createX = makeBrandedFactory<LabelType, typeof brand>(brand)
 export const brand = (b: symbol) => ({ [b]: true })
 
 
-const hasKindProp = (candidate: object): boolean => typeof Reflect.get(candidate, 'kind') === 'string'
-const hasInputProp = (candidate: object): boolean => typeof Reflect.get(candidate, 'input') === 'string'
+const hasKindProp = allPass([
+  (candidate: object) => hasKey('kind')(candidate),
+  (candidate: object) => typeof getKey('kind')(candidate) === 'string',
+])
+
+const hasInputProp = allPass([
+  (candidate: object) => hasKey('input')(candidate),
+  (candidate: object) => typeof getKey('input')(candidate) === 'string',
+])
 
 export const isDomainConstructionError = (candidate: unknown): candidate is DomainConstructionError =>
   ifElse(
