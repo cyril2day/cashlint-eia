@@ -29,7 +29,7 @@ import { assembleWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekl
 import { parseDecimal } from '@/shared/decimal'
 import { none, isSome } from '@/shared/maybe'
 import { ifElse } from '@/shared/fp'
-import { isFailure, isSuccess, type Result } from '@/shared/result'
+import { isSuccess, type Result } from '@/shared/result'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
 import type { AnalysisError } from '@/contexts/analysis/errors'
 
