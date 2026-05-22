@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const trendDirectionBrand = Symbol('TrendDirection')
 
@@ -24,7 +25,7 @@ const isTrendDirectionLabel = (input: unknown): input is TrendDirectionLabel =>
     () => false,
   )(input)
 
-const hasValidDirection = (candidate: object): boolean => isTrendDirectionLabel(Reflect.get(candidate, 'direction'))
+const hasValidDirection = (candidate: object): boolean => isTrendDirectionLabel(getKey('direction')(candidate))
 
 const createTrendDirection = (direction: TrendDirectionLabel): TrendDirection => ({
   direction,

@@ -92,13 +92,13 @@ const validateBrandedWeeklyFacts = (
     <I, F, O>(step: (value: I) => Result<O, F>, result: Result<I, F>) => binder(step, result),
     [
       (c: ValidationStart) =>
-        mapResult(mapError(parseReportWeek(Reflect.get(c.input, 'reportWeek')), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), reportWeek => ({ ...c, reportWeek })),
+        mapResult(mapError(parseReportWeek(c.input.reportWeek), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), reportWeek => ({ ...c, reportWeek })),
       (c: ValidationWithWeek) =>
-        mapResult(mapError(parseGeographyScope(Reflect.get(c.input, 'geography')), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), geography => ({ ...c, geography })),
+        mapResult(mapError(parseGeographyScope(c.input.geography), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), geography => ({ ...c, geography })),
       (c: ValidationWithGeo) =>
-        mapResult(parseInventories(Reflect.get(c.input, 'inventories')), inventories => ({ ...c, inventories })),
+        mapResult(parseInventories(c.input.inventories), inventories => ({ ...c, inventories })),
       (c: ValidationWithInventories) =>
-        mapResult(parsePrice(Reflect.get(c.input, 'price')), price => ({ ...c, price })),
+        mapResult(parsePrice(c.input.price), price => ({ ...c, price })),
       (c: ValidationWithPrice) =>
         mapResult(
           assembleWeeklyPetroleumFacts(c.inventories, [c.price]),

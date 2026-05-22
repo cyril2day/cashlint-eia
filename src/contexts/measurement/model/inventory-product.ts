@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const inventoryProductBrand = Symbol('InventoryProduct')
 
@@ -24,7 +25,7 @@ const isInventoryProductLabel = (input: unknown): input is InventoryProductLabel
     () => false,
   )(input)
 
-const hasValidProduct = (candidate: object): boolean => isInventoryProductLabel(Reflect.get(candidate, 'product'))
+const hasValidProduct = (candidate: object): boolean => isInventoryProductLabel(getKey('product')(candidate))
 
 const createInventoryProduct = (product: InventoryProductLabel): InventoryProduct => ({
   product,

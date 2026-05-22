@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const priceKindBrand = Symbol('PriceKind')
 
@@ -24,7 +25,7 @@ const isPriceKindLabel = (input: unknown): input is PriceKindLabel =>
     () => false,
   )(input)
 
-const hasValidKind = (candidate: object): boolean => isPriceKindLabel(Reflect.get(candidate, 'kind'))
+const hasValidKind = (candidate: object): boolean => isPriceKindLabel(getKey('kind')(candidate))
 
 const createPriceKind = (kind: PriceKindLabel): PriceKind => ({
   kind,

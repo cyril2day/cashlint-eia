@@ -10,6 +10,7 @@ import type { Decimal } from '@/shared/decimal'
 import type { MeasurementUnit } from './measurement-unit'
 import type { SourceIdentity } from './source-identity'
 import { allPass, ifElse } from '@/shared/fp'
+import { getKey } from '@/shared/object'
 import { type Maybe } from '@/shared/maybe'
 
 const weeklyFactBrand = Symbol('WeeklyFact')
@@ -61,12 +62,12 @@ const makeInvalidWeeklyFactError = (input: unknown): WeeklyFactParseError => ({
 
 const hasWeeklyFrequencyFields = (candidate: object): boolean =>
   allPass([
-    (c: object) => Boolean(Reflect.get(c, 'reportWeek')),
-    (c: object) => Boolean(Reflect.get(c, 'geography')),
-    (c: object) => Boolean(Reflect.get(c, 'slice')),
-    (c: object) => Boolean(Reflect.get(c, 'measurementKind')),
-    (c: object) => Boolean(Reflect.get(c, 'value')),
-    (c: object) => Boolean(Reflect.get(c, 'unit')),
+    (c: object) => Boolean(getKey('reportWeek')(c)),
+    (c: object) => Boolean(getKey('geography')(c)),
+    (c: object) => Boolean(getKey('slice')(c)),
+    (c: object) => Boolean(getKey('measurementKind')(c)),
+    (c: object) => Boolean(getKey('value')(c)),
+    (c: object) => Boolean(getKey('unit')(c)),
   ])(candidate)
 
 export const isWeeklyFact = (input: unknown): input is WeeklyFact =>

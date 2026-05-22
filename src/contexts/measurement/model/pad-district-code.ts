@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const padDistrictCodeBrand = Symbol('PADDistrictCode')
 
@@ -28,7 +29,7 @@ const isPADDistrictCodeLabel = (input: unknown): input is PADDistrictCodeLabel =
     () => false,
   )(input)
 
-const hasValidCode = (candidate: object): boolean => isPADDistrictCodeLabel(Reflect.get(candidate, 'code'))
+const hasValidCode = (candidate: object): boolean => isPADDistrictCodeLabel(getKey('code')(candidate))
 
 const createPADDistrictCode = (code: PADDistrictCodeLabel): PADDistrictCode => ({
   code,

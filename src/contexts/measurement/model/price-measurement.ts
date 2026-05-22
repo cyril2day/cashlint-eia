@@ -2,6 +2,7 @@ import { allPass, anyPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 import type { PriceKind } from './price-kind'
 import type { WeeklyFact } from './weekly-fact'
 import { isPriceKind } from './price-kind'
@@ -21,16 +22,23 @@ export type PriceMeasurementParseError = Readonly<{
 
 const hasPriceMeasurementBrand = hasBrand(priceMeasurementBrand)
 
-const hasValidKind = (candidate: object): boolean => isPriceKind(Reflect.get(candidate, 'kind'))
+const isPriceKindValue = (input: unknown): input is PriceKind =>
+  ifElse(
+    isObjectInput,
+    isPriceKind,
+    () => false,
+  )(input)
+
+const hasValidKind = (candidate: object): boolean => isPriceKindValue(getKey('kind')(candidate))
 
 const hasCompatibleFact = (candidate: object): boolean =>
   allPass([
-    (c: object) => Boolean(Reflect.get(c, 'fact')),
+    (c: object) => Boolean(getKey('fact')(c)),
     (c: object) =>
       anyPass([
         (f: unknown) => JSON.stringify(f).indexOf('WTISpotPrice') !== -1,
         (f: unknown) => JSON.stringify(f).indexOf('Price') !== -1,
-      ])(Reflect.get(c, 'fact')),
+      ])(getKey('fact')(c)),
   ])(candidate)
 
 const createPriceMeasurement = (kind: PriceKind, fact: WeeklyFact): PriceMeasurement => ({
@@ -61,7 +69,7 @@ export const parsePriceMeasurement = (
     () => failure(makeInvalidPriceMeasurementError(input)),
   )(input)
 
-export const formatPriceMeasurement = (m: PriceMeasurement): string => `${String(Reflect.get(m.kind, 'kind'))} ${String(Reflect.get(m.fact, 'value'))}`
+export const formatPriceMeasurement = (m: PriceMeasurement): string => `${String(m.kind.kind)} ${String(m.fact.value)}`
 
 export { createPriceMeasurement }
 

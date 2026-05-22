@@ -17,7 +17,7 @@ export const lookupPreviousObservation = (
   previousObservations: PreviousObservationMap,
   identity: SignalIdentity,
 ): Maybe<HistoricalObservation> => {
-  const found: HistoricalObservation | undefined = Reflect.get(previousObservations, formatSignalIdentity(identity))
+  const found: HistoricalObservation | undefined = previousObservations[formatSignalIdentity(identity)]
 
   return ifElse(
     (candidate: HistoricalObservation | undefined) => candidate === undefined,

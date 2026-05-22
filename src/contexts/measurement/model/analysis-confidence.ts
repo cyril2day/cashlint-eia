@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const analysisConfidenceBrand = Symbol('AnalysisConfidence')
 
@@ -24,7 +25,7 @@ const isAnalysisConfidenceLabel = (input: unknown): input is AnalysisConfidenceL
     () => false,
   )(input)
 
-const hasValidConfidence = (candidate: object): boolean => isAnalysisConfidenceLabel(Reflect.get(candidate, 'confidence'))
+const hasValidConfidence = (candidate: object): boolean => isAnalysisConfidenceLabel(getKey('confidence')(candidate))
 
 const createAnalysisConfidence = (confidence: AnalysisConfidenceLabel): AnalysisConfidence => ({
   confidence,

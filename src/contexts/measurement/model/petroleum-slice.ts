@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const petroleumSliceBrand = Symbol('PetroleumSlice')
 
@@ -27,7 +28,7 @@ const isPetroleumSliceLabel = (input: unknown): input is PetroleumSliceLabel =>
     () => false,
   )(input)
 
-const hasValidSlice = (candidate: object): boolean => isPetroleumSliceLabel(Reflect.get(candidate, 'slice'))
+const hasValidSlice = (candidate: object): boolean => isPetroleumSliceLabel(getKey('slice')(candidate))
 
 const createPetroleumSlice = (slice: PetroleumSliceLabel): PetroleumSlice => ({
   slice,

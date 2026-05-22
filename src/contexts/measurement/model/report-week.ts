@@ -3,6 +3,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const reportWeekBrand = Symbol('ReportWeek')
 
@@ -19,9 +20,9 @@ export type ReportWeekParseError = Readonly<{
 
 const hasReportWeekBrand = hasBrand(reportWeekBrand)
 
-const hasWeeklyFrequency = (candidate: object): boolean => Reflect.get(candidate, 'frequency') === 'weekly'
+const hasWeeklyFrequency = (candidate: object): boolean => getKey('frequency')(candidate) === 'weekly'
 
-const hasValidDate = (candidate: object): boolean => isDateValue(Reflect.get(candidate, 'date'))
+const hasValidDate = (candidate: object): boolean => isDateValue(getKey('date')(candidate))
 
 const createReportWeek = (date: DateValue): ReportWeek => ({
   date,

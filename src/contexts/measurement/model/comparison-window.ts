@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const comparisonWindowBrand = Symbol('ComparisonWindow')
 
@@ -24,7 +25,7 @@ const isComparisonWindowLabel = (input: unknown): input is ComparisonWindowLabel
     () => false,
   )(input)
 
-const hasValidWindow = (candidate: object): boolean => isComparisonWindowLabel(Reflect.get(candidate, 'window'))
+const hasValidWindow = (candidate: object): boolean => isComparisonWindowLabel(getKey('window')(candidate))
 
 const createComparisonWindow = (window: ComparisonWindowLabel): ComparisonWindow => ({
   window,

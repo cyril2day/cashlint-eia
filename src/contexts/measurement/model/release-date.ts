@@ -3,6 +3,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { mapError, mapResult, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const releaseDateBrand = Symbol('ReleaseDate')
 
@@ -18,7 +19,7 @@ export type ReleaseDateParseError = Readonly<{
 
 const hasReleaseDateBrand = hasBrand(releaseDateBrand)
 
-const hasValidDate = (candidate: object): boolean => isDateValue(Reflect.get(candidate, 'date'))
+const hasValidDate = (candidate: object): boolean => isDateValue(getKey('date')(candidate))
 
 const createReleaseDate = (date: DateValue): ReleaseDate => ({
   date,

@@ -2,6 +2,7 @@ import { allPass, anyPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 import type { InventoryProduct } from './inventory-product'
 import type { WeeklyFact } from './weekly-fact'
 import { isInventoryProduct } from './inventory-product'
@@ -21,16 +22,18 @@ export type InventoryMeasurementParseError = Readonly<{
 
 const hasInventoryMeasurementBrand = hasBrand(inventoryMeasurementBrand)
 
-const hasValidProduct = (candidate: object): boolean => isInventoryProduct(Reflect.get(candidate, 'product'))
+const isInventoryProductValue = (input: unknown): input is InventoryProduct => isInventoryProduct(input)
+
+const hasValidProduct = (candidate: object): boolean => isInventoryProductValue(getKey('product')(candidate))
 
 const hasCompatibleFact = (candidate: object): boolean =>
   allPass([
-    (c: object) => Boolean(Reflect.get(c, 'fact')),
+    (c: object) => Boolean(getKey('fact')(c)),
     (c: object) =>
       anyPass([
         (f: unknown) => JSON.stringify(f).indexOf('CrudeStocks') !== -1,
         (f: unknown) => JSON.stringify(f).indexOf('Inventory') !== -1,
-      ])(Reflect.get(c, 'fact')),
+      ])(getKey('fact')(c)),
   ])(candidate)
 
 const createInventoryMeasurement = (product: InventoryProduct, fact: WeeklyFact): InventoryMeasurement => ({
@@ -61,7 +64,7 @@ export const parseInventoryMeasurement = (
     () => failure(makeInvalidInventoryMeasurementError(input)),
   )(input)
 
-export const formatInventoryMeasurement = (m: InventoryMeasurement): string => `${Reflect.get(m.product, 'product')} ${String(Reflect.get(m.fact, 'value'))}`
+export const formatInventoryMeasurement = (m: InventoryMeasurement): string => `${m.product.product} ${String(m.fact.value)}`
 
 export { createInventoryMeasurement }
 

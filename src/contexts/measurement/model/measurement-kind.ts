@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const measurementKindBrand = Symbol('MeasurementKind')
 
@@ -48,7 +49,7 @@ const isMeasurementKindLabel = (input: unknown): input is MeasurementKindLabel =
     () => false,
   )(input)
 
-const hasValidKind = (candidate: object): boolean => isMeasurementKindLabel(Reflect.get(candidate, 'kind'))
+const hasValidKind = (candidate: object): boolean => isMeasurementKindLabel(getKey('kind')(candidate))
 
 const createMeasurementKind = (kind: MeasurementKindLabel): MeasurementKind => ({
   kind,

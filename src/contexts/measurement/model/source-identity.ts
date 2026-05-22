@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const sourceIdentityBrand = Symbol('SourceIdentity')
 
@@ -15,7 +16,7 @@ export type SourceIdentityParseError = Readonly<{ readonly kind: 'InvalidSourceI
 const hasSourceIdentityBrand = hasBrand(sourceIdentityBrand)
 const isNonEmptyString = (input: unknown): input is string => ifElse(isStringInput, (s: string) => s.trim().length > 0, () => false)(input)
 
-const hasValidId = (candidate: object): boolean => isNonEmptyString(Reflect.get(candidate, 'id'))
+const hasValidId = (candidate: object): boolean => isNonEmptyString(getKey('id')(candidate))
 
 const createSourceIdentity = (id: string): SourceIdentity => ({ id, [sourceIdentityBrand]: true, ...brand(sourceIdentityBrand) })
 

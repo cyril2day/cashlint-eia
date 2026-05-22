@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const measurementUnitBrand = Symbol('MeasurementUnit')
 
@@ -38,7 +39,7 @@ const isMeasurementUnitLabel = (input: unknown): input is MeasurementUnitLabel =
     () => false,
   )(input)
 
-const hasValidUnit = (candidate: object): boolean => isMeasurementUnitLabel(Reflect.get(candidate, 'unit'))
+const hasValidUnit = (candidate: object): boolean => isMeasurementUnitLabel(getKey('unit')(candidate))
 
 const createMeasurementUnit = (unit: MeasurementUnitLabel): MeasurementUnit => ({
   unit,

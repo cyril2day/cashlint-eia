@@ -2,6 +2,7 @@ import { allPass, ifElse, pipeWith } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
 import type { ReportWeek } from './report-week'
 import { formatReportWeekIso } from './report-week'
@@ -88,12 +89,12 @@ export const assembleWeeklyPetroleumFacts = (
   }
 
   function inventoryDuplicatesExist(v: Ctx): boolean {
-    const inventoryKeys = v.inventories.map(i => `${formatReportWeekIso(i.fact.reportWeek)}|${formatGeographyScope(i.fact.geography)}|${String(Reflect.get(i.product, 'product'))}`)
+    const inventoryKeys = v.inventories.map(i => `${formatReportWeekIso(i.fact.reportWeek)}|${formatGeographyScope(i.fact.geography)}|${String(getKey('product')(i.product))}`)
     return inventoryKeys.some((k, idx) => inventoryKeys.indexOf(k) !== idx)
   }
 
   function buildInventoryDuplicateError(v: Ctx) {
-    const inventoryKeys = v.inventories.map(i => `${formatReportWeekIso(i.fact.reportWeek)}|${formatGeographyScope(i.fact.geography)}|${String(Reflect.get(i.product, 'product'))}`)
+    const inventoryKeys = v.inventories.map(i => `${formatReportWeekIso(i.fact.reportWeek)}|${formatGeographyScope(i.fact.geography)}|${String(getKey('product')(i.product))}`)
     const duplicates = inventoryKeys.filter((k, idx) => inventoryKeys.indexOf(k) !== idx)
     return failure(makeDuplicateObservation(duplicates.join(',')))
   }

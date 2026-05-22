@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const balanceStateBrand = Symbol('BalanceState')
 
@@ -24,7 +25,7 @@ const isBalanceStateLabel = (input: unknown): input is BalanceStateLabel =>
     () => false,
   )(input)
 
-const hasValidState = (candidate: object): boolean => isBalanceStateLabel(Reflect.get(candidate, 'state'))
+const hasValidState = (candidate: object): boolean => isBalanceStateLabel(getKey('state')(candidate))
 
 const createBalanceState = (state: BalanceStateLabel): BalanceState => ({
   state,

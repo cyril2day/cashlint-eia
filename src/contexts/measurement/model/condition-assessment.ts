@@ -2,6 +2,7 @@ import { allPass, ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, isStringInput, hasBrand, brand } from '@/shared/domain'
+import { getKey } from '@/shared/object'
 
 const conditionAssessmentBrand = Symbol('ConditionAssessment')
 
@@ -24,7 +25,7 @@ const isConditionAssessmentLabel = (input: unknown): input is ConditionAssessmen
     () => false,
   )(input)
 
-const hasValidAssessment = (candidate: object): boolean => isConditionAssessmentLabel(Reflect.get(candidate, 'assessment'))
+const hasValidAssessment = (candidate: object): boolean => isConditionAssessmentLabel(getKey('assessment')(candidate))
 
 const createConditionAssessment = (assessment: ConditionAssessmentLabel): ConditionAssessment => ({
   assessment,
