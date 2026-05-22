@@ -4,11 +4,13 @@ import {
   buildWalkingSkeletonCaveats,
   buildWalkingSkeletonExplanation,
   buildWalkingSkeletonSummary,
+  assignWalkingSkeletonConfidence,
   classifyWalkingSkeletonSignalAlignment,
   composeWeeklyAnalysis,
   createWalkingSkeletonAnalysisPolicies,
   selectWalkingSkeletonSignals,
 } from '@/contexts/analysis'
+import { createAnalysisSignalAlignment } from '@/contexts/analysis/model'
 import {
   buildPreviousObservationMap,
   contextualizeWalkingSkeletonSignalSet,
@@ -196,6 +198,36 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(explanation).toContain('Refinery data is not included')
     expect(explanation).toContain('Supply data is not included')
     expect(explanation).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
+  })
+
+  it('builds the full walking-skeleton caveat set with propagated trend caveats', () => {
+    const { contextualized } = buildWalkingSkeletonInputs()
+    const policies = createWalkingSkeletonAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
+    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
+
+    expect(caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
+    expect(caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
+    expect(caveats.some(caveat => caveat.kind === 'SupplyDataNotIncluded')).toBe(true)
+    expect(caveats.some(isPropagatedTrendNotComputed)).toBe(false)
+
+    const missingTrendKeySignals: typeof keySignals = {
+      ...keySignals,
+      inventory: withoutTrend(keySignals.inventory),
+    }
+    const missingTrendCaveats = buildWalkingSkeletonCaveats(missingTrendKeySignals, policies)
+
+    expect(missingTrendCaveats.some(isPropagatedTrendNotComputed)).toBe(true)
+    expect(new Set(missingTrendCaveats.map(caveat => caveat.kind)).size).toBeGreaterThanOrEqual(4)
+  })
+
+  it('assigns conservative walking-skeleton confidence for each alignment', () => {
+    const policies = createWalkingSkeletonAnalysisPolicies()
+
+    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('AlignedTightening'), policies)).confidence).toBe('Medium')
+    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('AlignedLoosening'), policies)).confidence).toBe('Medium')
+    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Mixed'), policies)).confidence).toBe('Low')
+    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Insufficient'), policies)).confidence).toBe('Unknown')
   })
 
   it('writes a looser headline for aligned loosening', () => {
