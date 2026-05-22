@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { composeWeeklyAnalysis, createWalkingSkeletonAnalysisPolicies, selectWalkingSkeletonSignals } from '@/contexts/analysis'
+import {
+  buildWalkingSkeletonCaveats,
+  buildWalkingSkeletonExplanation,
+  buildWalkingSkeletonSummary,
+  classifyWalkingSkeletonSignalAlignment,
+  composeWeeklyAnalysis,
+  createWalkingSkeletonAnalysisPolicies,
+  selectWalkingSkeletonSignals,
+} from '@/contexts/analysis'
 import {
   buildPreviousObservationMap,
   contextualizeWalkingSkeletonSignalSet,
@@ -159,6 +167,35 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(analysis.caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'SupplyDataNotIncluded')).toBe(true)
+  })
+
+  it('writes a cautious summary from aligned signals', () => {
+    const { contextualized } = buildWalkingSkeletonInputs()
+    const policies = createWalkingSkeletonAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
+    const alignment = unwrapSuccess(classifyWalkingSkeletonSignalAlignment(keySignals))
+    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
+    const summary = unwrapSuccess(buildWalkingSkeletonSummary(keySignals, alignment, caveats, policies))
+
+    expect(summary).toContain('Crude inventory drew while WTI rose')
+    expect(summary).toContain('full system balance is not computed')
+    expect(summary).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
+  })
+
+  it('writes a careful explanation from aligned signals', () => {
+    const { contextualized } = buildWalkingSkeletonInputs()
+    const policies = createWalkingSkeletonAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
+    const alignment = unwrapSuccess(classifyWalkingSkeletonSignalAlignment(keySignals))
+    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
+    const explanation = unwrapSuccess(buildWalkingSkeletonExplanation(keySignals, alignment, caveats, policies))
+
+    expect(explanation).toContain('physical storage signal')
+    expect(explanation).toContain('market context')
+    expect(explanation).toContain('Full system balance is not computed')
+    expect(explanation).toContain('Refinery data is not included')
+    expect(explanation).toContain('Supply data is not included')
+    expect(explanation).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
   })
 
   it('writes a looser headline for aligned loosening', () => {

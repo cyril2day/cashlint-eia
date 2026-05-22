@@ -89,6 +89,21 @@ const validateNarrativeTone = (
   )()
 }
 
+const validateWalkingSkeletonNarrative = (
+  text: string,
+  policies: AnalysisPolicies,
+  field: 'headline' | 'summary' | 'explanation',
+  makeEmptyNarrativeError: (reason: string) => AnalysisError,
+): Result<string, AnalysisError> =>
+  bindResult(
+    ifElse(
+      () => isNonEmptyString(text),
+      () => success(text),
+      () => failure(makeEmptyNarrativeError(`${field} was empty`)),
+    )(),
+    candidate => validateNarrativeTone(candidate, policies, field),
+  )
+
 const isPropagatedInterpretationCaveat = (
   caveat: AnalysisCaveat,
 ): caveat is Extract<AnalysisCaveat, { readonly kind: 'PropagatedInterpretationCaveat' }> =>
@@ -342,12 +357,7 @@ export const buildWalkingSkeletonHeadline = (
 ): Result<string, AnalysisError> => {
   const headline = headlineForSignals(signals, alignment)
 
-  return bindResult(
-    ifElse(
-    () => isNonEmptyString(headline),
-    () => success(headline),
-    () => failure(makeUnableToComposeHeadlineError('headline was empty')),
-  )(), candidate => validateNarrativeTone(candidate, policies, 'headline'))
+  return validateWalkingSkeletonNarrative(headline, policies, 'headline', makeUnableToComposeHeadlineError)
 }
 
 export const buildWalkingSkeletonSummary = (
@@ -372,12 +382,7 @@ export const buildWalkingSkeletonSummary = (
 
   const summary = `${describeInventory(signals.inventory)} while ${describePrice(signals.price)}. ${note} ${caveatNote}`.trim()
 
-  return bindResult(
-    ifElse(
-    () => isNonEmptyString(summary),
-    () => success(summary),
-    () => failure(makeUnableToComposeSummaryError('summary was empty')),
-  )(), candidate => validateNarrativeTone(candidate, _policies, 'summary'))
+  return validateWalkingSkeletonNarrative(summary, _policies, 'summary', makeUnableToComposeSummaryError)
 }
 
 const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
@@ -402,12 +407,7 @@ export const buildWalkingSkeletonExplanation = (
 
   const explanation = `${describeInventory(signals.inventory)} is the physical storage signal, and ${describePrice(signals.price)} is market context. ${describeAlignment(alignment)}. ${policies.fullSystemBalanceNotComputedReason} ${policies.refineryDataNotIncludedReason} ${policies.supplyDataNotIncludedReason} ${trendNote}`.trim()
 
-  return bindResult(
-    ifElse(
-    () => isNonEmptyString(explanation),
-    () => success(explanation),
-    () => failure(makeUnableToComposeExplanationError('explanation was empty')),
-  )(), candidate => validateNarrativeTone(candidate, policies, 'explanation'))
+  return validateWalkingSkeletonNarrative(explanation, policies, 'explanation', makeUnableToComposeExplanationError)
 }
 
 const assembleWeeklyAnalysisResult = (
