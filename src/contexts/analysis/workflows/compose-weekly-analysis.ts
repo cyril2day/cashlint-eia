@@ -10,6 +10,7 @@ import { formatTrendDirection } from '@/contexts/measurement/model/trend-directi
 import type { AnalysisPolicies } from '../policies'
 import {
   makeInvalidAnalysisPolicyError,
+  makeInsufficientEvidenceForNarrativeError,
   makeMissingContextualizedSignalError,
   makeUnableToComposeExplanationError,
   makeUnableToComposeHeadlineError,
@@ -72,6 +73,21 @@ type AnalysisCompositionWithExplanation = AnalysisCompositionWithSummary & Reado
 }>
 
 const isNonEmptyString = (value: string): boolean => value.trim().length > 0
+
+const validateNarrativeTone = (
+  text: string,
+  policies: AnalysisPolicies,
+  field: 'headline' | 'summary' | 'explanation',
+): Result<string, AnalysisError> => {
+  const lowerText = text.toLowerCase()
+  const forbiddenPhrase = policies.forbiddenNarrativePhrases.find(phrase => lowerText.includes(phrase.toLowerCase()))
+
+  return ifElse(
+    () => forbiddenPhrase === undefined,
+    () => success(text),
+    () => failure(makeInsufficientEvidenceForNarrativeError(`${field} used forbidden narrative phrase: ${String(forbiddenPhrase)}`)),
+  )()
+}
 
 const isPropagatedInterpretationCaveat = (
   caveat: AnalysisCaveat,
@@ -290,14 +306,16 @@ export const buildWalkingSkeletonCaveats = (
 export const buildWalkingSkeletonHeadline = (
   signals: AnalysisKeySignals,
   alignment: AnalysisSignalAlignment,
+  policies: AnalysisPolicies,
 ): Result<string, AnalysisError> => {
   const headline = `${describeInventory(signals.inventory)} and ${describePrice(signals.price)}, ${describeAlignment(alignment)}.`
 
-  return ifElse(
+  return bindResult(
+    ifElse(
     () => isNonEmptyString(headline),
     () => success(headline),
     () => failure(makeUnableToComposeHeadlineError('headline was empty')),
-  )()
+  )(), candidate => validateNarrativeTone(candidate, policies, 'headline'))
 }
 
 export const buildWalkingSkeletonSummary = (
@@ -322,11 +340,12 @@ export const buildWalkingSkeletonSummary = (
 
   const summary = `${describeInventory(signals.inventory)} while ${describePrice(signals.price)}. ${note} ${caveatNote}`.trim()
 
-  return ifElse(
+  return bindResult(
+    ifElse(
     () => isNonEmptyString(summary),
     () => success(summary),
     () => failure(makeUnableToComposeSummaryError('summary was empty')),
-  )()
+  )(), candidate => validateNarrativeTone(candidate, _policies, 'summary'))
 }
 
 const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
@@ -351,11 +370,12 @@ export const buildWalkingSkeletonExplanation = (
 
   const explanation = `${describeInventory(signals.inventory)} is the physical storage signal, and ${describePrice(signals.price)} is market context. ${describeAlignment(alignment)}. ${policies.fullSystemBalanceNotComputedReason} ${policies.refineryDataNotIncludedReason} ${policies.supplyDataNotIncludedReason} ${trendNote}`.trim()
 
-  return ifElse(
+  return bindResult(
+    ifElse(
     () => isNonEmptyString(explanation),
     () => success(explanation),
     () => failure(makeUnableToComposeExplanationError('explanation was empty')),
-  )()
+  )(), candidate => validateNarrativeTone(candidate, policies, 'explanation'))
 }
 
 const assembleWeeklyAnalysisResult = (
@@ -415,7 +435,7 @@ const composeFromKeySignals = (
           caveats: buildWalkingSkeletonCaveats(context.keySignals, context.validatedPolicies),
         }),
       (context: AnalysisCompositionWithCaveats) =>
-        mapResult(buildWalkingSkeletonHeadline(context.keySignals, context.alignment), headline => ({ ...context, headline })),
+        mapResult(buildWalkingSkeletonHeadline(context.keySignals, context.alignment, context.validatedPolicies), headline => ({ ...context, headline })),
       (context: AnalysisCompositionWithHeadline) =>
         mapResult(buildWalkingSkeletonSummary(context.keySignals, context.alignment, context.caveats, context.validatedPolicies), summary => ({ ...context, summary })),
       (context: AnalysisCompositionWithSummary) =>

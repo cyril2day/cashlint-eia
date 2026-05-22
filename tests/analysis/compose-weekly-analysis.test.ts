@@ -31,6 +31,7 @@ import { none, isSome } from '@/shared/maybe'
 import { ifElse } from '@/shared/fp'
 import { isSuccess, type Result } from '@/shared/result'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
+import type { AnalysisError } from '@/contexts/analysis/errors'
 
 const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue => {
   return ifElse(isSuccess, candidate => candidate.value, () => {
@@ -104,6 +105,9 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(analysis.headline).toContain('suggests a tighter signal')
     expect(analysis.summary).toContain('Full system balance is not computed')
     expect(analysis.explanation).toContain('physical storage signal')
+    expect(analysis.headline).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
+    expect(analysis.summary).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
+    expect(analysis.explanation).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
     expect(analysis.caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
     expect(analysis.caveats.some(caveat => caveat.kind === 'SupplyDataNotIncluded')).toBe(true)
@@ -153,5 +157,23 @@ describe('Walking-skeleton Analysis composition', () => {
     const analysis = composeWeeklyAnalysis(facts, { inventory: contextualized.inventory }, createWalkingSkeletonAnalysisPolicies())
 
     expect(analysis.ok).toBe(false)
+  })
+
+  it('rejects a narrative policy that forbids the generated headline language', () => {
+    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const restrictivePolicies = {
+      ...createWalkingSkeletonAnalysisPolicies(),
+      forbiddenNarrativePhrases: ['suggests'],
+    }
+
+    const analysis = composeWeeklyAnalysis(facts, contextualized, restrictivePolicies)
+    const isFailureResult = (
+      candidate: Result<unknown, AnalysisError>,
+    ): candidate is Extract<Result<unknown, AnalysisError>, { readonly ok: false }> => candidate.ok === false
+
+    const errorKind = ifElse(isFailureResult, candidate => candidate.error.kind, () => undefined)(analysis)
+
+    expect(analysis.ok).toBe(false)
+    expect(errorKind).toBe('InsufficientEvidenceForNarrative')
   })
 })
