@@ -52,6 +52,11 @@ export const bindResult = <SuccessValue, FailureValue, NextSuccessValue>(
     (successResult: SuccessResult<SuccessValue>) => binder(successResult.value),
   )(result)
 
+export const bindResultStep = <InputValue, FailureValue, OutputValue>(
+  step: (value: InputValue) => Result<OutputValue, FailureValue>,
+  result: Result<InputValue, FailureValue>,
+): Result<OutputValue, FailureValue> => bindResult(result, step)
+
 export const combineResults = <FirstValue, FailureValue, SecondValue, CombinedValue>(
   first: Result<FirstValue, FailureValue>,
   second: Result<SecondValue, FailureValue>,

@@ -8,69 +8,51 @@ import { getKey } from '@/shared/object'
 import { none, type Maybe } from '@/shared/maybe'
 
 type BoundaryErrorArray = readonly BoundaryError[]
+type RequiredFieldName = 'seriesId' | 'value' | 'measureKindCandidate' | 'geographyCandidate'
+type RequiredFieldReader = (candidate: BoundaryDto) => Maybe<unknown>
+type BoundaryMaybeFieldName = 'measureKindCandidate' | 'geographyCandidate'
+
+const isSomeMaybeKind = (kind: unknown): boolean => kind === 'Some'
+const isNoneMaybeKind = (kind: unknown): boolean => kind === 'None'
 
 const isMaybeInput = (candidate: unknown): candidate is Maybe<unknown> =>
   cond([
-    [(value: unknown) => getKey('kind')(value) === 'Some', () => true],
-    [(value: unknown) => getKey('kind')(value) === 'None', () => true],
+    [(value: unknown) => isSomeMaybeKind(getKey('kind')(value)), () => true],
+    [(value: unknown) => isNoneMaybeKind(getKey('kind')(value)), () => true],
     [() => true, () => false],
   ])(candidate)
 
-const readMaybeField = (fieldName: string) => (candidate: BoundaryDto): Maybe<unknown> =>
+const readMaybeField = (fieldName: BoundaryMaybeFieldName) => (candidate: BoundaryDto): Maybe<unknown> =>
   ifElse(
     isMaybeInput,
     (value: Maybe<unknown>) => value,
     () => none(),
   )(getKey(fieldName)(candidate))
 
-const validateInventory = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
-  const fields: readonly RequiredMaybeField[] = [
-    { fieldName: 'seriesId', value: candidate.seriesId },
-    { fieldName: 'value', value: candidate.valueCandidate },
-  ]
-
-  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
+const requiredFieldReaderByName: Readonly<Record<RequiredFieldName, RequiredFieldReader>> = {
+  seriesId: candidate => candidate.seriesId,
+  value: candidate => candidate.valueCandidate,
+  measureKindCandidate: readMaybeField('measureKindCandidate'),
+  geographyCandidate: readMaybeField('geographyCandidate'),
 }
 
-const validatePrice = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
-  const fields: readonly RequiredMaybeField[] = [
-    { fieldName: 'seriesId', value: candidate.seriesId },
-    { fieldName: 'value', value: candidate.valueCandidate },
-    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
-  ]
-
-  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
+const requiredFieldNamesByBoundaryKind: Readonly<Record<BoundaryDto['kind'], readonly RequiredFieldName[]>> = {
+  Inventory: ['seriesId', 'value'],
+  Price: ['seriesId', 'value', 'measureKindCandidate'],
+  Refinery: ['seriesId', 'value', 'measureKindCandidate', 'geographyCandidate'],
+  Supply: ['seriesId', 'value', 'measureKindCandidate', 'geographyCandidate'],
 }
 
-const validateRefinery = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
-  const fields: readonly RequiredMaybeField[] = [
-    { fieldName: 'seriesId', value: candidate.seriesId },
-    { fieldName: 'value', value: candidate.valueCandidate },
-    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
-    { fieldName: 'geographyCandidate', value: readMaybeField('geographyCandidate')(candidate) },
-  ]
+const toRequiredMaybeField = (candidate: BoundaryDto) => (fieldName: RequiredFieldName): RequiredMaybeField => ({
+  fieldName,
+  value: requiredFieldReaderByName[fieldName](candidate),
+})
 
-  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
-}
+const readRequiredMaybeFields = (candidate: BoundaryDto): readonly RequiredMaybeField[] =>
+  requiredFieldNamesByBoundaryKind[candidate.kind].map(toRequiredMaybeField(candidate))
 
-const validateSupply = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
-  const fields: readonly RequiredMaybeField[] = [
-    { fieldName: 'seriesId', value: candidate.seriesId },
-    { fieldName: 'value', value: candidate.valueCandidate },
-    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
-    { fieldName: 'geographyCandidate', value: readMaybeField('geographyCandidate')(candidate) },
-  ]
-
-  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
-}
-
-const validateBoundary = (d: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> =>
-  cond<[BoundaryDto], Result<BoundaryDto, BoundaryErrorArray>>([
-    [(candidate: BoundaryDto) => candidate.kind === 'Inventory', validateInventory],
-    [(candidate: BoundaryDto) => candidate.kind === 'Price', validatePrice],
-    [(candidate: BoundaryDto) => candidate.kind === 'Refinery', validateRefinery],
-    [() => true, (candidate: BoundaryDto) => validateSupply(candidate)],
-  ])(d)
+const validateBoundary = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> =>
+  validateRequiredMaybeFields(candidate, candidate.source.endpoint, readRequiredMaybeFields(candidate))
 
 export const validateBoundaryInput = (
   inputs: readonly BoundaryDto[],

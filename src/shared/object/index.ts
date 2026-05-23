@@ -1,14 +1,20 @@
 import { ifElse } from '@/shared/fp'
 
-const isObjectInput = (input: unknown): input is object => input instanceof Object
+type ObjectInput = Readonly<Record<PropertyKey, unknown>>
 
-const readKeyFromObject = (key: string | symbol) => (candidate: object): unknown =>
-	Object.getOwnPropertyDescriptor(candidate, key)?.value
+const isObjectInput = (input: unknown): input is ObjectInput => input instanceof Object
+
+const readKeyFromObject = (key: PropertyKey) => (candidate: ObjectInput): unknown =>
+  Object.getOwnPropertyDescriptor(candidate, key)?.value
+
+const hasOwnKeyInObject = (key: PropertyKey) => (candidate: ObjectInput): boolean =>
+  Object.prototype.hasOwnProperty.call(candidate, key)
 
 const alwaysUndefined = (): undefined => undefined
+const alwaysFalse = (): false => false
 
-export const getKey = (key: string | symbol) => (obj: unknown): unknown =>
-	ifElse(isObjectInput, readKeyFromObject(key), alwaysUndefined)(obj)
+export const getKey = (key: PropertyKey) => (obj: unknown): unknown =>
+  ifElse(isObjectInput, readKeyFromObject(key), alwaysUndefined)(obj)
 
-export const hasKey = (key: string | symbol) => (obj: unknown): boolean =>
-	ifElse(isObjectInput, candidate => key in candidate, () => false)(obj)
+export const hasKey = (key: PropertyKey) => (obj: unknown): boolean =>
+  ifElse(isObjectInput, hasOwnKeyInObject(key), alwaysFalse)(obj)
