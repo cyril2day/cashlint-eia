@@ -5,7 +5,8 @@ import { parseReportWeek, formatReportWeekIso, type ReportWeek } from '@/context
 import { parseGeographyScope, formatGeographyScope, type GeographyScope } from '@/contexts/measurement/model/geography-scope'
 import { parseInventoryMeasurement, type InventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
 import { parsePriceMeasurement, type PriceMeasurement } from '@/contexts/measurement/model/price-measurement'
-import { assembleWeeklyPetroleumFacts, type WeeklyPetroleumFacts, type WeeklyPetroleumFactsError, isWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import { assembleWeeklyPetroleumFactsWithPolicy, type WeeklyPetroleumFacts, type WeeklyPetroleumFactsError, isWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import { walkingSkeletonRequiredMeasurementPolicy, type RequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
 
 export type WeeklyFactsValidationError =
   | WeeklyPetroleumFactsError
@@ -87,6 +88,7 @@ const geographiesMatch = (left: GeographyScope, right: GeographyScope): boolean 
 
 const validateBrandedWeeklyFacts = (
   input: WeeklyPetroleumFacts,
+  policy: RequiredMeasurementPolicy,
 ): Result<WeeklyPetroleumFacts, WeeklyFactsValidationError> => {
   const pipeline = pipeWith(
     <I, F, O>(step: (value: I) => Result<O, F>, result: Result<I, F>) => binder(step, result),
@@ -101,7 +103,13 @@ const validateBrandedWeeklyFacts = (
         mapResult(parsePrice(c.input.price), price => ({ ...c, price })),
       (c: ValidationWithPrice) =>
         mapResult(
-          assembleWeeklyPetroleumFacts(c.inventories, [c.price]),
+          assembleWeeklyPetroleumFactsWithPolicy({
+            policy,
+            inventories: c.inventories,
+            refinery: c.input.refinery,
+            supply: c.input.supply,
+            prices: [c.price],
+          }),
           assembled => ({ ...c, assembled }),
         ),
       (c: ValidationWithAssembled) =>
@@ -119,10 +127,11 @@ const validateBrandedWeeklyFacts = (
 
 export const validateWeeklyFacts = (
   input: unknown,
+  policy: RequiredMeasurementPolicy = walkingSkeletonRequiredMeasurementPolicy,
 ): Result<WeeklyPetroleumFacts, WeeklyFactsValidationError> =>
   ifElse(
     isWeeklyPetroleumFacts,
-    validateBrandedWeeklyFacts,
+    (candidate: WeeklyPetroleumFacts) => validateBrandedWeeklyFacts(candidate, policy),
     () => failure(makeInvalidWeeklyFactsInputError(input)),
   )(input)
 

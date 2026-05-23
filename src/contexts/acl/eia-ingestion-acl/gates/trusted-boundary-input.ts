@@ -1,13 +1,29 @@
-import type { BoundaryDto, TrustedBoundaryInput, InventoryBoundaryDto, PriceBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
+import type { BoundaryDto, TrustedBoundaryInput } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import { mapResult, traverseResults } from '@/shared/result'
 import type { Result } from '@/shared/result'
-import { ifElse } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 import type { BoundaryError } from '@/contexts/acl/eia-ingestion-acl/errors/boundary-error'
 import { validateRequiredMaybeFields, RequiredMaybeField } from '@/contexts/acl/eia-ingestion-acl/helpers/requiredMaybe'
+import { getKey } from '@/shared/object'
+import { none, type Maybe } from '@/shared/maybe'
 
 type BoundaryErrorArray = readonly BoundaryError[]
 
-const validateInventory = (candidate: InventoryBoundaryDto): Result<InventoryBoundaryDto, BoundaryErrorArray> => {
+const isMaybeInput = (candidate: unknown): candidate is Maybe<unknown> =>
+  cond([
+    [(value: unknown) => getKey('kind')(value) === 'Some', () => true],
+    [(value: unknown) => getKey('kind')(value) === 'None', () => true],
+    [() => true, () => false],
+  ])(candidate)
+
+const readMaybeField = (fieldName: string) => (candidate: BoundaryDto): Maybe<unknown> =>
+  ifElse(
+    isMaybeInput,
+    (value: Maybe<unknown>) => value,
+    () => none(),
+  )(getKey(fieldName)(candidate))
+
+const validateInventory = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
   const fields: readonly RequiredMaybeField[] = [
     { fieldName: 'seriesId', value: candidate.seriesId },
     { fieldName: 'value', value: candidate.valueCandidate },
@@ -16,22 +32,45 @@ const validateInventory = (candidate: InventoryBoundaryDto): Result<InventoryBou
   return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
 }
 
-const validatePrice = (candidate: PriceBoundaryDto): Result<PriceBoundaryDto, BoundaryErrorArray> => {
+const validatePrice = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
   const fields: readonly RequiredMaybeField[] = [
     { fieldName: 'seriesId', value: candidate.seriesId },
     { fieldName: 'value', value: candidate.valueCandidate },
-    { fieldName: 'measureKindCandidate', value: candidate.measureKindCandidate },
+    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
+  ]
+
+  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
+}
+
+const validateRefinery = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
+  const fields: readonly RequiredMaybeField[] = [
+    { fieldName: 'seriesId', value: candidate.seriesId },
+    { fieldName: 'value', value: candidate.valueCandidate },
+    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
+    { fieldName: 'geographyCandidate', value: readMaybeField('geographyCandidate')(candidate) },
+  ]
+
+  return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
+}
+
+const validateSupply = (candidate: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> => {
+  const fields: readonly RequiredMaybeField[] = [
+    { fieldName: 'seriesId', value: candidate.seriesId },
+    { fieldName: 'value', value: candidate.valueCandidate },
+    { fieldName: 'measureKindCandidate', value: readMaybeField('measureKindCandidate')(candidate) },
+    { fieldName: 'geographyCandidate', value: readMaybeField('geographyCandidate')(candidate) },
   ]
 
   return validateRequiredMaybeFields(candidate, candidate.source.endpoint, fields)
 }
 
 const validateBoundary = (d: BoundaryDto): Result<BoundaryDto, BoundaryErrorArray> =>
-  ifElse(
-    (candidate: BoundaryDto) => candidate.kind === 'Inventory',
-    validateInventory,
-    validatePrice,
-  )(d)
+  cond<[BoundaryDto], Result<BoundaryDto, BoundaryErrorArray>>([
+    [(candidate: BoundaryDto) => candidate.kind === 'Inventory', validateInventory],
+    [(candidate: BoundaryDto) => candidate.kind === 'Price', validatePrice],
+    [(candidate: BoundaryDto) => candidate.kind === 'Refinery', validateRefinery],
+    [() => true, (candidate: BoundaryDto) => validateSupply(candidate)],
+  ])(d)
 
 export const validateBoundaryInput = (
   inputs: readonly BoundaryDto[],
@@ -40,5 +79,3 @@ export const validateBoundaryInput = (
     traverseResults(inputs, validateBoundary),
     (values: readonly BoundaryDto[]) => ({ inputs: values }),
   )
-
-

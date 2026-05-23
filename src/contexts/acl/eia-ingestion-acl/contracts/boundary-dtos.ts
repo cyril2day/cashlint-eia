@@ -21,7 +21,29 @@ export type PriceBoundaryDto = Readonly<{
   readonly source: { endpoint: string }
 }>
 
-export type BoundaryDto = InventoryBoundaryDto | PriceBoundaryDto
+export type RefineryBoundaryDto = Readonly<{
+  readonly kind: 'Refinery'
+  readonly periodCandidate: Maybe<PeriodCandidate>
+  readonly seriesId: MaybeString
+  readonly measureKindCandidate: MaybeString
+  readonly valueCandidate: Maybe<ValueCandidate>
+  readonly unitCandidate: MaybeString
+  readonly geographyCandidate: MaybeString
+  readonly source: { endpoint: string }
+}>
+
+export type SupplyBoundaryDto = Readonly<{
+  readonly kind: 'Supply'
+  readonly periodCandidate: Maybe<PeriodCandidate>
+  readonly seriesId: MaybeString
+  readonly measureKindCandidate: MaybeString
+  readonly valueCandidate: Maybe<ValueCandidate>
+  readonly unitCandidate: MaybeString
+  readonly geographyCandidate: MaybeString
+  readonly source: { endpoint: string }
+}>
+
+export type BoundaryDto = InventoryBoundaryDto | PriceBoundaryDto | RefineryBoundaryDto | SupplyBoundaryDto
 
 export type TrustedBoundaryInput = Readonly<{
   readonly inputs: readonly BoundaryDto[]
@@ -59,6 +81,52 @@ export const fromRawPriceRow = (r: RawEiaRow): PriceBoundaryDto => {
     measureKindCandidate,
     valueCandidate,
     unitCandidate,
+    source,
+  }
+}
+
+export const fromRawRefineryRow = (
+  r: RawEiaRow,
+  measureKindCandidate: MaybeString,
+): RefineryBoundaryDto => {
+  const periodCandidate = r.period
+  const seriesId = r.series_id
+  const valueCandidate = r.value
+  const unitCandidate = r.unit
+  const geographyCandidate = r.geography
+  const source = { endpoint: 'eia' }
+
+  return {
+    kind: 'Refinery',
+    periodCandidate,
+    seriesId,
+    measureKindCandidate,
+    valueCandidate,
+    unitCandidate,
+    geographyCandidate,
+    source,
+  }
+}
+
+export const fromRawSupplyRow = (
+  r: RawEiaRow,
+  measureKindCandidate: MaybeString,
+): SupplyBoundaryDto => {
+  const periodCandidate = r.period
+  const seriesId = r.series_id
+  const valueCandidate = r.value
+  const unitCandidate = r.unit
+  const geographyCandidate = r.geography
+  const source = { endpoint: 'eia' }
+
+  return {
+    kind: 'Supply',
+    periodCandidate,
+    seriesId,
+    measureKindCandidate,
+    valueCandidate,
+    unitCandidate,
+    geographyCandidate,
     source,
   }
 }

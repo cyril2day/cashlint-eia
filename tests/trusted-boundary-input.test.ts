@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { some, none } from '@/shared/maybe'
-import { fromRawInventoryRow, fromRawPriceRow } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
+import { fromRawInventoryRow, fromRawPriceRow, fromRawRefineryRow, fromRawSupplyRow } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import { validateBoundaryInput } from '@/contexts/acl/eia-ingestion-acl/gates/trusted-boundary-input'
 import { isSuccess, isFailure } from '@/shared/result'
 
@@ -59,5 +59,39 @@ describe('validateBoundaryInput gate', () => {
     expect(isFailure(res)).toBe(true)
     const resJson = JSON.parse(JSON.stringify(res))
     expect(resJson.error.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('accepts valid refinery and supply boundary dtos', () => {
+    const refinery = fromRawRefineryRow({
+      period: some('2023W01'),
+      date: none(),
+      value: some('16000'),
+      unit: some('MBBL/D'),
+      series_id: some('WCRRIUS2'),
+      series: none(),
+      product: none(),
+      geography: some('USTotal'),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }, some('RefineryNetInput'))
+
+    const supply = fromRawSupplyRow({
+      period: some('2023W01'),
+      date: none(),
+      value: some('13000'),
+      unit: some('MBBL/D'),
+      series_id: some('WCRFPUS2'),
+      series: none(),
+      product: none(),
+      geography: some('USTotal'),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }, some('DomesticProduction'))
+
+    const res = validateBoundaryInput([refinery, supply])
+
+    expect(isSuccess(res)).toBe(true)
   })
 })

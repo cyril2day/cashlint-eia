@@ -3,7 +3,7 @@ import { sequenceResults, mapError, mapResult, success, failure } from '@/shared
 import { ifElse, pipeWith } from '@/shared/fp'
 import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
 import type { Result } from '@/shared/result'
-import type { InventoryBoundaryDto, PriceBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
+import type { InventoryBoundaryDto, PriceBoundaryDto, RefineryBoundaryDto, SupplyBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import { parseDecimal } from '@/shared/decimal'
 import { parseMeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
 import type { MeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
@@ -23,24 +23,43 @@ import type { PriceKind } from '@/contexts/measurement/model/price-kind'
 import { createWeeklyFact } from '@/contexts/measurement/model/weekly-fact'
 import { createInventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
 import { createPriceMeasurement } from '@/contexts/measurement/model/price-measurement'
+import { createRefineryMeasurement, parseRefineryMeasurement } from '@/contexts/measurement/model/refinery-measurement'
+import { createSupplyMeasurement, parseSupplyMeasurement } from '@/contexts/measurement/model/supply-measurement'
 import type { ReportWeek } from '@/contexts/measurement/model/report-week'
 
 
-type MeasurementBuilderError = Readonly<{ readonly kind: 'InvalidInventoryInput' | 'InvalidPriceInput'; readonly input: string }>
+type MeasurementBuilderError = Readonly<{ readonly kind: 'InvalidInventoryInput' | 'InvalidPriceInput' | 'InvalidRefineryInput' | 'InvalidSupplyInput'; readonly input: string }>
 
 // Note: avoid heterogenous `sequenceResults` usage to preserve strong types.
 
 const unitLabels: Record<string, string> = {
   MBBL: 'ThousandBarrels',
   'MBBL/D': 'ThousandBarrelsPerDay',
+  PCT: 'Percent',
+  '%': 'Percent',
   'USD/bbl': 'USDPerBarrel',
   'USDPerBarrel': 'USDPerBarrel',
+}
+
+const geographyLabels: Record<string, string> = {
+  US: 'USTotal',
+  USA: 'USTotal',
+  'U.S.': 'USTotal',
+  'United States': 'USTotal',
+  USTotal: 'USTotal',
 }
 
 const normalizeUnitLabel = (input: unknown): string =>
   ifElse(
     (s: string) => Object.prototype.hasOwnProperty.call(unitLabels, s),
     (s: string) => unitLabels[s],
+    (s: string) => s,
+  )(String(input))
+
+const normalizeGeographyLabel = (input: unknown): string =>
+  ifElse(
+    (s: string) => Object.prototype.hasOwnProperty.call(geographyLabels, s),
+    (s: string) => geographyLabels[s],
     (s: string) => s,
   )(String(input))
 
@@ -125,6 +144,84 @@ export const buildPriceMeasurement = (
     (arr: readonly PriceBoundaryDto[]) => mapError(buildPriceFromDto(reportWeek)(arr[0]), (e): MeasurementBuilderError => ({ kind: 'InvalidPriceInput', input: String(e) })),
     () => failure<MeasurementBuilderError>({ kind: 'InvalidPriceInput', input: 'missing-price' }),
   )(dtos)
+
+const buildRefineryFromDto = (reportWeek: ReportWeek) => (d: RefineryBoundaryDto): Result<ReturnType<typeof createRefineryMeasurement>, MeasurementBuilderError> => {
+  const withValue = (_d: RefineryBoundaryDto) =>
+    mapResult(mapError(parseDecimal(unwrap(_d.valueCandidate)), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-value' })), value => ({ d: _d, value }))
+
+  const withUnit = (ctx: { d: RefineryBoundaryDto; value: number }) =>
+    mapResult(mapError(parseMeasurementUnit(normalizeUnitLabel(unwrap(ctx.d.unitCandidate))), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-unit' })), unit => ({ ...ctx, unit }))
+
+  const withKind = (ctx: { d: RefineryBoundaryDto; value: number; unit: unknown }) =>
+    mapResult(mapError(parseMeasurementKind(unwrap(ctx.d.measureKindCandidate)), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-kind' })), kind => ({ ...ctx, kind }))
+
+  const withSlice = (ctx: { d: RefineryBoundaryDto; value: number; unit: unknown; kind: unknown }) =>
+    mapResult(mapError(parsePetroleumSlice('Refinery'), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-slice' })), slice => ({ ...ctx, slice }))
+
+  const withGeo = (ctx: { d: RefineryBoundaryDto; value: number; unit: unknown; kind: unknown; slice: unknown }) =>
+    mapResult(mapError(parseGeographyScope(normalizeGeographyLabel(unwrap(ctx.d.geographyCandidate))), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-geo' })), geo => ({ ...ctx, geo }))
+
+  const withSource = (ctx: { d: RefineryBoundaryDto; value: number; unit: unknown; kind: unknown; slice: unknown; geo: unknown }) =>
+    mapResult(mapError(parseSourceIdentity(d.source.endpoint), () => ({ kind: 'InvalidRefineryInput', input: 'invalid-source' })), source => ({ ...ctx, source }))
+
+  const createMeasurementStep = (ctx: { d: RefineryBoundaryDto; value: number; unit: MeasurementUnit; kind: MeasurementKind; slice: PetroleumSlice; geo: GeographyScope; source: SourceIdentity }) =>
+    mapError(
+      parseRefineryMeasurement(createRefineryMeasurement(ctx.kind, createWeeklyFact(reportWeek, ctx.geo, ctx.slice, ctx.kind, ctx.value, ctx.unit, some(ctx.source)))),
+      (): MeasurementBuilderError => ({ kind: 'InvalidRefineryInput', input: 'incompatible-refinery-fact' }),
+    )
+
+  const pipeline = pipeWith(
+    <InputValue, FailureValue, OutputValue>(step: (value: InputValue) => Result<OutputValue, FailureValue>, result: Result<InputValue, FailureValue>) => binder(step, result),
+    [withValue, withUnit, withKind, withSlice, withGeo, withSource, createMeasurementStep],
+  )
+
+  return pipeline(d)
+}
+
+export const buildRefineryMeasurements = (
+  reportWeek: ReportWeek,
+  dtos: readonly RefineryBoundaryDto[],
+): Result<readonly ReturnType<typeof createRefineryMeasurement>[], MeasurementBuilderError> =>
+  mapError(sequenceResults(dtos.map(buildRefineryFromDto(reportWeek))), (e): MeasurementBuilderError => ({ kind: 'InvalidRefineryInput', input: String(e) }))
+
+const buildSupplyFromDto = (reportWeek: ReportWeek) => (d: SupplyBoundaryDto): Result<ReturnType<typeof createSupplyMeasurement>, MeasurementBuilderError> => {
+  const withValue = (_d: SupplyBoundaryDto) =>
+    mapResult(mapError(parseDecimal(unwrap(_d.valueCandidate)), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-value' })), value => ({ d: _d, value }))
+
+  const withUnit = (ctx: { d: SupplyBoundaryDto; value: number }) =>
+    mapResult(mapError(parseMeasurementUnit(normalizeUnitLabel(unwrap(ctx.d.unitCandidate))), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-unit' })), unit => ({ ...ctx, unit }))
+
+  const withKind = (ctx: { d: SupplyBoundaryDto; value: number; unit: unknown }) =>
+    mapResult(mapError(parseMeasurementKind(unwrap(ctx.d.measureKindCandidate)), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-kind' })), kind => ({ ...ctx, kind }))
+
+  const withSlice = (ctx: { d: SupplyBoundaryDto; value: number; unit: unknown; kind: unknown }) =>
+    mapResult(mapError(parsePetroleumSlice('Supply'), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-slice' })), slice => ({ ...ctx, slice }))
+
+  const withGeo = (ctx: { d: SupplyBoundaryDto; value: number; unit: unknown; kind: unknown; slice: unknown }) =>
+    mapResult(mapError(parseGeographyScope(normalizeGeographyLabel(unwrap(ctx.d.geographyCandidate))), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-geo' })), geo => ({ ...ctx, geo }))
+
+  const withSource = (ctx: { d: SupplyBoundaryDto; value: number; unit: unknown; kind: unknown; slice: unknown; geo: unknown }) =>
+    mapResult(mapError(parseSourceIdentity(d.source.endpoint), () => ({ kind: 'InvalidSupplyInput', input: 'invalid-source' })), source => ({ ...ctx, source }))
+
+  const createMeasurementStep = (ctx: { d: SupplyBoundaryDto; value: number; unit: MeasurementUnit; kind: MeasurementKind; slice: PetroleumSlice; geo: GeographyScope; source: SourceIdentity }) =>
+    mapError(
+      parseSupplyMeasurement(createSupplyMeasurement(ctx.kind, createWeeklyFact(reportWeek, ctx.geo, ctx.slice, ctx.kind, ctx.value, ctx.unit, some(ctx.source)))),
+      (): MeasurementBuilderError => ({ kind: 'InvalidSupplyInput', input: 'incompatible-supply-fact' }),
+    )
+
+  const pipeline = pipeWith(
+    <InputValue, FailureValue, OutputValue>(step: (value: InputValue) => Result<OutputValue, FailureValue>, result: Result<InputValue, FailureValue>) => binder(step, result),
+    [withValue, withUnit, withKind, withSlice, withGeo, withSource, createMeasurementStep],
+  )
+
+  return pipeline(d)
+}
+
+export const buildSupplyMeasurements = (
+  reportWeek: ReportWeek,
+  dtos: readonly SupplyBoundaryDto[],
+): Result<readonly ReturnType<typeof createSupplyMeasurement>[], MeasurementBuilderError> =>
+  mapError(sequenceResults(dtos.map(buildSupplyFromDto(reportWeek))), (e): MeasurementBuilderError => ({ kind: 'InvalidSupplyInput', input: String(e) }))
 
 export type { MeasurementBuilderError }
 
