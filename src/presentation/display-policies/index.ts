@@ -9,6 +9,7 @@ import { formatTrendDirection } from '@/contexts/measurement/model/trend-directi
 const summaryConditionLabelByKind: Readonly<Record<AnalysisCondition['condition'], string>> = {
   Tightening: 'Tightening',
   Loosening: 'Loosening',
+  Balanced: 'Balanced',
   Mixed: 'Mixed',
   Unknown: 'Unknown',
 }

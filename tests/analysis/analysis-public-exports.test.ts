@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  composeFullWeeklyAnalysis,
   composeWeeklyAnalysis,
+  createFullAnalysisPolicies,
   createWalkingSkeletonAnalysisPolicies,
   selectWalkingSkeletonSignals,
 } from '@/contexts/analysis'
@@ -9,7 +11,9 @@ import {
 describe('Analysis public exports', () => {
   it('exposes the walking-skeleton analysis surface', () => {
     expect(typeof composeWeeklyAnalysis).toBe('function')
+    expect(typeof composeFullWeeklyAnalysis).toBe('function')
     expect(typeof createWalkingSkeletonAnalysisPolicies).toBe('function')
+    expect(typeof createFullAnalysisPolicies).toBe('function')
     expect(typeof selectWalkingSkeletonSignals).toBe('function')
 
     const policies = createWalkingSkeletonAnalysisPolicies()

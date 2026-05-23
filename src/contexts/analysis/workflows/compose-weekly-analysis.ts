@@ -351,7 +351,14 @@ const formatNonPropagatedCaveatReasons = (caveats: readonly AnalysisCaveat[]): s
     .filter((caveat): caveat is Exclude<AnalysisCaveat, { readonly kind: 'PropagatedInterpretationCaveat' }> =>
       caveat.kind !== 'PropagatedInterpretationCaveat',
     )
-    .map(caveat => caveat.reason)
+    .map(caveat =>
+      ifElse(
+        (candidate: Exclude<AnalysisCaveat, { readonly kind: 'PropagatedInterpretationCaveat' }>): candidate is Extract<AnalysisCaveat, { readonly kind: 'PropagatedSystemBalanceCaveat' }> =>
+          candidate.kind === 'PropagatedSystemBalanceCaveat',
+        candidate => candidate.source.kind,
+        candidate => candidate.reason,
+      )(caveat),
+    )
     .join(' ')
 
 export const buildWalkingSkeletonCaveats = (

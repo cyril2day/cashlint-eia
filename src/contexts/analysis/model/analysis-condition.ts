@@ -4,9 +4,9 @@ import { getKey } from '@/shared/object'
 
 const analysisConditionBrand = Symbol('AnalysisCondition')
 
-export type AnalysisConditionLabel = 'Tightening' | 'Loosening' | 'Mixed' | 'Unknown'
+export type AnalysisConditionLabel = 'Tightening' | 'Loosening' | 'Balanced' | 'Mixed' | 'Unknown'
 
-const analysisConditions: readonly AnalysisConditionLabel[] = ['Tightening', 'Loosening', 'Mixed', 'Unknown']
+const analysisConditions: readonly AnalysisConditionLabel[] = ['Tightening', 'Loosening', 'Balanced', 'Mixed', 'Unknown']
 
 export type AnalysisCondition = Readonly<{
   readonly condition: AnalysisConditionLabel

@@ -1,3 +1,4 @@
+import type { SystemBalanceState, BalanceDriverKind } from '@/contexts/system-balance/model'
 import type { AnalysisConfidenceLabel } from '../model/analysis-confidence'
 import type { AnalysisConditionLabel } from '../model/analysis-condition'
 
@@ -17,6 +18,28 @@ export type AnalysisPolicies = Readonly<{
   readonly forbiddenNarrativePhrases: readonly string[]
 }>
 
+export type FullAnalysisPolicies = AnalysisPolicies & Readonly<{
+  readonly condition: Readonly<{
+    readonly preferredBalanceStates: readonly SystemBalanceState[]
+    readonly mixedEvidenceStates: readonly SystemBalanceState[]
+  }>
+  readonly drivers: Readonly<{
+    readonly maximumCount: number
+    readonly priorityKinds: readonly BalanceDriverKind[]
+  }>
+  readonly signals: Readonly<{
+    readonly maximumCount: number
+  }>
+  readonly historicalQualifications: Readonly<{
+    readonly maximumCount: number
+  }>
+  readonly confidence: Readonly<{
+    readonly balanceStateConfidence: Readonly<Record<SystemBalanceState, AnalysisConfidenceLabel>>
+    readonly contradictorySignalPenalty: number
+    readonly partialInterpretationPenalty: number
+  }>
+}>
+
 export const createWalkingSkeletonAnalysisPolicies = (): AnalysisPolicies => ({
   allowProvisionalConditionLabels: false,
   provisionalTighteningConditionLabel: 'Tightening',
@@ -31,4 +54,45 @@ export const createWalkingSkeletonAnalysisPolicies = (): AnalysisPolicies => ({
   supplyDataNotIncludedReason: 'Supply data is not included in this walking skeleton.',
   preferredNarrativePhrases: ['suggests', 'indicates', 'supports', 'is consistent with', 'appears to'],
   forbiddenNarrativePhrases: ['proves', 'guarantees', 'will cause', 'must mean', 'certainly'],
+})
+
+export const createFullAnalysisPolicies = (): FullAnalysisPolicies => ({
+  ...createWalkingSkeletonAnalysisPolicies(),
+  condition: {
+    preferredBalanceStates: ['Tightening', 'Loosening', 'Balanced', 'Mixed', 'Unknown'],
+    mixedEvidenceStates: ['Mixed', 'Unknown'],
+  },
+  drivers: {
+    maximumCount: 3,
+    priorityKinds: [
+      'InventoryDraw',
+      'InventoryBuild',
+      'StrongerRefineryDemand',
+      'WeakerRefineryDemand',
+      'DecreasedImports',
+      'IncreasedImports',
+      'IncreasedExports',
+      'DecreasedExports',
+      'IncreasedProduction',
+      'DecreasedProduction',
+      'SupplyPressureMovement',
+    ],
+  },
+  signals: {
+    maximumCount: 2,
+  },
+  historicalQualifications: {
+    maximumCount: 2,
+  },
+  confidence: {
+    balanceStateConfidence: {
+      Tightening: 'High',
+      Loosening: 'High',
+      Balanced: 'Medium',
+      Mixed: 'Low',
+      Unknown: 'Unknown',
+    },
+    contradictorySignalPenalty: 1,
+    partialInterpretationPenalty: 1,
+  },
 })
