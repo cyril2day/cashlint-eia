@@ -161,6 +161,14 @@
   line-height: 1.6;
 }
 
+.oil-lint-shell__summary-headline {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.5rem, 2.5vw, 2.15rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 .oil-lint-shell__summary-metrics {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -210,6 +218,25 @@
   background: linear-gradient(180deg, var(--surface-color-tertiary) 0%, var(--surface-color-secondary) 100%);
 }
 
+.oil-lint-shell__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.oil-lint-shell__card-status {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-color-secondary) 88%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .oil-lint-shell__card--inventory {
   border-color: color-mix(in srgb, var(--color-cyan) 36%, var(--color-border));
 }
@@ -239,9 +266,37 @@
 
 .oil-lint-shell__card-note,
 .oil-lint-shell__state-body,
-.oil-lint-shell__caveat-item {
+.oil-lint-shell__caveat-body {
   margin: 0;
   color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.oil-lint-shell__card-meta {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.oil-lint-shell__card-meta-item {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.oil-lint-shell__card-meta-label,
+.oil-lint-shell__caveat-title {
+  margin: 0;
+  color: var(--color-link);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.oil-lint-shell__card-meta-value {
+  margin: 0;
+  color: var(--text-primary);
   font-size: 0.95rem;
   line-height: 1.55;
 }
@@ -259,6 +314,18 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--surface-color-secondary) 94%, transparent);
+}
+
+.oil-lint-shell__caveat-item--info {
+  border-color: color-mix(in srgb, var(--color-cyan) 28%, var(--color-border));
+}
+
+.oil-lint-shell__caveat-item--warning {
+  border-color: color-mix(in srgb, var(--color-amber) 28%, var(--color-border));
+}
+
+.oil-lint-shell__caveat-title {
+  margin-bottom: 0.35rem;
 }
 
 .oil-lint-shell__state--empty {

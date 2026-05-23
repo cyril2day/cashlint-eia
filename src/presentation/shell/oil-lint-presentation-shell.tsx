@@ -1,84 +1,23 @@
 import React from 'react'
 
-import { oilLintPresentationDisplayLabels } from '@/presentation/display-policies'
+import { ifElse } from '@/shared/fp'
+import { type Maybe, type Some } from '@/shared/maybe'
 
 import { SummaryCardShell } from './summary-card-shell'
+import type { SummaryDisplayState, SummaryViewModel } from '../contracts/summary-view-model'
 
-type ShellCard = Readonly<{
-  readonly kind: 'inventory' | 'price' | 'system'
-  readonly title: string
-  readonly value: string
-  readonly note: string
-}>
-
-type ShellState = Readonly<{
-  readonly kind: 'empty' | 'partial' | 'error'
-  readonly title: string
-  readonly body: string
-}>
+const summaryDisplayStateLabelByKind: Readonly<Record<SummaryDisplayState, string>> = {
+  complete: 'Complete output',
+  partial: 'Partial output',
+  empty: 'Empty output',
+  error: 'Error output',
+}
 
 type ShellSectionHeaderProps = Readonly<{
   readonly eyebrow: string
   readonly title: string
   readonly titleId: string
   readonly tag: string
-}>
-
-const summaryMetrics: readonly ShellMetric[] = [
-  {
-    label: 'Condition',
-    value: oilLintPresentationDisplayLabels.pendingCondition,
-  },
-  {
-    label: 'Confidence',
-    value: oilLintPresentationDisplayLabels.pendingConfidence,
-  },
-]
-
-const summaryCards: readonly ShellCard[] = [
-  {
-    kind: 'inventory',
-    title: 'Inventory',
-    value: 'Waiting on SummaryViewModel',
-    note: 'Physical storage signal will appear here in the next phase.',
-  },
-  {
-    kind: 'price',
-    title: 'WTI price',
-    value: 'Waiting on SummaryViewModel',
-    note: 'Market context will appear here in the next phase.',
-  },
-  {
-    kind: 'system',
-    title: 'System balance',
-    value: 'Reserved for Phase 10',
-    note: 'Full balance detail is not rendered yet.',
-  },
-] 
-
-const shellStates: readonly ShellState[] = [
-  {
-    kind: 'empty',
-    title: 'Empty state',
-    body: 'This region will show an explicit empty state when no weekly analysis is available.',
-  },
-  {
-    kind: 'partial',
-    title: 'Partial state',
-    body: 'This region will show partial but useful output when some mapped values are present.',
-  },
-  {
-    kind: 'error',
-    title: 'Error state',
-    body: 'This region will show a safe display for future presentation errors and warnings.',
-  },
-] 
-
-const shellMeta: readonly string[] = ['Report week', 'Geography']
-
-type ShellMetric = Readonly<{
-  readonly label: string
-  readonly value: string
 }>
 
 function ShellSectionHeader({ eyebrow, title, titleId, tag }: ShellSectionHeaderProps) {
@@ -95,7 +34,14 @@ function ShellSectionHeader({ eyebrow, title, titleId, tag }: ShellSectionHeader
   )
 }
 
-export function OilLintPresentationShell() {
+const renderMaybeText = (value: Maybe<string>): string =>
+  ifElse(
+    (candidate: Maybe<string>): candidate is Some<string> => candidate.kind === 'Some',
+    (candidate: Some<string>) => candidate.value,
+    () => 'No additional state message.',
+  )(value)
+
+export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly viewModel: SummaryViewModel }>) {
   return (
     <main className="oil-lint-shell" aria-labelledby="oil-lint-shell-title">
       <div className="oil-lint-shell__backdrop" aria-hidden="true" />
@@ -104,46 +50,46 @@ export function OilLintPresentationShell() {
         <header className="oil-lint-shell__header">
           <p className="oil-lint-shell__eyebrow">Oil Lint</p>
           <h1 className="oil-lint-shell__title" id="oil-lint-shell-title">
-            Presentation shell for the weekly analysis experience
+            Weekly analysis presentation shell
           </h1>
           <p className="oil-lint-shell__lede">
-            This shell reserves the layout for future View Models. It keeps the presentation layer
-            separate from domain meaning and uses placeholder content only.
+            Temporary presentation-safe SummaryViewModel data is rendered here until route
+            integration is wired up.
           </p>
 
-          <dl className="oil-lint-shell__meta" aria-label="Display context placeholders">
-            {shellMeta.map(label => (
-              <div key={label} className="oil-lint-shell__meta-item">
-                <dt className="oil-lint-shell__meta-label">{label}</dt>
-                <dd className="oil-lint-shell__meta-value">
-                  {oilLintPresentationDisplayLabels.pendingSummaryValue}
-                </dd>
-              </div>
-            ))}
+          <dl className="oil-lint-shell__meta" aria-label="Display context">
+            <div className="oil-lint-shell__meta-item">
+              <dt className="oil-lint-shell__meta-label">Report week</dt>
+              <dd className="oil-lint-shell__meta-value">{viewModel.reportWeekText}</dd>
+            </div>
+            <div className="oil-lint-shell__meta-item">
+              <dt className="oil-lint-shell__meta-label">Geography</dt>
+              <dd className="oil-lint-shell__meta-value">{viewModel.geographyText}</dd>
+            </div>
           </dl>
         </header>
 
         <section className="oil-lint-shell__summary-region" aria-labelledby="oil-lint-summary-title">
           <ShellSectionHeader
             eyebrow="Weekly summary"
-            title="Summary region placeholder"
+            title={viewModel.headline}
             titleId="oil-lint-summary-title"
-            tag="Placeholder only"
+            tag={summaryDisplayStateLabelByKind[viewModel.displayState]}
           />
 
           <div className="oil-lint-shell__summary-panel">
-            <p className="oil-lint-shell__summary-label">Headline placeholder</p>
-            <p className="oil-lint-shell__summary-text">
-              Future headline and summary text will arrive here from SummaryViewModel.
-            </p>
+            <p className="oil-lint-shell__summary-label">Summary</p>
+            <p className="oil-lint-shell__summary-text">{viewModel.summary}</p>
 
             <dl className="oil-lint-shell__summary-metrics" aria-label="Summary placeholders">
-              {summaryMetrics.map(metric => (
-                <div key={metric.label} className="oil-lint-shell__summary-metric">
-                  <dt className="oil-lint-shell__summary-metric-label">{metric.label}</dt>
-                  <dd className="oil-lint-shell__summary-metric-value">{metric.value}</dd>
-                </div>
-              ))}
+              <div className="oil-lint-shell__summary-metric">
+                <dt className="oil-lint-shell__summary-metric-label">Condition</dt>
+                <dd className="oil-lint-shell__summary-metric-value">{viewModel.conditionLabel}</dd>
+              </div>
+              <div className="oil-lint-shell__summary-metric">
+                <dt className="oil-lint-shell__summary-metric-label">Confidence</dt>
+                <dd className="oil-lint-shell__summary-metric-value">{viewModel.confidenceLabel}</dd>
+              </div>
             </dl>
           </div>
         </section>
@@ -151,13 +97,13 @@ export function OilLintPresentationShell() {
         <section className="oil-lint-shell__cards-region" aria-labelledby="oil-lint-cards-title">
           <ShellSectionHeader
             eyebrow="Summary cards"
-            title="Card grid shell"
+            title="Inventory and WTI price cards"
             titleId="oil-lint-cards-title"
-            tag="Inventory, price, system balance"
+            tag="SummaryCardViewModel"
           />
 
           <ul className="oil-lint-shell__card-grid">
-            {summaryCards.map(card => (
+            {viewModel.cards.map(card => (
               <SummaryCardShell key={card.kind} {...card} />
             ))}
           </ul>
@@ -166,36 +112,34 @@ export function OilLintPresentationShell() {
         <section className="oil-lint-shell__caveats-region" aria-labelledby="oil-lint-caveats-title">
           <ShellSectionHeader
             eyebrow="Caveats"
-            title="Caveat region shell"
+            title="Presentation caveats"
             titleId="oil-lint-caveats-title"
             tag="User trust display path"
           />
 
           <ul className="oil-lint-shell__caveat-list">
-            <li className="oil-lint-shell__caveat-item">
-              Caveats will be mapped into this region from the presentation layer in a later phase.
-            </li>
-            <li className="oil-lint-shell__caveat-item">
-              This placeholder keeps the location visible without inventing analysis meaning.
-            </li>
+            {viewModel.caveats.map(caveat => (
+              <li key={caveat.kind} className={`oil-lint-shell__caveat-item oil-lint-shell__caveat-item--${caveat.severity}`}>
+                <p className="oil-lint-shell__caveat-title">{caveat.title}</p>
+                <p className="oil-lint-shell__caveat-body">{caveat.message}</p>
+              </li>
+            ))}
           </ul>
         </section>
 
         <section className="oil-lint-shell__states-region" aria-labelledby="oil-lint-states-title">
           <ShellSectionHeader
-            eyebrow="States"
-            title="Error, empty, and partial states"
+            eyebrow="State"
+            title="Display state"
             titleId="oil-lint-states-title"
-            tag="Accessible placeholders"
+            tag={summaryDisplayStateLabelByKind[viewModel.displayState]}
           />
 
           <div className="oil-lint-shell__state-grid">
-            {shellStates.map(state => (
-              <section key={state.kind} className={`oil-lint-shell__state oil-lint-shell__state--${state.kind}`}>
-                <p className="oil-lint-shell__state-title">{state.title}</p>
-                <p className="oil-lint-shell__state-body">{state.body}</p>
-              </section>
-            ))}
+            <section className={`oil-lint-shell__state oil-lint-shell__state--${viewModel.displayState}`}>
+              <p className="oil-lint-shell__state-title">{summaryDisplayStateLabelByKind[viewModel.displayState]}</p>
+              <p className="oil-lint-shell__state-body">{renderMaybeText(viewModel.displayStateMessage)}</p>
+            </section>
           </div>
         </section>
       </article>

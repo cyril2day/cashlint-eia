@@ -3,16 +3,21 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { OilLintPresentationShell } from '@/presentation'
+import { oilLintPresentationViewModel } from '@/presentation/shell/oil-lint-presentation-view-model'
 
 describe('OilLintPresentationShell', () => {
   it('renders the presentation shell regions', () => {
-    const markup = renderToStaticMarkup(<OilLintPresentationShell />)
+    const markup = renderToStaticMarkup(<OilLintPresentationShell viewModel={oilLintPresentationViewModel} />)
 
-    expect(markup).toContain('Presentation shell for the weekly analysis experience')
-    expect(markup).toContain('Summary region placeholder')
-    expect(markup).toContain('Card grid shell')
-    expect(markup).toContain('Caveat region shell')
-    expect(markup).toContain('Error, empty, and partial states')
-    expect(markup).toContain('Pending SummaryViewModel')
+    expect(markup).toContain('Weekly analysis presentation shell')
+    expect(markup).toContain('Walking-skeleton summary ready for presentation')
+    expect(markup).toContain('Inventory and WTI price cards')
+    expect(markup).toContain('Presentation caveats')
+    expect(markup).toContain('Display state')
+    expect(markup).toContain('Condition pending')
+    expect(markup).toContain('Confidence pending')
+    expect(markup).toContain('80 ThousandBarrels')
+    expect(markup).toContain('72 USDPerBarrel')
+    expect(markup).toContain('Full system balance not computed')
   })
 })
