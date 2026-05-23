@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import '@/app/globals.scss'
 
 export const metadata: Metadata = {
-  title: 'Oil Lint',
-  description: 'Project foundation for the Oil Lint application.'
+  title: 'Oil Lint | Presentation Shell',
+  description: 'Presentation shell for the Oil Lint weekly analysis experience.'
 }
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body>{children}</body>
     </html>
   )

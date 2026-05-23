@@ -1,11 +1,11 @@
-import { allPass, anyPass, cond, converge, find, ifElse, pipe, pipeWith } from '@/shared/fp'
+import { allPass, anyPass, cond, converge, find, ifElse, isNonEmptyString, pipe, pipeWith } from '@/shared/fp'
 import { bindResult, failure, mapResult, success, type Result, combineResults } from '@/shared/result'
-import { map as mapMaybe, unwrap } from '@/shared/maybe'
+import { isNone, map as mapMaybe, unwrap } from '@/shared/maybe'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import type { ContextualizedSignal, ContextualizedSignalSet } from '@/contexts/interpretation/model'
 import { type Trend } from '@/contexts/interpretation/model/trend'
+import type { TrendDirectionLabel } from '@/contexts/measurement/model/trend-direction'
 import { getKey, hasKey } from '@/shared/object'
-import { formatTrendDirection } from '@/contexts/measurement/model/trend-direction'
 
 import type { AnalysisPolicies } from '../policies'
 import {
@@ -71,8 +71,6 @@ type AnalysisCompositionWithSummary = AnalysisCompositionWithHeadline & Readonly
 type AnalysisCompositionWithExplanation = AnalysisCompositionWithSummary & Readonly<{
   readonly explanation: string
 }>
-
-const isNonEmptyString = (value: string): boolean => value.trim().length > 0
 
 const validateNarrativeTone = (
   text: string,
@@ -146,10 +144,17 @@ export const selectWalkingSkeletonSignals = (signals: AnalysisSignalInput): Resu
   return combineResults(inventoryResult, priceResult, (inventory, price) => ({ inventory, price }))
 }
 
-const getTrendDirection = (signal: ContextualizedSignal): string | undefined => {
-  const trend = signal.trend
+const getTrendDirection = (signal: ContextualizedSignal): TrendDirectionLabel | undefined =>
+  unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(signal.trend))
 
-  return unwrap(mapMaybe((candidate: Trend) => formatTrendDirection(candidate.direction))(trend))
+const buildPropagatedSignalCaveats = (signal: ContextualizedSignal): readonly AnalysisCaveat[] => {
+  const propagatedCaveats = signal.caveats.map(createPropagatedInterpretationCaveat)
+
+  return ifElse(
+    isNone,
+    () => [...propagatedCaveats, createPropagatedInterpretationCaveat(createTrendNotComputedCaveat(signal.signal.identity))],
+    () => propagatedCaveats,
+  )(signal.trend)
 }
 
 export const classifyWalkingSkeletonSignalAlignment = (
@@ -272,15 +277,11 @@ const resolveDirectionalPhrase = (
   )(descriptors)
 
 const describeInventory = (signal: ContextualizedSignal): string => {
-  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(signal.trend))
-
-  return resolveDirectionalPhrase(direction, inventoryDirectionDescriptors, 'Crude inventory trend was not clear')
+  return resolveDirectionalPhrase(getTrendDirection(signal), inventoryDirectionDescriptors, 'Crude inventory trend was not clear')
 }
 
 const describePrice = (signal: ContextualizedSignal): string => {
-  const direction = unwrap(mapMaybe((candidate: Trend) => candidate.direction.direction)(signal.trend))
-
-  return resolveDirectionalPhrase(direction, priceDirectionDescriptors, 'WTI trend was not clear')
+  return resolveDirectionalPhrase(getTrendDirection(signal), priceDirectionDescriptors, 'WTI trend was not clear')
 }
 
 const describeAlignment = (alignment: AnalysisSignalAlignment): string =>
@@ -319,34 +320,26 @@ const dedupeCaveats = (caveats: readonly AnalysisCaveat[]): readonly AnalysisCav
   })
 }
 
+const composeNarrative = (...parts: readonly string[]): string => parts.filter(isNonEmptyString).join(' ')
+
+const formatNonPropagatedCaveatReasons = (caveats: readonly AnalysisCaveat[]): string =>
+  caveats
+    .filter((caveat): caveat is Exclude<AnalysisCaveat, { readonly kind: 'PropagatedInterpretationCaveat' }> =>
+      caveat.kind !== 'PropagatedInterpretationCaveat',
+    )
+    .map(caveat => caveat.reason)
+    .join(' ')
+
 export const buildWalkingSkeletonCaveats = (
   signals: AnalysisKeySignals,
   policies: AnalysisPolicies,
 ): readonly AnalysisCaveat[] => {
-  const propagatedFromInventory = signals.inventory.caveats.map(createPropagatedInterpretationCaveat)
-  const propagatedFromPrice = signals.price.caveats.map(createPropagatedInterpretationCaveat)
-
-  const explicitInventoryTrendMissing = unwrap(signals.inventory.trend) === undefined
-  const explicitPriceTrendMissing = unwrap(signals.price.trend) === undefined
-
-  const propagatedFromInventoryFinal = ifElse(
-    () => explicitInventoryTrendMissing,
-    () => [...propagatedFromInventory, createPropagatedInterpretationCaveat(createTrendNotComputedCaveat(signals.inventory.signal.identity))],
-    () => propagatedFromInventory,
-  )()
-
-  const propagatedFromPriceFinal = ifElse(
-    () => explicitPriceTrendMissing,
-    () => [...propagatedFromPrice, createPropagatedInterpretationCaveat(createTrendNotComputedCaveat(signals.price.signal.identity))],
-    () => propagatedFromPrice,
-  )()
-
   return dedupeCaveats([
     createFullSystemBalanceNotComputedCaveat(policies.fullSystemBalanceNotComputedReason),
     createRefineryDataNotIncludedCaveat(policies.refineryDataNotIncludedReason),
     createSupplyDataNotIncludedCaveat(policies.supplyDataNotIncludedReason),
-    ...propagatedFromInventoryFinal,
-    ...propagatedFromPriceFinal,
+    ...buildPropagatedSignalCaveats(signals.inventory),
+    ...buildPropagatedSignalCaveats(signals.price),
   ])
 }
 
@@ -364,7 +357,7 @@ export const buildWalkingSkeletonSummary = (
   signals: AnalysisKeySignals,
   alignment: AnalysisSignalAlignment,
   caveats: readonly AnalysisCaveat[],
-  _policies: AnalysisPolicies,
+  policies: AnalysisPolicies,
 ): Result<string, AnalysisError> => {
   const note = cond<[], string>([
     [
@@ -375,14 +368,13 @@ export const buildWalkingSkeletonSummary = (
     [() => true, () => 'The trend context is incomplete, so the walking skeleton stays cautious.'],
   ])()
 
-  const caveatNote = caveats
-    .filter((caveat) => caveat.kind !== 'PropagatedInterpretationCaveat')
-    .map((caveat) => caveat.reason)
-    .join(' ')
+  const summary = composeNarrative(
+    `${describeInventory(signals.inventory)} while ${describePrice(signals.price)}.`,
+    note,
+    formatNonPropagatedCaveatReasons(caveats),
+  )
 
-  const summary = `${describeInventory(signals.inventory)} while ${describePrice(signals.price)}. ${note} ${caveatNote}`.trim()
-
-  return validateWalkingSkeletonNarrative(summary, _policies, 'summary', makeUnableToComposeSummaryError)
+  return validateWalkingSkeletonNarrative(summary, policies, 'summary', makeUnableToComposeSummaryError)
 }
 
 const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
@@ -405,7 +397,14 @@ export const buildWalkingSkeletonExplanation = (
     () => '',
   )()
 
-  const explanation = `${describeInventory(signals.inventory)} is the physical storage signal, and ${describePrice(signals.price)} is market context. ${describeAlignment(alignment)}. ${policies.fullSystemBalanceNotComputedReason} ${policies.refineryDataNotIncludedReason} ${policies.supplyDataNotIncludedReason} ${trendNote}`.trim()
+  const explanation = composeNarrative(
+    `${describeInventory(signals.inventory)} is the physical storage signal, and ${describePrice(signals.price)} is market context.`,
+    `${describeAlignment(alignment)}.`,
+    policies.fullSystemBalanceNotComputedReason,
+    policies.refineryDataNotIncludedReason,
+    policies.supplyDataNotIncludedReason,
+    trendNote,
+  )
 
   return validateWalkingSkeletonNarrative(explanation, policies, 'explanation', makeUnableToComposeExplanationError)
 }
