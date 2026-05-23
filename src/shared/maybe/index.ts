@@ -12,6 +12,19 @@ export const isSome = <T>(m: Maybe<T>): m is Some<T> => m.kind === 'Some'
 
 export const isNone = <T>(m: Maybe<T>): m is None => m.kind === 'None'
 
+export const matchMaybe = <T, R>(
+  cases: Readonly<{
+    readonly Some: (value: T) => R
+    readonly None: () => R
+  }>,
+) =>
+  (m: Maybe<T>): R =>
+    ifElse(
+      isSome<T>,
+      candidate => cases.Some(candidate.value),
+      cases.None,
+    )(m)
+
 export const map = <A, B>(fn: (a: A) => B) =>
   ifElse(
     (m: Maybe<A>): m is Some<A> => m.kind === 'Some',
@@ -25,5 +38,3 @@ export const unwrap = <T>(m: Maybe<T>): T | undefined =>
     (candidate: Some<T>) => candidate.value,
     () => undefined,
   )(m)
-
-
