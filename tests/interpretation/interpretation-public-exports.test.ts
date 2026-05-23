@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { contextualizeWalkingSkeletonSignalSet, createWalkingSkeletonInterpretationPolicies, buildPreviousObservationMap } from '@/contexts/interpretation'
+import { contextualizeFullSignalSet, contextualizeWalkingSkeletonSignalSet, createWalkingSkeletonInterpretationPolicies, buildPreviousObservationMap } from '@/contexts/interpretation'
 import { parseComparisonWindow, parseGeographyScope, parseInventoryProduct, parseMeasurementKind, parseMeasurementUnit, parsePetroleumSlice, parsePriceKind, parseReportWeek } from '@/contexts/measurement/model'
-import { createInventorySignalIdentity, createPriceSignalIdentity, createHistoricalObservation, createInventorySignal, createPriceSignal } from '@/contexts/interpretation'
+import { createHistoricalObservation, createHistoricalSeries, createInventorySignal, createInventorySignalIdentity, createPriceSignal, createPriceSignalIdentity } from '@/contexts/interpretation'
 import { ifElse } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 
@@ -43,9 +43,15 @@ describe('Interpretation public exports', () => {
       createHistoricalObservation(inventoryIdentity, reportWeek, 100, inventoryUnit),
       createHistoricalObservation(priceIdentity, reportWeek, 75, priceUnit),
     ])
+    const historicalSeries = {
+      inventory: createHistoricalSeries(inventoryIdentity, inventoryUnit, [createHistoricalObservation(inventoryIdentity, reportWeek, 100, inventoryUnit)]),
+      price: createHistoricalSeries(priceIdentity, priceUnit, [createHistoricalObservation(priceIdentity, reportWeek, 75, priceUnit)]),
+    }
 
     expect(inventorySignal.identity.kind).toBe('Inventory')
     expect(priceSignal.identity.kind).toBe('Price')
     expect(previousObservations).toBeDefined()
+    expect(typeof contextualizeFullSignalSet).toBe('function')
+    expect(historicalSeries.inventory.identity.kind).toBe('Inventory')
   })
 })

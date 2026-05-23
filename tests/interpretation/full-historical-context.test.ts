@@ -15,15 +15,18 @@ import {
   calculateBaseline,
   calculateTrend,
   contextualizeFullSignal,
+  contextualizeFullSignalSet,
   createHistoricalObservation,
   createHistoricalSeries,
   createInventorySignal,
   createInventorySignalIdentity,
+  createPriceSignal,
   createPriceSignalIdentity,
   createWalkingSkeletonInterpretationPolicies,
   detectAnomaly,
   validateHistoricalSeries,
   type HistoricalSeries,
+  type HistoricalSignalSet,
   type Signal,
 } from '@/contexts/interpretation'
 import { ifElse } from '@/shared/fp'
@@ -43,6 +46,10 @@ const inventoryProduct = () => unwrapSuccess(parseInventoryProduct('CrudeOil'))
 const inventoryKind = () => unwrapSuccess(parseMeasurementKind('CrudeStocks'))
 const inventorySlice = () => unwrapSuccess(parsePetroleumSlice('Inventory'))
 const inventoryUnit = () => unwrapSuccess(parseMeasurementUnit('ThousandBarrels'))
+const priceKind = () => unwrapSuccess(parsePriceKind('WTISpot'))
+const priceMeasurementKind = () => unwrapSuccess(parseMeasurementKind('WTISpotPrice'))
+const priceSlice = () => unwrapSuccess(parsePetroleumSlice('Price'))
+const priceUnit = () => unwrapSuccess(parseMeasurementUnit('USDPerBarrel'))
 const week = (value: string) => unwrapSuccess(parseReportWeek(value))
 
 const inventoryIdentity = () =>
@@ -61,6 +68,12 @@ const inventorySignal = (value: number): Signal =>
 const observation = (date: string, value: number) =>
   createHistoricalObservation(inventoryIdentity(), week(date), value, inventoryUnit())
 
+const priceIdentity = () =>
+  createPriceSignalIdentity(geography(), priceMeasurementKind(), priceSlice(), priceKind())
+
+const priceObservation = (date: string, value: number) =>
+  createHistoricalObservation(priceIdentity(), week(date), value, priceUnit())
+
 const history = (values: readonly number[]): HistoricalSeries =>
   createHistoricalSeries(inventoryIdentity(), inventoryUnit(), [
     observation('2026-05-12T00:00:00.000Z', values[0]),
@@ -68,6 +81,21 @@ const history = (values: readonly number[]): HistoricalSeries =>
     observation('2026-04-28T00:00:00.000Z', values[2]),
     observation('2026-04-21T00:00:00.000Z', values[3]),
   ])
+
+const thinPriceHistory = (): HistoricalSeries =>
+  createHistoricalSeries(priceIdentity(), priceUnit(), [
+    priceObservation('2026-05-12T00:00:00.000Z', 75),
+  ])
+
+const priceSignal = (value: number): Signal =>
+  createPriceSignal(
+    priceIdentity(),
+    week('2026-05-19T00:00:00.000Z'),
+    geography(),
+    value,
+    priceUnit(),
+    priceSlice(),
+  )
 
 const oneWeekPolicy = () =>
   createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 1, 1)
@@ -180,5 +208,24 @@ describe('Full contextualized signal interpretation', () => {
     expect(contextualized.baseline.kind).toBe('NotComputed')
     expect(contextualized.anomaly.kind).toBe('NotComputed')
     expect(contextualized.caveats.map(caveat => caveat.kind)).toContain('BaselineNotComputed')
+  })
+
+  it('contextualizes a full signal set and preserves per-signal caveats', () => {
+    const signals = {
+      inventory: inventorySignal(110),
+      price: priceSignal(70),
+    }
+    const seriesSet: HistoricalSignalSet = {
+      inventory: history([100, 102, 98, 100]),
+      price: thinPriceHistory(),
+    }
+
+    const contextualized = unwrapSuccess(contextualizeFullSignalSet(signals, seriesSet, oneWeekPolicy()))
+
+    expect(contextualized.inventory.baseline.kind).toBe('Computed')
+    expect(contextualized.inventory.anomaly.kind).toBe('Anomalous')
+    expect(contextualized.price.baseline.kind).toBe('NotComputed')
+    expect(contextualized.price.anomaly.kind).toBe('NotComputed')
+    expect(contextualized.price.caveats.map(caveat => caveat.kind)).toContain('BaselineNotComputed')
   })
 })
