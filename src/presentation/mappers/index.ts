@@ -1,0 +1,1 @@
+export const oilLintPresentationMapperScope = 'SummaryViewModel mapping will live here.'
