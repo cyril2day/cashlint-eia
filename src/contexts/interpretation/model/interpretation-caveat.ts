@@ -8,7 +8,11 @@ export type InterpretationCaveat =
   | Readonly<{ readonly kind: 'IdentityMismatch'; readonly expectedIdentity: SignalIdentity; readonly actualIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
   | Readonly<{ readonly kind: 'UnitMismatch'; readonly signalIdentity: SignalIdentity; readonly expectedUnit: string; readonly actualUnit: string; readonly [interpretationCaveatBrand]: true }>
   | Readonly<{ readonly kind: 'TrendNotComputed'; readonly signalIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
+  | Readonly<{ readonly kind: 'BaselineNotComputed'; readonly signalIdentity: SignalIdentity; readonly reason: string; readonly [interpretationCaveatBrand]: true }>
   | Readonly<{ readonly kind: 'AnomalyNotComputed'; readonly signalIdentity: SignalIdentity; readonly reason: string; readonly [interpretationCaveatBrand]: true }>
+  | Readonly<{ readonly kind: 'InsufficientBaselineHistory'; readonly signalIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
+  | Readonly<{ readonly kind: 'DuplicateHistoryRejected'; readonly signalIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
+  | Readonly<{ readonly kind: 'UnsupportedComparisonWindow'; readonly signalIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
   | Readonly<{ readonly kind: 'ComparisonWindowUnavailable'; readonly signalIdentity: SignalIdentity; readonly [interpretationCaveatBrand]: true }>
 
 export const createMissingPreviousObservationCaveat = (signalIdentity: SignalIdentity): InterpretationCaveat => ({
@@ -53,6 +57,35 @@ export const createAnomalyNotComputedCaveat = (signalIdentity: SignalIdentity, r
   kind: 'AnomalyNotComputed',
   signalIdentity,
   reason,
+  [interpretationCaveatBrand]: true,
+  ...brand(interpretationCaveatBrand),
+})
+
+export const createBaselineNotComputedCaveat = (signalIdentity: SignalIdentity, reason: string): InterpretationCaveat => ({
+  kind: 'BaselineNotComputed',
+  signalIdentity,
+  reason,
+  [interpretationCaveatBrand]: true,
+  ...brand(interpretationCaveatBrand),
+})
+
+export const createInsufficientBaselineHistoryCaveat = (signalIdentity: SignalIdentity): InterpretationCaveat => ({
+  kind: 'InsufficientBaselineHistory',
+  signalIdentity,
+  [interpretationCaveatBrand]: true,
+  ...brand(interpretationCaveatBrand),
+})
+
+export const createDuplicateHistoryRejectedCaveat = (signalIdentity: SignalIdentity): InterpretationCaveat => ({
+  kind: 'DuplicateHistoryRejected',
+  signalIdentity,
+  [interpretationCaveatBrand]: true,
+  ...brand(interpretationCaveatBrand),
+})
+
+export const createUnsupportedComparisonWindowCaveat = (signalIdentity: SignalIdentity): InterpretationCaveat => ({
+  kind: 'UnsupportedComparisonWindow',
+  signalIdentity,
   [interpretationCaveatBrand]: true,
   ...brand(interpretationCaveatBrand),
 })

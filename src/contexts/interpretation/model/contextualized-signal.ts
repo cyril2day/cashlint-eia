@@ -4,12 +4,14 @@ import { formatSignal, type Signal } from './signal'
 import { type Trend } from './trend'
 import { type InterpretationAnomalyState } from './anomaly-state'
 import { type InterpretationCaveat } from './interpretation-caveat'
+import { type BaselineResult } from './baseline'
 
 const contextualizedSignalBrand = Symbol('ContextualizedSignal')
 
 export type ContextualizedSignal = Readonly<{
   readonly signal: Signal
   readonly trend: Maybe<Trend>
+  readonly baseline: BaselineResult
   readonly anomaly: InterpretationAnomalyState
   readonly caveats: readonly InterpretationCaveat[]
   readonly [contextualizedSignalBrand]: true
@@ -18,11 +20,13 @@ export type ContextualizedSignal = Readonly<{
 export const createContextualizedSignal = (
   signal: Signal,
   trend: Maybe<Trend>,
+  baseline: BaselineResult,
   anomaly: InterpretationAnomalyState,
   caveats: readonly InterpretationCaveat[],
 ): ContextualizedSignal => ({
   signal,
   trend,
+  baseline,
   anomaly,
   caveats,
   [contextualizedSignalBrand]: true,
@@ -33,14 +37,14 @@ export const createContextualizedSignalWithoutTrend = (
   signal: Signal,
   anomaly: InterpretationAnomalyState,
   caveats: readonly InterpretationCaveat[],
-): ContextualizedSignal => createContextualizedSignal(signal, none(), anomaly, caveats)
+): ContextualizedSignal => createContextualizedSignal(signal, none(), { kind: 'NotComputed', reason: 'NotComputed' }, anomaly, caveats)
 
 export const createContextualizedSignalWithTrend = (
   signal: Signal,
   trend: Trend,
   anomaly: InterpretationAnomalyState,
   caveats: readonly InterpretationCaveat[],
-): ContextualizedSignal => createContextualizedSignal(signal, some(trend), anomaly, caveats)
+): ContextualizedSignal => createContextualizedSignal(signal, some(trend), { kind: 'NotComputed', reason: 'NotComputed' }, anomaly, caveats)
 
 export const formatContextualizedSignal = (contextualizedSignal: ContextualizedSignal): string =>
   [formatSignal(contextualizedSignal.signal), contextualizedSignal.trend.kind, contextualizedSignal.anomaly.kind].join('|')

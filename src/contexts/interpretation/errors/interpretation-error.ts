@@ -9,6 +9,14 @@ export type InterpretationError =
   | Readonly<{ readonly kind: 'MissingFlatThreshold'; readonly signalKind: 'Inventory' | 'Price'; readonly signalIdentity: SignalIdentity }>
   | Readonly<{ readonly kind: 'TrendComputationUndefined'; readonly signalIdentity: SignalIdentity }>
   | Readonly<{ readonly kind: 'MissingRequiredSignal'; readonly missing: 'inventory' | 'price' }>
+  | Readonly<{ readonly kind: 'HistoricalSeriesInvalid'; readonly signalIdentity: SignalIdentity; readonly input: string }>
+  | Readonly<{ readonly kind: 'InsufficientHistory'; readonly signalIdentity: SignalIdentity; readonly required: number; readonly actual: number }>
+  | Readonly<{ readonly kind: 'BaselineWindowTooShort'; readonly signalIdentity: SignalIdentity; readonly required: number; readonly actual: number }>
+  | Readonly<{ readonly kind: 'BaselineDispersionUnavailable'; readonly signalIdentity: SignalIdentity }>
+  | Readonly<{ readonly kind: 'AnomalyThresholdInvalid'; readonly signalIdentity: SignalIdentity; readonly input: string }>
+  | Readonly<{ readonly kind: 'UnsupportedComparisonWindow'; readonly input: string }>
+  | Readonly<{ readonly kind: 'DuplicateObservation'; readonly signalIdentity: SignalIdentity; readonly input: string }>
+  | Readonly<{ readonly kind: 'UnableToContextualizeSignal'; readonly signalIdentity: SignalIdentity }>
 
 export const makeMissingPreviousObservationError = (signalIdentity: SignalIdentity): InterpretationError => ({
   kind: 'MissingPreviousObservation',
@@ -57,6 +65,70 @@ export const makeTrendComputationUndefinedError = (signalIdentity: SignalIdentit
 export const makeMissingRequiredSignalError = (missing: 'inventory' | 'price'): InterpretationError => ({
   kind: 'MissingRequiredSignal',
   missing,
+})
+
+export const makeHistoricalSeriesInvalidError = (
+  signalIdentity: SignalIdentity,
+  input: string,
+): InterpretationError => ({
+  kind: 'HistoricalSeriesInvalid',
+  signalIdentity,
+  input,
+})
+
+export const makeInsufficientHistoryError = (
+  signalIdentity: SignalIdentity,
+  required: number,
+  actual: number,
+): InterpretationError => ({
+  kind: 'InsufficientHistory',
+  signalIdentity,
+  required,
+  actual,
+})
+
+export const makeBaselineWindowTooShortError = (
+  signalIdentity: SignalIdentity,
+  required: number,
+  actual: number,
+): InterpretationError => ({
+  kind: 'BaselineWindowTooShort',
+  signalIdentity,
+  required,
+  actual,
+})
+
+export const makeBaselineDispersionUnavailableError = (signalIdentity: SignalIdentity): InterpretationError => ({
+  kind: 'BaselineDispersionUnavailable',
+  signalIdentity,
+})
+
+export const makeAnomalyThresholdInvalidError = (
+  signalIdentity: SignalIdentity,
+  input: string,
+): InterpretationError => ({
+  kind: 'AnomalyThresholdInvalid',
+  signalIdentity,
+  input,
+})
+
+export const makeUnsupportedComparisonWindowError = (input: unknown): InterpretationError => ({
+  kind: 'UnsupportedComparisonWindow',
+  input: String(input),
+})
+
+export const makeDuplicateObservationError = (
+  signalIdentity: SignalIdentity,
+  input: string,
+): InterpretationError => ({
+  kind: 'DuplicateObservation',
+  signalIdentity,
+  input,
+})
+
+export const makeUnableToContextualizeSignalError = (signalIdentity: SignalIdentity): InterpretationError => ({
+  kind: 'UnableToContextualizeSignal',
+  signalIdentity,
 })
 
 export const formatInterpretationError = (error: InterpretationError): string =>

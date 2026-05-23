@@ -1,6 +1,7 @@
 import type { AnalysisCondition } from '@/contexts/analysis/model/analysis-condition'
 import type { AnalysisConfidence } from '@/contexts/analysis/model/analysis-confidence'
 import type { InterpretationAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
+import { cond } from '@/shared/fp'
 import { map } from '@/shared/maybe'
 import type { Trend } from '@/contexts/interpretation/model/trend'
 import { formatTrendDirection } from '@/contexts/measurement/model/trend-direction'
@@ -28,4 +29,8 @@ export const formatSummaryConfidenceLabel = (confidence: AnalysisConfidence): st
 export const formatSummaryTrendLabel = map((trend: Trend) => formatTrendDirection(trend.direction))
 
 export const formatSummaryAnomalyLabel = (anomaly: InterpretationAnomalyState): string =>
-  anomaly.reason
+  cond<[InterpretationAnomalyState], string>([
+    [value => value.kind === 'NotComputed', value => String(Reflect.get(value, 'reason'))],
+    [value => value.kind === 'Anomalous', value => String(Reflect.get(value, 'direction'))],
+    [() => true, () => 'Normal'],
+  ])(anomaly)
