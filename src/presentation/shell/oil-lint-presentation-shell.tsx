@@ -1,10 +1,8 @@
 import React from 'react'
 
-import { ifElse } from '@/shared/fp'
-import { type Maybe, type Some } from '@/shared/maybe'
-
 import { SummaryCardShell } from './summary-card-shell'
 import type { SummaryDisplayState, SummaryViewModel } from '../contracts/summary-view-model'
+import { renderMaybeText } from '../utils/render-maybe-text'
 
 const summaryDisplayStateLabelByKind: Readonly<Record<SummaryDisplayState, string>> = {
   complete: 'Complete output',
@@ -33,13 +31,6 @@ function ShellSectionHeader({ eyebrow, title, titleId, tag }: ShellSectionHeader
     </div>
   )
 }
-
-const renderMaybeText = (value: Maybe<string>): string =>
-  ifElse(
-    (candidate: Maybe<string>): candidate is Some<string> => candidate.kind === 'Some',
-    (candidate: Some<string>) => candidate.value,
-    () => 'No additional state message.',
-  )(value)
 
 export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly viewModel: SummaryViewModel }>) {
   return (
@@ -138,7 +129,7 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
           <div className="oil-lint-shell__state-grid">
             <section className={`oil-lint-shell__state oil-lint-shell__state--${viewModel.displayState}`}>
               <p className="oil-lint-shell__state-title">{summaryDisplayStateLabelByKind[viewModel.displayState]}</p>
-              <p className="oil-lint-shell__state-body">{renderMaybeText(viewModel.displayStateMessage)}</p>
+              <p className="oil-lint-shell__state-body">{renderMaybeText('No additional state message.')(viewModel.displayStateMessage)}</p>
             </section>
           </div>
         </section>

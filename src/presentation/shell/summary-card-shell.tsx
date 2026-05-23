@@ -1,9 +1,7 @@
 import React from 'react'
 
-import { ifElse } from '@/shared/fp'
-import { type Maybe, type Some } from '@/shared/maybe'
-
 import type { SummaryCardViewModel } from '../contracts/summary-card-view-model'
+import { renderMaybeText } from '../utils/render-maybe-text'
 
 const summaryCardModifierByKind: Readonly<Record<SummaryCardViewModel['kind'], string>> = {
   inventory: 'oil-lint-shell__card--inventory',
@@ -16,19 +14,12 @@ type CardMetaEntry = Readonly<{
   readonly value: string
 }>
 
-const renderMaybeText = (value: Maybe<string>): string =>
-  ifElse(
-    (candidate: Maybe<string>): candidate is Some<string> => candidate.kind === 'Some',
-    (candidate: Some<string>) => candidate.value,
-    () => 'Unavailable',
-  )(value)
-
 const createCardMetaEntries = (card: SummaryCardViewModel): readonly CardMetaEntry[] => [
-  { label: 'Subtitle', value: renderMaybeText(card.subtitleText) },
-  { label: 'Trend', value: renderMaybeText(card.trendLabel) },
-  { label: 'Anomaly', value: renderMaybeText(card.anomalyLabel) },
-  { label: 'Caveat', value: renderMaybeText(card.caveatLabel) },
-  { label: 'Drilldown', value: renderMaybeText(card.drilldownTarget) },
+  { label: 'Subtitle', value: renderMaybeText('Unavailable')(card.subtitleText) },
+  { label: 'Trend', value: renderMaybeText('Unavailable')(card.trendLabel) },
+  { label: 'Anomaly', value: renderMaybeText('Unavailable')(card.anomalyLabel) },
+  { label: 'Caveat', value: renderMaybeText('Unavailable')(card.caveatLabel) },
+  { label: 'Drilldown', value: renderMaybeText('Unavailable')(card.drilldownTarget) },
 ]
 
 export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitleText, trendLabel, anomalyLabel, caveatLabel, drilldownTarget }: SummaryCardViewModel) {

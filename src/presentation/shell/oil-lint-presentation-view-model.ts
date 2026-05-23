@@ -1,4 +1,5 @@
 import { oilLintPresentationDisplayLabels } from '@/presentation/display-policies'
+import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
 
 import type { PresentationCaveatViewModel } from '../contracts/presentation-caveat-view-model'
@@ -8,6 +9,16 @@ import type { SummaryViewModel } from '../contracts/summary-view-model'
 const reportWeekText = '2026-05-19'
 const geographyText = 'US Total'
 const summarySubtitleText = `${reportWeekText} · ${geographyText}`
+
+const summaryDisplayStateMessageByKind = cond<
+  [SummaryViewModel['displayState']],
+  string
+>([
+  [candidate => candidate === 'empty', () => 'No supported summary data is available for this scope.'],
+  [candidate => candidate === 'partial', () => 'Walking-skeleton output includes caveats.'],
+  [candidate => candidate === 'error', () => 'Safe error content is available when needed.'],
+  [() => true, () => 'Summary output is complete.'],
+])
 
 const inventoryCard: SummaryCardViewModel = {
   kind: 'inventory',
@@ -54,7 +65,7 @@ const presentationCaveats: readonly PresentationCaveatViewModel[] = [
   },
 ]
 
-export const oilLintPresentationViewModel: SummaryViewModel = {
+export const createOilLintPresentationViewModel = (displayState: SummaryViewModel['displayState']): SummaryViewModel => ({
   reportWeekText,
   geographyText,
   headline: 'Walking-skeleton summary ready for presentation',
@@ -63,6 +74,8 @@ export const oilLintPresentationViewModel: SummaryViewModel = {
   confidenceLabel: oilLintPresentationDisplayLabels.pendingConfidence,
   cards: [inventoryCard, priceCard],
   caveats: presentationCaveats,
-  displayState: 'partial',
-  displayStateMessage: some('Walking-skeleton output includes caveats.'),
-}
+  displayState,
+  displayStateMessage: some(summaryDisplayStateMessageByKind(displayState)),
+})
+
+export const oilLintPresentationViewModel: SummaryViewModel = createOilLintPresentationViewModel('partial')

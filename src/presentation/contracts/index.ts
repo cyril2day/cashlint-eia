@@ -1,5 +1,6 @@
 export * from './summary-card-view-model'
 export * from './presentation-caveat-view-model'
+export * from './presentation-error-view-model'
 export * from './summary-view-model'
 
 export const oilLintPresentationBemRules: readonly string[] = [
