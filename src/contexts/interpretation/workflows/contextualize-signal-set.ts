@@ -9,8 +9,8 @@ export const contextualizeWalkingSkeletonSignalSet = (
   signals: CurrentSignalSet,
   previousObservations: PreviousObservationMap,
   policies: InterpretationPolicies,
-): Result<ContextualizedSignalSet, InterpretationError> => {
-  return combineResults(
+): Result<ContextualizedSignalSet, InterpretationError> =>
+  combineResults(
     contextualizeSignal(signals.inventory, previousObservations, policies),
     contextualizeSignal(signals.price, previousObservations, policies),
     (inventory, price) => ({
@@ -18,4 +18,3 @@ export const contextualizeWalkingSkeletonSignalSet = (
       price,
     }),
   )
-}

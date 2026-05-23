@@ -1,6 +1,5 @@
 import { cond, ifElse, pipeWith } from '@/shared/fp'
-import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
-import { failure, mapError, mapResult, sequenceResults, success, type Result } from '@/shared/result'
+import { bindResultStep, failure, mapError, mapResult, sequenceResults, success, type Result } from '@/shared/result'
 import { parseReportWeek, formatReportWeekIso, type ReportWeek } from '@/contexts/measurement/model/report-week'
 import { parseGeographyScope, formatGeographyScope, type GeographyScope } from '@/contexts/measurement/model/geography-scope'
 import { parseInventoryMeasurement, type InventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
@@ -23,6 +22,8 @@ const makeInvalidWeeklyFactsInputError = (input: unknown): WeeklyFactsValidation
   kind: 'InvalidWeeklyPetroleumFactsInput',
   input: String(input),
 })
+const mapToInvalidWeeklyFactsInput = (input: unknown) => (): WeeklyFactsValidationError =>
+  makeInvalidWeeklyFactsInputError(input)
 
 const makeMissingInventory = (): WeeklyFactsValidationError => ({ kind: 'MissingRequiredMeasurement', missing: 'inventory' })
 
@@ -33,7 +34,7 @@ const isReadonlyUnknownArray = (value: unknown): value is readonly unknown[] => 
 const validateInventoryArray = (values: readonly unknown[]): Result<readonly InventoryMeasurement[], WeeklyFactsValidationError> =>
   cond([
     [(inventoryValues: readonly unknown[]) => inventoryValues.length === 0, () => failure(makeMissingInventory())],
-    [() => true, (inventoryValues: readonly unknown[]) => mapError(sequenceResults(inventoryValues.map(parseInventoryMeasurement)), () => makeInvalidWeeklyFactsInputError(inventoryValues))],
+    [() => true, (inventoryValues: readonly unknown[]) => mapError(sequenceResults(inventoryValues.map(parseInventoryMeasurement)), mapToInvalidWeeklyFactsInput(inventoryValues))],
   ])(values)
 
 const handleMissingOrInvalidInventory = (value: unknown): Result<readonly InventoryMeasurement[], WeeklyFactsValidationError> =>
@@ -77,8 +78,20 @@ const parsePrice = (candidate: unknown): Result<PriceMeasurement, WeeklyFactsVal
   ifElse(
     (value: unknown) => value === undefined,
     () => failure(makeMissingPrice()),
-    (value: unknown) => mapError(parsePriceMeasurement(value), () => makeInvalidWeeklyFactsInputError(value)),
+    (value: unknown) => mapError(parsePriceMeasurement(value), mapToInvalidWeeklyFactsInput(value)),
   )(candidate)
+
+const mapReportWeekParseError = (error: { readonly input: string }): WeeklyFactsValidationError =>
+  ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })
+
+const mapGeographyParseError = (error: { readonly input: string }): WeeklyFactsValidationError =>
+  ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })
+
+const mapIntoContext = <ContextValue, NextValue>(
+  result: Result<NextValue, WeeklyFactsValidationError>,
+  toContextValue: (value: NextValue) => ContextValue,
+): Result<ContextValue, WeeklyFactsValidationError> =>
+  mapResult(result, toContextValue)
 
 const reportWeeksMatch = (left: ReportWeek, right: ReportWeek): boolean =>
   formatReportWeekIso(left) === formatReportWeekIso(right)
@@ -91,18 +104,18 @@ const validateBrandedWeeklyFacts = (
   policy: RequiredMeasurementPolicy,
 ): Result<WeeklyPetroleumFacts, WeeklyFactsValidationError> => {
   const pipeline = pipeWith(
-    <I, F, O>(step: (value: I) => Result<O, F>, result: Result<I, F>) => binder(step, result),
+    bindResultStep,
     [
       (c: ValidationStart) =>
-        mapResult(mapError(parseReportWeek(c.input.reportWeek), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), reportWeek => ({ ...c, reportWeek })),
+        mapIntoContext(mapError(parseReportWeek(c.input.reportWeek), mapReportWeekParseError), reportWeek => ({ ...c, reportWeek })),
       (c: ValidationWithWeek) =>
-        mapResult(mapError(parseGeographyScope(c.input.geography), error => ({ kind: 'InvalidWeeklyPetroleumFactsInput', input: error.input })), geography => ({ ...c, geography })),
+        mapIntoContext(mapError(parseGeographyScope(c.input.geography), mapGeographyParseError), geography => ({ ...c, geography })),
       (c: ValidationWithGeo) =>
-        mapResult(parseInventories(c.input.inventories), inventories => ({ ...c, inventories })),
+        mapIntoContext(parseInventories(c.input.inventories), inventories => ({ ...c, inventories })),
       (c: ValidationWithInventories) =>
-        mapResult(parsePrice(c.input.price), price => ({ ...c, price })),
+        mapIntoContext(parsePrice(c.input.price), price => ({ ...c, price })),
       (c: ValidationWithPrice) =>
-        mapResult(
+        mapIntoContext(
           assembleWeeklyPetroleumFactsWithPolicy({
             policy,
             inventories: c.inventories,
@@ -113,9 +126,9 @@ const validateBrandedWeeklyFacts = (
           assembled => ({ ...c, assembled }),
         ),
       (c: ValidationWithAssembled) =>
-        mapResult(validateReportWeekCoherence(c, c.assembled), () => c),
+        mapIntoContext(validateReportWeekCoherence(c, c.assembled), () => c),
       (c: ValidationWithAssembled) =>
-        mapResult(validateGeographyCoherence(c, c.assembled), () => c),
+        mapIntoContext(validateGeographyCoherence(c, c.assembled), () => c),
     ],
   )
 

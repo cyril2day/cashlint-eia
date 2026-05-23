@@ -29,6 +29,9 @@ const createNotComputedAnomalyContext = (signal: Signal, policies: Interpretatio
 
 type NotComputedAnomalyContext = ReturnType<typeof createNotComputedAnomalyContext>
 
+const isMissingPreviousObservationAllowed = (policies: InterpretationPolicies): boolean =>
+  policies.allowMissingPreviousObservation === true
+
 const contextualizeTrendForMatchedObservation = (
   signal: Signal,
   policies: InterpretationPolicies,
@@ -36,13 +39,17 @@ const contextualizeTrendForMatchedObservation = (
 ): Result<ContextualizedSignal, InterpretationError> =>
   mapResult(calculateOneWeekTrend(signal, matched, policies), createContextualizedSignalWithTrendResult(signal, createNotComputedAnomalyContext(signal, policies)))
 
+const contextualizeTrendForSignal = (signal: Signal, policies: InterpretationPolicies) => (matched: HistoricalObservation): Result<ContextualizedSignal, InterpretationError> =>
+  contextualizeTrendForMatchedObservation(signal, policies, matched)
+
 const contextualizeMatchedObservation = (
   signal: Signal,
   previousObservation: HistoricalObservation,
   policies: InterpretationPolicies,
 ): Result<ContextualizedSignal, InterpretationError> =>
-  bindResult(matchPreviousObservation(signal, previousObservation), (matched) =>
-    contextualizeTrendForMatchedObservation(signal, policies, matched),
+  bindResult(
+    matchPreviousObservation(signal, previousObservation),
+    contextualizeTrendForSignal(signal, policies),
   )
 
 const buildMissingPreviousObservationContext = (
@@ -66,21 +73,18 @@ const handleMissingPreviousObservation = (
   policies: InterpretationPolicies,
 ): Result<ContextualizedSignal, InterpretationError> =>
   ifElse(
-    (candidate: boolean) => candidate === true,
+    () => isMissingPreviousObservationAllowed(policies),
     () => success(buildMissingPreviousObservationContext(signal, policies)),
     () => createMissingPreviousObservationFailure(signal),
-  )(policies.allowMissingPreviousObservation)
+  )()
 
 export const contextualizeSignal = (
   signal: Signal,
   previousObservations: PreviousObservationMap,
   policies: InterpretationPolicies,
-): Result<ContextualizedSignal, InterpretationError> => {
-  const previousObservation = unwrap(lookupPreviousObservation(previousObservations, signal.identity))
-
-  return ifElse(
+): Result<ContextualizedSignal, InterpretationError> =>
+  ifElse(
     (candidate: HistoricalObservation | undefined) => candidate === undefined,
     () => handleMissingPreviousObservation(signal, policies),
     (candidate) => contextualizeMatchedObservation(signal, candidate, policies),
-  )(previousObservation)
-}
+  )(unwrap(lookupPreviousObservation(previousObservations, signal.identity)))

@@ -5,7 +5,7 @@ import type { Result } from '@/shared/result'
 import { mapPeriodCandidateToReportWeek } from '@/contexts/measurement/normalizers/period'
 import { makeIncompleteWeeklyInputError } from '@/contexts/acl/eia-ingestion-acl/errors/boundary-error'
 import { formatReportWeekIso, type ReportWeek } from '@/contexts/measurement/model/report-week'
-import { ifElse } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 
 export type NormalizedWeeklyInput = ReadonlyArray<{
   readonly reportWeek: ReportWeek
@@ -15,75 +15,103 @@ export type NormalizedWeeklyInput = ReadonlyArray<{
   readonly prices: readonly PriceBoundaryDto[]
 }>
 
-const mapDtoToWeek = (d: BoundaryDto): Result<{ week: ReportWeek; dto: BoundaryDto }, ReturnType<typeof makeIncompleteWeeklyInputError>> => {
-  const period = unwrap(d.periodCandidate)
+type NormalizeWeeklyFactsError = ReturnType<typeof makeIncompleteWeeklyInputError>
+type WeeklyEntry = Readonly<{ readonly week: ReportWeek; readonly dto: BoundaryDto }>
+type WeeklyBucket = Readonly<{
+  readonly reportWeek: ReportWeek
+  readonly inventories: readonly BoundaryDto[]
+  readonly refinery: readonly BoundaryDto[]
+  readonly supply: readonly BoundaryDto[]
+  readonly prices: readonly BoundaryDto[]
+}>
+
+const isInventoryDto = (dto: BoundaryDto): dto is InventoryBoundaryDto => dto.kind === 'Inventory'
+const isRefineryDto = (dto: BoundaryDto): dto is RefineryBoundaryDto => dto.kind === 'Refinery'
+const isSupplyDto = (dto: BoundaryDto): dto is SupplyBoundaryDto => dto.kind === 'Supply'
+const isPriceDto = (dto: BoundaryDto): dto is PriceBoundaryDto => dto.kind === 'Price'
+
+const makeIncompleteErrorForDto = (dto: BoundaryDto): NormalizeWeeklyFactsError =>
+  makeIncompleteWeeklyInputError({ endpoint: dto.source.endpoint, seriesId: unwrap(dto.seriesId) })
+
+const createEmptyWeeklyBucket = (reportWeek: ReportWeek): WeeklyBucket => ({
+  reportWeek,
+  inventories: [],
+  refinery: [],
+  supply: [],
+  prices: [],
+})
+
+const readOrCreateWeeklyBucket = (reportWeek: ReportWeek) => (bucket: WeeklyBucket | undefined): WeeklyBucket =>
+  ifElse(
+    (candidate: WeeklyBucket | undefined) => candidate === undefined,
+    () => createEmptyWeeklyBucket(reportWeek),
+    (candidate: WeeklyBucket) => candidate,
+  )(bucket)
+
+const appendInventory = (dto: BoundaryDto) => (bucket: WeeklyBucket): WeeklyBucket => ({
+  ...bucket,
+  inventories: [...bucket.inventories, dto],
+})
+
+const appendRefinery = (dto: BoundaryDto) => (bucket: WeeklyBucket): WeeklyBucket => ({
+  ...bucket,
+  refinery: [...bucket.refinery, dto],
+})
+
+const appendSupply = (dto: BoundaryDto) => (bucket: WeeklyBucket): WeeklyBucket => ({
+  ...bucket,
+  supply: [...bucket.supply, dto],
+})
+
+const appendPrice = (dto: BoundaryDto) => (bucket: WeeklyBucket): WeeklyBucket => ({
+  ...bucket,
+  prices: [...bucket.prices, dto],
+})
+
+const updateBucketWithDto = (dto: BoundaryDto) => (bucket: WeeklyBucket): WeeklyBucket =>
+  cond<[BoundaryDto], WeeklyBucket>([
+    [isInventoryDto, candidate => appendInventory(candidate)(bucket)],
+    [isRefineryDto, candidate => appendRefinery(candidate)(bucket)],
+    [isSupplyDto, candidate => appendSupply(candidate)(bucket)],
+    [isPriceDto, candidate => appendPrice(candidate)(bucket)],
+  ])(dto)
+
+const mapDtoToWeek = (dto: BoundaryDto): Result<WeeklyEntry, NormalizeWeeklyFactsError> => {
+  const period = unwrap(dto.periodCandidate)
 
   return ifElse(
     (candidate: unknown) => candidate === undefined,
-    () => failure(makeIncompleteWeeklyInputError({ endpoint: d.source.endpoint, seriesId: unwrap(d.seriesId) })),
+    () => failure(makeIncompleteErrorForDto(dto)),
     (candidate: unknown) =>
       mapError(
-        mapResult(mapPeriodCandidateToReportWeek(String(candidate)), week => ({ week, dto: d })),
-        () => makeIncompleteWeeklyInputError({ endpoint: d.source.endpoint, seriesId: unwrap(d.seriesId) }),
+        mapResult(mapPeriodCandidateToReportWeek(String(candidate)), week => ({ week, dto })),
+        () => makeIncompleteErrorForDto(dto),
       ),
   )(period)
 }
 
+const groupEntriesByWeek = (entries: readonly WeeklyEntry[]): Record<string, WeeklyBucket> =>
+  entries.reduce<Record<string, WeeklyBucket>>((groups, entry) => {
+    const weekKey = formatReportWeekIso(entry.week)
+    const bucket = readOrCreateWeeklyBucket(entry.week)(groups[weekKey])
+    const updatedBucket = updateBucketWithDto(entry.dto)(bucket)
+    return { ...groups, [weekKey]: updatedBucket }
+  }, {})
+
+const toNormalizedWeeklyInput = (groups: Record<string, WeeklyBucket>): NormalizedWeeklyInput =>
+  Object.values(groups).map(group => ({
+    reportWeek: group.reportWeek,
+    inventories: group.inventories.filter(isInventoryDto),
+    refinery: group.refinery.filter(isRefineryDto),
+    supply: group.supply.filter(isSupplyDto),
+    prices: group.prices.filter(isPriceDto),
+  }))
+
 export const normalizeWeeklyFacts = (
   input: TrustedBoundaryInput,
-): Result<NormalizedWeeklyInput, ReturnType<typeof makeIncompleteWeeklyInputError>> =>
-  bindResult(sequenceResults(input.inputs.map(mapDtoToWeek)), entries => {
-    const groups = entries.reduce<Record<string, { reportWeek: ReportWeek; inventories: BoundaryDto[]; refinery: BoundaryDto[]; supply: BoundaryDto[]; prices: BoundaryDto[] }>>((acc, e) => {
-      const key = formatReportWeekIso(e.week)
-
-      const prev = acc[key]
-
-      const makeEmptyGroup = (w: ReportWeek) => {
-        const inventories: BoundaryDto[] = []
-        const refinery: BoundaryDto[] = []
-        const supply: BoundaryDto[] = []
-        const prices: BoundaryDto[] = []
-        return { reportWeek: w, inventories, refinery, supply, prices }
-      }
-
-      const base = ifElse((candidate: unknown) => candidate === undefined, () => makeEmptyGroup(e.week), () => prev)(prev)
-
-      const updated = {
-        reportWeek: base.reportWeek,
-        inventories: ifElse(
-          (_: BoundaryDto) => _.kind === 'Inventory',
-          (_: BoundaryDto) => [...base.inventories, _],
-          (_: BoundaryDto) => base.inventories,
-        )(e.dto),
-        refinery: ifElse(
-          (_: BoundaryDto) => _.kind === 'Refinery',
-          (_: BoundaryDto) => [...base.refinery, _],
-          (_: BoundaryDto) => base.refinery,
-        )(e.dto),
-        supply: ifElse(
-          (_: BoundaryDto) => _.kind === 'Supply',
-          (_: BoundaryDto) => [...base.supply, _],
-          (_: BoundaryDto) => base.supply,
-        )(e.dto),
-        prices: ifElse(
-          (_: BoundaryDto) => _.kind === 'Price',
-          (_: BoundaryDto) => [...base.prices, _],
-          (_: BoundaryDto) => base.prices,
-        )(e.dto),
-      }
-
-      return { ...acc, [key]: updated }
-    }, {})
-
-    const result: NormalizedWeeklyInput = Object.values(groups).map(g => ({
-      reportWeek: g.reportWeek,
-      inventories: g.inventories.filter((x): x is InventoryBoundaryDto => x.kind === 'Inventory'),
-      refinery: g.refinery.filter((x): x is RefineryBoundaryDto => x.kind === 'Refinery'),
-      supply: g.supply.filter((x): x is SupplyBoundaryDto => x.kind === 'Supply'),
-      prices: g.prices.filter((x): x is PriceBoundaryDto => x.kind === 'Price'),
-    }))
-
-    return success(result)
-  })
+): Result<NormalizedWeeklyInput, NormalizeWeeklyFactsError> =>
+  bindResult(sequenceResults(input.inputs.map(mapDtoToWeek)), entries =>
+    success(toNormalizedWeeklyInput(groupEntriesByWeek(entries))),
+  )
 
 export default normalizeWeeklyFacts

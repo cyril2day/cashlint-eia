@@ -1,5 +1,5 @@
 import { allPass, anyPass, cond, converge, find, ifElse, isNonEmptyString, pipe, pipeWith } from '@/shared/fp'
-import { bindResult, failure, mapResult, success, type Result, combineResults } from '@/shared/result'
+import { bindResult, bindResultStep, failure, mapResult, success, type Result, combineResults } from '@/shared/result'
 import { isNone, map as mapMaybe, unwrap } from '@/shared/maybe'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import type { ContextualizedSignal, ContextualizedSignalSet } from '@/contexts/interpretation/model'
@@ -72,6 +72,22 @@ type AnalysisCompositionWithExplanation = AnalysisCompositionWithSummary & Reado
   readonly explanation: string
 }>
 
+type AnalysisCompositionReady = Readonly<{
+  readonly validatedPolicies: AnalysisPolicies
+  readonly keySignals: AnalysisKeySignals
+}>
+
+const resolveAlignedConditionLabel = (
+  allowProvisionalConditionLabels: boolean,
+  provisionalLabel: AnalysisConditionLabel,
+  insufficientLabel: AnalysisConditionLabel,
+): AnalysisConditionLabel =>
+  ifElse(
+    () => allowProvisionalConditionLabels,
+    () => provisionalLabel,
+    () => insufficientLabel,
+  )()
+
 const validateNarrativeTone = (
   text: string,
   policies: AnalysisPolicies,
@@ -87,6 +103,17 @@ const validateNarrativeTone = (
   )()
 }
 
+const ensureNonEmptyNarrative = (
+  text: string,
+  field: 'headline' | 'summary' | 'explanation',
+  makeEmptyNarrativeError: (reason: string) => AnalysisError,
+): Result<string, AnalysisError> =>
+  ifElse(
+    () => isNonEmptyString(text),
+    () => success(text),
+    () => failure(makeEmptyNarrativeError(`${field} was empty`)),
+  )()
+
 const validateWalkingSkeletonNarrative = (
   text: string,
   policies: AnalysisPolicies,
@@ -94,11 +121,7 @@ const validateWalkingSkeletonNarrative = (
   makeEmptyNarrativeError: (reason: string) => AnalysisError,
 ): Result<string, AnalysisError> =>
   bindResult(
-    ifElse(
-      () => isNonEmptyString(text),
-      () => success(text),
-      () => failure(makeEmptyNarrativeError(`${field} was empty`)),
-    )(),
+    ensureNonEmptyNarrative(text, field, makeEmptyNarrativeError),
     candidate => validateNarrativeTone(candidate, policies, field),
   )
 
@@ -205,10 +228,11 @@ export const assignWalkingSkeletonCondition = (
       () =>
         success(
           createAnalysisCondition(
-            cond<[], AnalysisConditionLabel>([
-              [() => policies.allowProvisionalConditionLabels, () => policies.provisionalTighteningConditionLabel],
-              [() => true, () => policies.insufficientConditionLabel],
-            ])(),
+            resolveAlignedConditionLabel(
+              policies.allowProvisionalConditionLabels,
+              policies.provisionalTighteningConditionLabel,
+              policies.insufficientConditionLabel,
+            ),
           ),
         ),
     ],
@@ -217,10 +241,11 @@ export const assignWalkingSkeletonCondition = (
       () =>
         success(
           createAnalysisCondition(
-            cond<[], AnalysisConditionLabel>([
-              [() => policies.allowProvisionalConditionLabels, () => policies.provisionalLooseningConditionLabel],
-              [() => true, () => policies.insufficientConditionLabel],
-            ])(),
+            resolveAlignedConditionLabel(
+              policies.allowProvisionalConditionLabels,
+              policies.provisionalLooseningConditionLabel,
+              policies.insufficientConditionLabel,
+            ),
           ),
         ),
     ],
@@ -276,13 +301,11 @@ const resolveDirectionalPhrase = (
     ),
   )(descriptors)
 
-const describeInventory = (signal: ContextualizedSignal): string => {
-  return resolveDirectionalPhrase(getTrendDirection(signal), inventoryDirectionDescriptors, 'Crude inventory trend was not clear')
-}
+const describeInventory = (signal: ContextualizedSignal): string =>
+  resolveDirectionalPhrase(getTrendDirection(signal), inventoryDirectionDescriptors, 'Crude inventory trend was not clear')
 
-const describePrice = (signal: ContextualizedSignal): string => {
-  return resolveDirectionalPhrase(getTrendDirection(signal), priceDirectionDescriptors, 'WTI trend was not clear')
-}
+const describePrice = (signal: ContextualizedSignal): string =>
+  resolveDirectionalPhrase(getTrendDirection(signal), priceDirectionDescriptors, 'WTI trend was not clear')
 
 const describeAlignment = (alignment: AnalysisSignalAlignment): string =>
   cond<[], string>([
@@ -304,10 +327,11 @@ const headlineForSignals = converge(
 
 
 const caveatKey = (caveat: AnalysisCaveat): string =>
-  cond<[AnalysisCaveat], string>([
-    [isPropagatedInterpretationCaveat, candidate => `propagated:${JSON.stringify(getKey('source')(candidate))}`],
-    [() => true, candidate => `${candidate.kind}:${String(getKey('reason')(candidate))}`],
-  ])(caveat)
+  ifElse(
+    isPropagatedInterpretationCaveat,
+    candidate => `propagated:${JSON.stringify(getKey('source')(candidate))}`,
+    candidate => `${candidate.kind}:${String(getKey('reason')(candidate))}`,
+  )(caveat)
 
 const dedupeCaveats = (caveats: readonly AnalysisCaveat[]): readonly AnalysisCaveat[] => {
   const seen = new Set<string>()
@@ -446,37 +470,97 @@ const switchSignalContradictions = (context: AnalysisCompositionWithExplanation)
     () => [],
   )()
 
+const addAlignment = (
+  context: AnalysisCompositionStart,
+): Result<AnalysisCompositionWithAlignment, AnalysisError> =>
+  mapResult(
+    classifyWalkingSkeletonSignalAlignment(context.keySignals),
+    alignment => ({ ...context, alignment }),
+  )
+
+const addCondition = (
+  context: AnalysisCompositionWithAlignment,
+): Result<AnalysisCompositionWithCondition, AnalysisError> =>
+  mapResult(
+    assignWalkingSkeletonCondition(context.alignment, context.validatedPolicies),
+    condition => ({ ...context, condition }),
+  )
+
+const addConfidence = (
+  context: AnalysisCompositionWithCondition,
+): Result<AnalysisCompositionWithConfidence, AnalysisError> =>
+  mapResult(
+    assignWalkingSkeletonConfidence(context.alignment, context.validatedPolicies),
+    confidence => ({ ...context, confidence }),
+  )
+
+const addCaveats = (
+  context: AnalysisCompositionWithConfidence,
+): Result<AnalysisCompositionWithCaveats, AnalysisError> =>
+  success({
+    ...context,
+    caveats: buildWalkingSkeletonCaveats(context.keySignals, context.validatedPolicies),
+  })
+
+const addHeadline = (
+  context: AnalysisCompositionWithCaveats,
+): Result<AnalysisCompositionWithHeadline, AnalysisError> =>
+  mapResult(
+    buildWalkingSkeletonHeadline(context.keySignals, context.alignment, context.validatedPolicies),
+    headline => ({ ...context, headline }),
+  )
+
+const addSummary = (
+  context: AnalysisCompositionWithHeadline,
+): Result<AnalysisCompositionWithSummary, AnalysisError> =>
+  mapResult(
+    buildWalkingSkeletonSummary(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
+    summary => ({ ...context, summary }),
+  )
+
+const addExplanation = (
+  context: AnalysisCompositionWithSummary,
+): Result<AnalysisCompositionWithExplanation, AnalysisError> =>
+  mapResult(
+    buildWalkingSkeletonExplanation(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
+    explanation => ({ ...context, explanation }),
+  )
+
+const finalizeWeeklyAnalysis = (
+  context: AnalysisCompositionWithExplanation,
+): Result<WeeklyAnalysis, AnalysisError> => success(assembleWeeklyAnalysisResult(context))
+
 const composeFromKeySignals = (
   facts: WeeklyPetroleumFacts,
   keySignals: AnalysisKeySignals,
   validatedPolicies: AnalysisPolicies,
 ): Result<WeeklyAnalysis, AnalysisError> => {
   const pipeline = pipeWith(
-    <InputValue, FailureValue, OutputValue>(step: (value: InputValue) => Result<OutputValue, FailureValue>, result: Result<InputValue, FailureValue>) => bindResult(result, step),
+    bindResultStep,
     [
-      (context: AnalysisCompositionStart) =>
-        mapResult(classifyWalkingSkeletonSignalAlignment(context.keySignals), alignment => ({ ...context, alignment })),
-      (context: AnalysisCompositionWithAlignment) =>
-        mapResult(assignWalkingSkeletonCondition(context.alignment, context.validatedPolicies), condition => ({ ...context, condition })),
-      (context: AnalysisCompositionWithCondition) =>
-        mapResult(assignWalkingSkeletonConfidence(context.alignment, context.validatedPolicies), confidence => ({ ...context, confidence })),
-      (context: AnalysisCompositionWithConfidence) =>
-        success({
-          ...context,
-          caveats: buildWalkingSkeletonCaveats(context.keySignals, context.validatedPolicies),
-        }),
-      (context: AnalysisCompositionWithCaveats) =>
-        mapResult(buildWalkingSkeletonHeadline(context.keySignals, context.alignment, context.validatedPolicies), headline => ({ ...context, headline })),
-      (context: AnalysisCompositionWithHeadline) =>
-        mapResult(buildWalkingSkeletonSummary(context.keySignals, context.alignment, context.caveats, context.validatedPolicies), summary => ({ ...context, summary })),
-      (context: AnalysisCompositionWithSummary) =>
-        mapResult(buildWalkingSkeletonExplanation(context.keySignals, context.alignment, context.caveats, context.validatedPolicies), explanation => ({ ...context, explanation })),
-      (context: AnalysisCompositionWithExplanation) => success(assembleWeeklyAnalysisResult(context)),
+      addAlignment,
+      addCondition,
+      addConfidence,
+      addCaveats,
+      addHeadline,
+      addSummary,
+      addExplanation,
+      finalizeWeeklyAnalysis,
     ],
   )
 
   return pipeline({ facts, keySignals, validatedPolicies })
 }
+
+const addSelectedSignals =
+  (signals: AnalysisSignalInput) =>
+  (validatedPolicies: AnalysisPolicies): Result<AnalysisCompositionReady, AnalysisError> =>
+    mapResult(selectWalkingSkeletonSignals(signals), keySignals => ({ validatedPolicies, keySignals }))
+
+const composeValidatedAnalysis =
+  (facts: WeeklyPetroleumFacts) =>
+  (context: AnalysisCompositionReady): Result<WeeklyAnalysis, AnalysisError> =>
+    composeFromKeySignals(facts, context.keySignals, context.validatedPolicies)
 
 export const composeWeeklyAnalysis = (
   facts: WeeklyPetroleumFacts,
@@ -484,13 +568,11 @@ export const composeWeeklyAnalysis = (
   policies: AnalysisPolicies,
 ): Result<WeeklyAnalysis, AnalysisError> => {
   const pipeline = pipeWith(
-    <InputValue, FailureValue, OutputValue>(step: (value: InputValue) => Result<OutputValue, FailureValue>, result: Result<InputValue, FailureValue>) => bindResult(result, step),
+    bindResultStep,
     [
       validatePolicies,
-      (validatedPolicies: AnalysisPolicies) =>
-        mapResult(selectWalkingSkeletonSignals(signals), keySignals => ({ validatedPolicies, keySignals })),
-      (context: Readonly<{ readonly validatedPolicies: AnalysisPolicies; readonly keySignals: AnalysisKeySignals }>) =>
-        composeFromKeySignals(facts, context.keySignals, context.validatedPolicies),
+      addSelectedSignals(signals),
+      composeValidatedAnalysis(facts),
     ],
   )
 

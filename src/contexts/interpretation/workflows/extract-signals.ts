@@ -6,25 +6,22 @@ import { createInventorySignal, createPriceSignal, type Signal } from '../model/
 import { type CurrentSignalSet } from '../model/current-signal-set'
 import { makeMissingRequiredSignalError, type InterpretationError } from '../errors'
 
-export const extractInventorySignal = (facts: WeeklyPetroleumFacts): Result<Signal, InterpretationError> => {
-  const inventory = facts.inventories[0]
+const createInventorySignalFromFacts = (inventory: WeeklyPetroleumFacts['inventories'][number]): Signal =>
+  createInventorySignal(
+    createInventorySignalIdentity(inventory.fact.geography, inventory.fact.measurementKind, inventory.fact.slice, inventory.product),
+    inventory.fact.reportWeek,
+    inventory.fact.geography,
+    inventory.fact.value,
+    inventory.fact.unit,
+    inventory.fact.slice,
+  )
 
-  return ifElse(
-    (candidate: typeof inventory) => candidate === undefined,
+export const extractInventorySignal = (facts: WeeklyPetroleumFacts): Result<Signal, InterpretationError> =>
+  ifElse(
+    (candidate: WeeklyPetroleumFacts['inventories'][number] | undefined) => candidate === undefined,
     () => failure(makeMissingRequiredSignalError('inventory')),
-    (candidate) =>
-      success(
-        createInventorySignal(
-          createInventorySignalIdentity(candidate.fact.geography, candidate.fact.measurementKind, candidate.fact.slice, candidate.product),
-          candidate.fact.reportWeek,
-          candidate.fact.geography,
-          candidate.fact.value,
-          candidate.fact.unit,
-          candidate.fact.slice,
-        ),
-      ),
-  )(inventory)
-}
+    candidate => success(createInventorySignalFromFacts(candidate)),
+  )(facts.inventories[0])
 
 export const extractPriceSignal = (facts: WeeklyPetroleumFacts): Result<Signal, InterpretationError> =>
   success(

@@ -10,6 +10,31 @@ import type { ApplicationError } from '@/application/errors'
 import { toUpstreamAppError, toBoundaryAppError, toBoundaryArrayAppError, toMeasurementAppError } from '@/application/errors'
 import { buildWalkingSkeletonRequests } from '@/application/workflows/walking-skeleton-request-descriptions'
 import type { WalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
+import type { BoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
+import type { Result } from '@/shared/result'
+
+const translateInventoryRows = (envelope: Parameters<typeof translateInventoryEnvelope>[0]): Result<readonly BoundaryDto[], ApplicationError> =>
+  mapError(translateInventoryEnvelope(envelope), toBoundaryAppError)
+
+const translatePriceRows = (envelope: Parameters<typeof translatePriceEnvelope>[0]): Result<readonly BoundaryDto[], ApplicationError> =>
+  mapError(translatePriceEnvelope(envelope), toBoundaryAppError)
+
+const combineBoundaryDtos = (
+  inventoryDtos: readonly BoundaryDto[],
+  priceDtos: readonly BoundaryDto[],
+): readonly BoundaryDto[] => [...inventoryDtos, ...priceDtos]
+
+const validateTrustedBoundaryInput = (
+  input: readonly BoundaryDto[],
+): Result<Parameters<typeof processTrustedBoundaryMeasurements>[0], ApplicationError> =>
+  mapError(validateBoundaryInput(input), toBoundaryArrayAppError)
+
+const processMeasurements = (
+  input: Parameters<typeof processTrustedBoundaryMeasurements>[0],
+): Result<readonly WeeklyPetroleumFacts[], ApplicationError> =>
+  mapError(processTrustedBoundaryMeasurements(input), toMeasurementAppError)
+
+const selectFirstFacts = (facts: readonly WeeklyPetroleumFacts[]): WeeklyPetroleumFacts => facts[0]
 
 export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
   command: WalkingSkeletonCommand,
@@ -17,28 +42,21 @@ export const buildWalkingSkeleton = (deps: WalkingSkeletonDependencies) => (
   const { inventoryRequest, priceRequest } = buildWalkingSkeletonRequests(command)
 
   const loadInventory = mapAsyncError(deps.eiaClient.loadRows(inventoryRequest), toUpstreamAppError)
-
-  const inventoryTranslated = bindAsyncResult(loadInventory, (invEnvelope) =>
-    Promise.resolve(mapError(translateInventoryEnvelope(invEnvelope), toBoundaryAppError)),
+  const withInventoryTranslated = bindAsyncResult(loadInventory, inventoryEnvelope =>
+    Promise.resolve(translateInventoryRows(inventoryEnvelope)),
   )
 
-  const withPrice = bindAsyncResult(inventoryTranslated, (invDtos) => {
+  return bindAsyncResult(withInventoryTranslated, inventoryDtos => {
     const loadPrice = mapAsyncError(deps.eiaClient.loadRows(priceRequest), toUpstreamAppError)
 
-    return bindAsyncResult(loadPrice, (priceEnvelope) => {
-      const priceTranslated = mapError(translatePriceEnvelope(priceEnvelope), toBoundaryAppError)
-
-      const combinedDtosResult = mapResult(priceTranslated, (priceDtos) => [...invDtos, ...priceDtos])
-
-      const validatedInputResult = bindResult(combinedDtosResult, (inputs) => mapError(validateBoundaryInput(inputs), toBoundaryArrayAppError))
-
-      const processed = bindResult(validatedInputResult, (validInput) => mapError(processTrustedBoundaryMeasurements(validInput), toMeasurementAppError))
-
-      const finalResult = mapResult(processed, (arr) => arr[0])
-
-      return Promise.resolve(finalResult)
+    return bindAsyncResult(loadPrice, priceEnvelope => {
+      const withPriceTranslated = translatePriceRows(priceEnvelope)
+      const combinedBoundaryDtos = mapResult(withPriceTranslated, priceDtos =>
+        combineBoundaryDtos(inventoryDtos, priceDtos),
+      )
+      const trustedInput = bindResult(combinedBoundaryDtos, validateTrustedBoundaryInput)
+      const processedFacts = bindResult(trustedInput, processMeasurements)
+      return Promise.resolve(mapResult(processedFacts, selectFirstFacts))
     })
   })
-
-  return withPrice
 }

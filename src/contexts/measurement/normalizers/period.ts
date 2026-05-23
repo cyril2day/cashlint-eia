@@ -5,12 +5,15 @@ import { parseReportWeek, type ReportWeek, type ReportWeekParseError } from '@/c
 
 export type PeriodCandidate = string | number
 
+const toPeriodInput = (candidate: PeriodCandidate): string => String(candidate)
+
 export const mapPeriodCandidateToReportWeek = (
   candidate: PeriodCandidate,
 ): Result<ReportWeek, ReportWeekParseError> => {
+  const periodInput = toPeriodInput(candidate)
   const makeReportWeekParseError = (input: string): ReportWeekParseError => ({ kind: 'InvalidReportWeekInput', input })
 
-  const isoOrErr = mapError(parseIsoDate(String(candidate)), () => makeReportWeekParseError(String(candidate)))
+  const isoOrErr = mapError(parseIsoDate(periodInput), () => makeReportWeekParseError(periodInput))
 
   return bindResult(isoOrErr, iso => parseReportWeek(iso))
 }

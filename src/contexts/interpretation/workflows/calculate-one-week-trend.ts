@@ -22,6 +22,8 @@ const unwrapTrendDirection = (direction: TrendDirection['direction']): TrendDire
 const upDirection = unwrapTrendDirection('Up')
 const downDirection = unwrapTrendDirection('Down')
 const flatDirection = unwrapTrendDirection('Flat')
+const isOneWeekWindow = (policies: InterpretationPolicies): boolean => policies.comparisonWindow.window === 'OneWeek'
+const isFiniteNumber = (candidate: number): boolean => Number.isFinite(candidate)
 
 const resolveThreshold = (signal: Signal, policies: InterpretationPolicies): number =>
   ifElse(
@@ -44,7 +46,7 @@ const buildTrendFromDelta = (
   delta: number,
 ): Result<Trend, InterpretationError> =>
   ifElse(
-    (candidateDelta: number) => Number.isFinite(candidateDelta),
+    isFiniteNumber,
     (candidateDelta) => success(createTrend(comparisonWindow, resolveDirection(candidateDelta, threshold), Math.abs(candidateDelta))),
     () => failure(makeTrendComputationUndefinedError(signal.identity)),
   )(delta)
@@ -55,7 +57,7 @@ export const calculateOneWeekTrend = (
   policies: InterpretationPolicies,
 ): Result<Trend, InterpretationError> =>
   ifElse(
-    (candidate: InterpretationPolicies) => candidate.comparisonWindow.window === 'OneWeek',
+    isOneWeekWindow,
     (candidate) => buildTrendFromDelta(signal, candidate.comparisonWindow, resolveThreshold(signal, candidate), signal.value - previousObservation.value),
     (candidate) => failure(makeInvalidComparisonWindowError(candidate.comparisonWindow)),
   )(policies)
