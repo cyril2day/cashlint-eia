@@ -5,21 +5,25 @@ import { map } from '@/shared/maybe'
 import type { Trend } from '@/contexts/interpretation/model/trend'
 import { formatTrendDirection } from '@/contexts/measurement/model/trend-direction'
 
-export const oilLintPresentationDisplayLabels: Readonly<{
-  readonly placeholder: string
-  readonly pendingSummaryValue: string
-  readonly pendingCondition: string
-  readonly pendingConfidence: string
-}> = {
-  placeholder: 'Placeholder only',
-  pendingSummaryValue: 'Pending SummaryViewModel',
-  pendingCondition: 'Condition pending',
-  pendingConfidence: 'Confidence pending',
+const summaryConditionLabelByKind: Readonly<Record<AnalysisCondition['condition'], string>> = {
+  Tightening: 'Tightening',
+  Loosening: 'Loosening',
+  Mixed: 'Mixed',
+  Unknown: 'Unknown',
 }
 
-export const formatSummaryConditionLabel = (condition: AnalysisCondition): string => condition.condition
+const summaryConfidenceLabelByKind: Readonly<Record<AnalysisConfidence['confidence'], string>> = {
+  High: 'High',
+  Medium: 'Medium',
+  Low: 'Low',
+  Unknown: 'Unknown',
+}
 
-export const formatSummaryConfidenceLabel = (confidence: AnalysisConfidence): string => confidence.confidence
+export const formatSummaryConditionLabel = (condition: AnalysisCondition): string =>
+  summaryConditionLabelByKind[condition.condition]
+
+export const formatSummaryConfidenceLabel = (confidence: AnalysisConfidence): string =>
+  summaryConfidenceLabelByKind[confidence.confidence]
 
 export const formatSummaryTrendLabel = map((trend: Trend) => formatTrendDirection(trend.direction))
 

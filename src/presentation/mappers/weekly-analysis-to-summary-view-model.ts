@@ -8,7 +8,9 @@ import {
   formatSummarySignalSubtitleText,
   formatSummarySignalValueText,
 } from '@/presentation/formatting-policies'
-import { cond } from '@/shared/fp'
+import { isStringInput } from '@/shared/domain'
+import { both, cond, ifElse } from '@/shared/fp'
+import { getKey } from '@/shared/object'
 import { none, some, type Maybe } from '@/shared/maybe'
 
 import type { PresentationCaveatKind, PresentationCaveatViewModel } from '../contracts/presentation-caveat-view-model'
@@ -27,57 +29,83 @@ const createCaveat = (
   severity,
 })
 
-const formatInterpretationCaveatMessage: (caveat: ContextualizedSignal['caveats'][number]) => PresentationCaveatViewModel = cond([
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'MissingPreviousObservation',
-    () => createCaveat('missing-previous-observation', 'Missing previous observation', 'No previous observation is available.'),
-  ],
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'IdentityMismatch',
-    () => createCaveat('identity-mismatch', 'Identity mismatch', 'Signal identity does not match the expected shape.'),
-  ],
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'UnitMismatch',
-    () => createCaveat('unit-mismatch', 'Unit mismatch', 'Signal unit does not match the expected unit.'),
-  ],
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'TrendNotComputed',
-    () => createCaveat('trend-not-computed', 'Trend not computed', 'Trend is not available for this signal.'),
-  ],
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'AnomalyNotComputed',
-    () => createCaveat('anomaly-not-computed', 'Anomaly not computed', 'Anomaly is not available for this signal.'),
-  ],
-  [
-    (caveat: ContextualizedSignal['caveats'][number]) => caveat.kind === 'ComparisonWindowUnavailable',
-    () => createCaveat('comparison-window-unavailable', 'Comparison window unavailable', 'Comparison window is not available for this signal.'),
-  ],
-])
+type InterpretationCaveat = ContextualizedSignal['caveats'][number]
 
-const formatAnalysisCaveatMessage: (caveat: AnalysisCaveat) => PresentationCaveatViewModel = cond([
-  [
-    (caveat: AnalysisCaveat) => caveat.kind === 'FullSystemBalanceNotComputed',
-    () => createCaveat('full-system-balance-not-computed', 'Full system balance not computed', 'Full system balance is not computed.'),
-  ],
-  [
-    (caveat: AnalysisCaveat) => caveat.kind === 'RefineryDataNotIncluded',
-    () => createCaveat('refinery-data-not-included', 'Refinery data not included', 'Refinery data is not included.'),
-  ],
-  [
-    (caveat: AnalysisCaveat) => caveat.kind === 'SupplyDataNotIncluded',
-    () => createCaveat('supply-data-not-included', 'Supply data not included', 'Supply data is not included.'),
-  ],
-  [
-    (caveat: AnalysisCaveat) => caveat.kind === 'PropagatedInterpretationCaveat',
-    () => createCaveat('trend-not-computed', 'Trend not computed', 'A propagated interpretation caveat is present.'),
-  ],
-])
+const hasReason = (candidate: object): candidate is Readonly<{ readonly reason: string }> =>
+  both(
+    (value: object) => 'reason' in value,
+    (value: object) => isStringInput(getKey('reason')(value)),
+  )(candidate)
+
+const hasSource = (candidate: object): candidate is Readonly<{ readonly source: InterpretationCaveat }> =>
+  'source' in candidate
+
+const getCaveatReasonOrDefault = (fallback: string) => (candidate: object): string =>
+  ifElse(
+    hasReason,
+    value => value.reason,
+    () => fallback,
+  )(candidate)
+
+const formatSourceCaveatOrDefault = (fallback: PresentationCaveatViewModel) =>
+  (candidate: object): PresentationCaveatViewModel =>
+    ifElse(
+      hasSource,
+      value => formatInterpretationCaveatMessage(value.source),
+      () => fallback,
+    )(candidate)
+
+const formatInterpretationCaveatMessage = (caveat: InterpretationCaveat): PresentationCaveatViewModel =>
+  cond<[InterpretationCaveat], PresentationCaveatViewModel>([
+    [candidate => candidate.kind === 'MissingPreviousObservation', () =>
+      createCaveat('missing-previous-observation', 'Missing previous observation', 'No previous observation is available.')],
+    [candidate => candidate.kind === 'IdentityMismatch', () =>
+      createCaveat('identity-mismatch', 'Identity mismatch', 'Signal identity does not match the expected shape.')],
+    [candidate => candidate.kind === 'UnitMismatch', () =>
+      createCaveat('unit-mismatch', 'Unit mismatch', 'Signal unit does not match the expected unit.')],
+    [candidate => candidate.kind === 'TrendNotComputed', () =>
+      createCaveat('trend-not-computed', 'Trend not computed', 'Trend is not available for this signal.')],
+    [candidate => both((value: InterpretationCaveat) => value.kind === 'AnomalyNotComputed', hasReason)(candidate),
+      candidate => createCaveat('anomaly-not-computed', 'Anomaly not computed', getCaveatReasonOrDefault('Anomaly is not available for this signal.')(candidate))],
+    [candidate => candidate.kind === 'ComparisonWindowUnavailable', () =>
+      createCaveat('comparison-window-unavailable', 'Comparison window unavailable', 'Comparison window is not available for this signal.')],
+    [() => true, () =>
+      createCaveat('trend-not-computed', 'Trend not computed', 'A signal caveat is present.')],
+  ])(caveat)
+
+const formatAnalysisCaveatMessage = (caveat: AnalysisCaveat): PresentationCaveatViewModel =>
+  cond<[AnalysisCaveat], PresentationCaveatViewModel>([
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'FullSystemBalanceNotComputed', hasReason)(candidate),
+      candidate => createCaveat('full-system-balance-not-computed', 'Full system balance not computed', getCaveatReasonOrDefault('Full system balance is not computed.')(candidate)),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'RefineryDataNotIncluded', hasReason)(candidate),
+      candidate => createCaveat('refinery-data-not-included', 'Refinery data not included', getCaveatReasonOrDefault('Refinery data is not included.')(candidate)),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'SupplyDataNotIncluded', hasReason)(candidate),
+      candidate => createCaveat('supply-data-not-included', 'Supply data not included', getCaveatReasonOrDefault('Supply data is not included.')(candidate)),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'PropagatedInterpretationCaveat', hasSource)(candidate),
+      candidate => formatSourceCaveatOrDefault(
+        createCaveat('trend-not-computed', 'Trend not computed', 'A propagated interpretation caveat is present.'),
+      )(candidate),
+    ],
+    [() => true, () =>
+      createCaveat('trend-not-computed', 'Trend not computed', 'A propagated interpretation caveat is present.')],
+  ])(caveat)
+
+const toMaybeJoinedMessages = (separator: string) =>
+  ifElse(
+    (messages: readonly string[]) => messages.length > 0,
+    (messages: readonly string[]) => some<string>(messages.join(separator)),
+    () => none(),
+  )
 
 const formatCardCaveatLabel = (signal: ContextualizedSignal): Maybe<string> =>
-  cond<[readonly string[]], Maybe<string>>([
-    [messages => messages.length > 0, messages => some<string>(messages.join(' · '))],
-    [() => true, () => none()],
-  ])(signal.caveats.map(formatInterpretationCaveatMessage).map(caveat => caveat.message))
+  toMaybeJoinedMessages(' · ')(signal.caveats.map(formatInterpretationCaveatMessage).map(caveat => caveat.message))
 
 const mapCard = (
   kind: SummaryCardKind,
@@ -96,11 +124,21 @@ const mapCard = (
   drilldownTarget: none(),
 })
 
+const summaryCardDefinitions: ReadonlyArray<Readonly<{
+  readonly kind: SummaryCardKind
+  readonly title: string
+  readonly getSignal: (analysis: WeeklyAnalysis) => ContextualizedSignal
+}>> = [
+  { kind: 'inventory', title: 'Inventory', getSignal: analysis => analysis.keySignals.inventory },
+  { kind: 'price', title: 'WTI price', getSignal: analysis => analysis.keySignals.price },
+]
+
 const mapDisplayState = (analysis: WeeklyAnalysis): SummaryDisplayState =>
-  cond<[WeeklyAnalysis], SummaryDisplayState>([
-    [candidate => candidate.caveats.length > 0, () => 'partial'],
-    [() => true, () => 'complete'],
-  ])(analysis)
+  ifElse(
+    (candidate: WeeklyAnalysis) => candidate.caveats.length > 0,
+    (): SummaryDisplayState => 'partial',
+    (): SummaryDisplayState => 'complete',
+  )(analysis)
 
 export const mapWeeklyAnalysisToSummaryViewModel = (analysis: WeeklyAnalysis): SummaryViewModel => {
   const conditionLabel = formatSummaryConditionLabel(analysis.condition)
@@ -112,15 +150,15 @@ export const mapWeeklyAnalysisToSummaryViewModel = (analysis: WeeklyAnalysis): S
     summary: analysis.summary,
     conditionLabel,
     confidenceLabel: formatSummaryConfidenceLabel(analysis.confidence),
-    cards: [
-      mapCard('inventory', 'Inventory', analysis.keySignals.inventory, conditionLabel),
-      mapCard('price', 'WTI price', analysis.keySignals.price, conditionLabel),
-    ],
+    cards: summaryCardDefinitions.map(definition =>
+      mapCard(definition.kind, definition.title, definition.getSignal(analysis), conditionLabel),
+    ),
     caveats: analysis.caveats.map(formatAnalysisCaveatMessage),
     displayState: mapDisplayState(analysis),
-    displayStateMessage: cond<[WeeklyAnalysis], Maybe<string>>([
-      [candidate => candidate.caveats.length > 0, () => some<string>('Walking-skeleton output includes caveats.')],
-      [() => true, () => none()],
-    ])(analysis),
+    displayStateMessage: ifElse(
+      (candidate: WeeklyAnalysis) => candidate.caveats.length > 0,
+      (): Maybe<string> => some('Walking-skeleton output includes caveats.'),
+      (): Maybe<string> => none(),
+    )(analysis),
   }
 }

@@ -1,4 +1,3 @@
-import { oilLintPresentationDisplayLabels } from '@/presentation/display-policies'
 import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
 
@@ -7,7 +6,7 @@ import type { SummaryCardViewModel } from '../contracts/summary-card-view-model'
 import type { SummaryViewModel } from '../contracts/summary-view-model'
 
 const reportWeekText = '2026-05-19'
-const geographyText = 'US Total'
+const geographyText = 'USTotal'
 const summarySubtitleText = `${reportWeekText} · ${geographyText}`
 
 const summaryDisplayStateMessageByKind = cond<
@@ -24,11 +23,11 @@ const inventoryCard: SummaryCardViewModel = {
   kind: 'inventory',
   title: 'Inventory',
   valueText: '80 ThousandBarrels',
-  statusLabel: 'Pending',
+  statusLabel: 'Unknown',
   subtitleText: some(summarySubtitleText),
   trendLabel: none(),
   anomalyLabel: some('Inventory anomaly is not computed yet.'),
-  caveatLabel: some('Inventory caveat pending'),
+  caveatLabel: none(),
   drilldownTarget: none(),
 }
 
@@ -36,11 +35,11 @@ const priceCard: SummaryCardViewModel = {
   kind: 'price',
   title: 'WTI price',
   valueText: '72 USDPerBarrel',
-  statusLabel: 'Pending',
+  statusLabel: 'Unknown',
   subtitleText: some(summarySubtitleText),
   trendLabel: some('Up'),
   anomalyLabel: some('Price anomaly is not computed yet.'),
-  caveatLabel: some('Price caveat pending'),
+  caveatLabel: none(),
   drilldownTarget: none(),
 }
 
@@ -70,8 +69,8 @@ export const createOilLintPresentationViewModel = (displayState: SummaryViewMode
   geographyText,
   headline: 'Walking-skeleton summary ready for presentation',
   summary: 'Inventory and price output are rendered from the presentation contract, with caveats kept visible.',
-  conditionLabel: oilLintPresentationDisplayLabels.pendingCondition,
-  confidenceLabel: oilLintPresentationDisplayLabels.pendingConfidence,
+  conditionLabel: 'Unknown',
+  confidenceLabel: 'Medium',
   cards: [inventoryCard, priceCard],
   caveats: presentationCaveats,
   displayState,

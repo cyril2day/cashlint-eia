@@ -9,7 +9,7 @@ import {
   createSupplyDataNotIncludedCaveat,
 } from '@/contexts/analysis/model/analysis-caveat'
 import { createContextualizedSignalWithTrend, createContextualizedSignalWithoutTrend, createInventorySignal, createInventorySignalIdentity, createPriceSignal, createPriceSignalIdentity } from '@/contexts/interpretation/model'
-import { createTrendNotComputedCaveat } from '@/contexts/interpretation/model/interpretation-caveat'
+import { createAnomalyNotComputedCaveat, createTrendNotComputedCaveat } from '@/contexts/interpretation/model/interpretation-caveat'
 import { createTrend } from '@/contexts/interpretation/model/trend'
 import { parseComparisonWindow, parseGeographyScope, parseInventoryProduct, parseMeasurementKind, parseMeasurementUnit, parsePetroleumSlice, parsePriceKind, parseReportWeek, parseTrendDirection } from '@/contexts/measurement/model'
 import { createNotComputedAnomalyState as createNotComputedSignalAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
@@ -128,6 +128,39 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
       'refinery-data-not-included',
       'supply-data-not-included',
       'trend-not-computed',
+    ])
+  })
+
+  it('preserves propagated interpretation caveat meaning for anomaly reasons', () => {
+    const analysis = buildAnalysis()
+    const anomalyReason = 'Anomaly model is not configured for this signal.'
+
+    const viewModel = mapWeeklyAnalysisToSummaryViewModel(
+      createWeeklyAnalysis(
+        analysis.reportWeek,
+        analysis.geography,
+        analysis.condition,
+        analysis.headline,
+        analysis.summary,
+        analysis.explanation,
+        analysis.keySignals,
+        analysis.supportingSignals,
+        analysis.contradictorySignals,
+        [
+          createPropagatedInterpretationCaveat(
+            createAnomalyNotComputedCaveat(analysis.keySignals.inventory.signal.identity, anomalyReason),
+          ),
+        ],
+        analysis.confidence,
+        analysis.alignment,
+      ),
+    )
+
+    expect(viewModel.caveats).toEqual([
+      expect.objectContaining({
+        kind: 'anomaly-not-computed',
+        message: anomalyReason,
+      }),
     ])
   })
 })
