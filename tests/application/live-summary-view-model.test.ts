@@ -7,13 +7,100 @@ import { cond } from '@/shared/fp'
 import { ifElse } from '@/shared/fp'
 import { isFailure, isSuccess, type Result, success } from '@/shared/result'
 import type { EiaRequest, UpstreamError } from '@/application/ports/eia-client'
+import { none, some } from '@/shared/maybe'
+import type { RawEiaEnvelope, RawEiaRow } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
 import { inventoryValidEnvelope } from '../fixtures/eia/stoc-wstk/inventory-valid'
 import { priceValidEnvelope } from '../fixtures/eia/pri-spt/price-valid'
 
-const requestForEnvelope = (request: EiaRequest): typeof inventoryValidEnvelope | typeof priceValidEnvelope =>
-  cond<[EiaRequest], typeof inventoryValidEnvelope | typeof priceValidEnvelope>([
+type SeriesValues = Readonly<{
+  readonly current: string
+  readonly previous: string
+  readonly unit: string
+}>
+
+const refinerySeriesValues: Readonly<Record<string, SeriesValues>> = {
+  WCRRIUS2: { current: '16958', previous: '16909', unit: 'MBBL/D' },
+  WGIRIUS2: { current: '17300', previous: '17201', unit: 'MBBL/D' },
+  WOCLEUS2: { current: '18162', previous: '18162', unit: 'MBBL/D' },
+  WPULEUS3: { current: '92.1', previous: '91.7', unit: '%' },
+}
+
+const supplySeriesValues: Readonly<Record<string, SeriesValues>> = {
+  WCRFPUS2: { current: '13000', previous: '12900', unit: 'MBBL/D' },
+  WCRIMUS2: { current: '7000', previous: '7200', unit: 'MBBL/D' },
+  WCREXUS2: { current: '4000', previous: '3900', unit: 'MBBL/D' },
+}
+
+const defaultSeriesValues: SeriesValues = { current: '0', previous: '0', unit: 'MBBL/D' }
+
+const rowFor = (seriesId: string, period: string, value: string, unit: string): RawEiaRow => ({
+  period: some(period),
+  date: some(period),
+  value: some(value),
+  unit: some(unit),
+  series_id: none(),
+  series: some(seriesId),
+  product: some('CrudeOil'),
+  geography: some('U.S.'),
+  frequency: some('weekly'),
+  description: some('sanitized live fixture'),
+  notes: none(),
+})
+
+const envelopeFor = (endpoint: string, seriesId: string, valuesBySeries: Readonly<Record<string, SeriesValues>>): RawEiaEnvelope => {
+  const values = ifElse(
+    (candidate: SeriesValues | undefined): candidate is SeriesValues => candidate !== undefined,
+    candidate => candidate,
+    () => defaultSeriesValues,
+  )(valuesBySeries[seriesId])
+
+  return {
+    api: none(),
+    request: none(),
+    response: none(),
+    data: some([
+      rowFor(seriesId, '2026-01-09', values.current, values.unit),
+      rowFor(seriesId, '2026-01-02', values.previous, values.unit),
+    ]),
+    endpoint: some(endpoint),
+    received_at: none(),
+  }
+}
+
+const stringOrEmpty = (value: string | undefined): string =>
+  ifElse(
+    (candidate: string | undefined): candidate is string => candidate !== undefined,
+    candidate => candidate,
+    () => '',
+  )(value)
+
+const paramsAreSome = (
+  params: EiaRequest['params'],
+): params is Extract<EiaRequest['params'], { readonly kind: 'Some' }> => params.kind === 'Some'
+
+const requestSeriesId = (request: EiaRequest): string =>
+  ifElse(
+    paramsAreSome,
+    candidate => stringOrEmpty(candidate.value['facets[series][]']),
+    () => '',
+  )(request.params)
+
+const emptyEnvelopeFor = (endpoint: string): RawEiaEnvelope => ({
+  api: none(),
+  request: none(),
+  response: none(),
+  data: some([]),
+  endpoint: some(endpoint),
+  received_at: none(),
+})
+
+const requestForEnvelope = (request: EiaRequest): typeof inventoryValidEnvelope | typeof priceValidEnvelope | RawEiaEnvelope =>
+  cond<[EiaRequest], typeof inventoryValidEnvelope | typeof priceValidEnvelope | RawEiaEnvelope>([
     [candidate => candidate.endpoint.includes('stoc'), () => inventoryValidEnvelope],
-    [() => true, () => priceValidEnvelope],
+    [candidate => candidate.endpoint.includes('pri'), () => priceValidEnvelope],
+    [candidate => candidate.endpoint.includes('pnp'), candidate => envelopeFor(candidate.endpoint, requestSeriesId(candidate), refinerySeriesValues)],
+    [candidate => candidate.endpoint.includes('sum'), candidate => envelopeFor(candidate.endpoint, requestSeriesId(candidate), supplySeriesValues)],
+    [() => true, candidate => emptyEnvelopeFor(candidate.endpoint)],
   ])(request)
 
 const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue =>
@@ -51,16 +138,18 @@ describe('live summary view model', () => {
     expect(summary.reportWeekText).toBe('2026-01-09')
     expect(summary.geographyText).toBe('USTotal')
     expect(summary.displayState).toBe('partial')
-    expect(summary.cards).toHaveLength(2)
-    expect(summary.cards[0].valueText).toContain('836125')
-    expect(summary.cards[1].valueText).toContain('76.31')
-    expect(summary.cards[0].subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
-    expect(summary.cards[1].subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
-    expect(summary.cards[0].trendLabel).toEqual({ kind: 'Some', value: 'Down' })
-    expect(summary.cards[1].trendLabel).toEqual({ kind: 'Some', value: 'Up' })
-    expect(summary.headline).toContain('Crude inventory drew and WTI rose')
+    expect(summary.cards).toHaveLength(3)
+    expect(summary.cards.find(card => card.kind === 'system')?.valueText).toBe('Tightening')
+    expect(summary.cards.find(card => card.kind === 'inventory')?.valueText).toContain('836,125')
+    expect(summary.cards.find(card => card.kind === 'price')?.valueText).toContain('76.31')
+    expect(summary.cards.find(card => card.kind === 'inventory')?.subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
+    expect(summary.cards.find(card => card.kind === 'price')?.subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
+    expect(summary.cards.find(card => card.kind === 'inventory')?.trendLabel).toEqual({ kind: 'Some', value: 'Down' })
+    expect(summary.cards.find(card => card.kind === 'price')?.trendLabel).toEqual({ kind: 'Some', value: 'Up' })
+    expect(summary.headline).toContain('Tightening')
     expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('missing-previous-observation')
-    expect(summary.summary).toContain('Full system balance is not computed in this walking skeleton.')
+    expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('full-system-balance-not-computed')
+    expect(summary.summary).not.toContain('walking skeleton')
   })
 
   it('returns a typed upstream failure when the underlying client fails', async () => {

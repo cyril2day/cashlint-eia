@@ -1,5 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import { buildInventoryRequest, buildPriceRequest } from '@/application/ports/eia-request-builders'
+import { buildInventoryRequest, buildPriceRequest, buildRefineryRequests, buildSupplyRequests } from '@/application/ports/eia-request-builders'
+import type { EiaRequest } from '@/application/ports/eia-client'
+import { ifElse } from '@/shared/fp'
+
+const seriesParam = (request: EiaRequest): string =>
+  ifElse(
+    (params: EiaRequest['params']) => params.kind === 'Some',
+    params => params.value['facets[series][]'],
+    () => '',
+  )(request.params)
+
+const isLatestTwoRowRequest = (request: EiaRequest): boolean =>
+  ifElse(
+    (params: EiaRequest['params']) => params.kind === 'Some',
+    params => params.value.length === '2',
+    () => false,
+  )(request.params)
 
 describe('EIA request builders', () => {
   it('builds inventory request with correct endpoint and params', () => {
@@ -45,5 +61,30 @@ describe('EIA request builders', () => {
         },
       },
     })
+  })
+
+  it('builds one latest-two-row request per refinery and supply series', () => {
+    const week = '2026-01-01'
+    const refinery = buildRefineryRequests(week)
+    const supply = buildSupplyRequests(week)
+
+    expect(refinery.map(request => request.endpoint)).toEqual([
+      '/v2/petroleum/pnp/wiup/data/',
+      '/v2/petroleum/pnp/wiup/data/',
+      '/v2/petroleum/pnp/wiup/data/',
+      '/v2/petroleum/pnp/wiup/data/',
+    ])
+    expect(refinery.map(seriesParam)).toEqual([
+      'WCRRIUS2',
+      'WGIRIUS2',
+      'WOCLEUS2',
+      'WPULEUS3',
+    ])
+    expect(supply.map(seriesParam)).toEqual([
+      'WCRFPUS2',
+      'WCRIMUS2',
+      'WCREXUS2',
+    ])
+    expect(refinery.concat(supply).every(isLatestTwoRowRequest)).toBe(true)
   })
 })

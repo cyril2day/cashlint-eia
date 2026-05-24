@@ -3,8 +3,8 @@ import type { WalkingSkeletonCommand } from '@/application/commands/walking-skel
 import type { WalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
 import { buildWalkingSkeletonFactSeries } from '@/application/workflows/walking-skeleton'
 import { toMeasurementAppError } from '@/application/errors'
-import { createWalkingSkeletonAnalysisPolicies } from '@/contexts/analysis/policies'
-import { composeWeeklyAnalysis } from '@/contexts/analysis/workflows'
+import { createFullAnalysisPolicies, createWalkingSkeletonAnalysisPolicies } from '@/contexts/analysis/policies'
+import { composeFullWeeklyAnalysis, composeWeeklyAnalysis } from '@/contexts/analysis/workflows'
 import { buildPreviousObservationMap, contextualizeWalkingSkeletonSignalSet, extractCurrentSignalSet, createWalkingSkeletonInterpretationPolicies } from '@/contexts/interpretation'
 import type { ContextualizedSignalSet } from '@/contexts/interpretation/model/current-signal-set'
 import type { CurrentSignalSet } from '@/contexts/interpretation/model/current-signal-set'
@@ -13,17 +13,20 @@ import type { PreviousObservationMap } from '@/contexts/interpretation/model/pre
 import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import { parseComparisonWindow } from '@/contexts/measurement/model'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
+import { composeSystemBalanceAnalysis, defaultSystemBalancePolicy } from '@/contexts/system-balance'
 import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 import { mapWeeklyAnalysisToSummaryViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
 import { bindAsyncResult } from '@/shared/async-result'
 import { bindResult, failure, mapError, mapResult, success, type Result } from '@/shared/result'
+import { none, some, type Maybe } from '@/shared/maybe'
 
 const liveInventoryFlatThreshold = 1
 const livePriceFlatThreshold = 1
 
 type LiveSummaryInput = Readonly<{
   readonly currentFacts: WeeklyPetroleumFacts
+  readonly previousFacts: Maybe<WeeklyPetroleumFacts>
   readonly previousObservations: PreviousObservationMap
 }>
 
@@ -105,15 +108,22 @@ const buildPreviousObservationMapFromSeries = (
 
 const buildLiveSummaryInput = (
   factSeries: readonly WeeklyPetroleumFacts[],
-): Result<LiveSummaryInput, ApplicationError> =>
-  bindResult(
+): Result<LiveSummaryInput, ApplicationError> => {
+  const previousFacts = ifElse(
+    (candidate: WeeklyPetroleumFacts | undefined): candidate is WeeklyPetroleumFacts => candidate !== undefined,
+    candidate => some(candidate),
+    () => none(),
+  )(factSeries[1])
+
+  return bindResult(
     selectCurrentFacts(factSeries),
     currentFacts =>
       mapResult(
         buildPreviousObservationMapFromSeries(factSeries),
-        previousObservations => ({ currentFacts, previousObservations }),
+        previousObservations => ({ currentFacts, previousFacts, previousObservations }),
       ),
   )
+}
 
 const buildSummaryViewModel =
   (facts: WeeklyPetroleumFacts) =>
@@ -126,6 +136,25 @@ const buildSummaryViewModel =
       mapWeeklyAnalysisToSummaryViewModel,
     )
 
+const buildFullSummaryViewModel =
+  (input: LiveSummaryInput) =>
+  (contextualizedSignals: ContextualizedSignalSet): Result<SummaryViewModel, ApplicationError> => {
+    const systemBalanceAnalysis = mapError(
+      composeSystemBalanceAnalysis(some(input.currentFacts), input.previousFacts, defaultSystemBalancePolicy),
+      toMeasurementAppError,
+    )
+    const weeklyAnalysis = bindResult(
+      systemBalanceAnalysis,
+      balanceAnalysis =>
+        mapError(
+          composeFullWeeklyAnalysis(balanceAnalysis, contextualizedSignals, createFullAnalysisPolicies()),
+          toMeasurementAppError,
+        ),
+    )
+
+    return mapResult(weeklyAnalysis, mapWeeklyAnalysisToSummaryViewModel)
+  }
+
 const buildLiveSummaryResult = (
   input: LiveSummaryInput,
 ): Result<SummaryViewModel, ApplicationError> => {
@@ -135,7 +164,15 @@ const buildLiveSummaryResult = (
     interpretationPolicies => buildContextualizedSignals(input.currentFacts, input.previousObservations)(interpretationPolicies),
   )
 
-  return bindResult(contextualizedSignalsResult, buildSummaryViewModel(input.currentFacts))
+  return bindResult(
+    contextualizedSignalsResult,
+    contextualizedSignals =>
+      ifElse(
+        (candidate: Maybe<WeeklyPetroleumFacts>) => candidate.kind === 'Some',
+        () => buildFullSummaryViewModel(input)(contextualizedSignals),
+        () => buildSummaryViewModel(input.currentFacts)(contextualizedSignals),
+      )(input.previousFacts),
+  )
 }
 
 export const buildLiveSummaryViewModel = (
