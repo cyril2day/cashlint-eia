@@ -12,6 +12,7 @@ import {
   makeFrequencyMismatchError,
   makeInvalidDateOrPeriodError,
   makeInvalidNumericValueError,
+  makeInvalidUnitError,
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
@@ -136,10 +137,26 @@ const translateInventoryRows = (
   rows: readonly RawEiaRow[],
 ): BR<readonly InventoryBoundaryDto[]> => sequenceResults(rows.map(translateInventoryRow))
 
+const validateUnitCandidate = (
+  unitCandidate: string,
+  seriesId: string,
+): BR<string> =>
+  ifElse(
+    isWalkingSkeletonInventoryUnitCandidate,
+    validUnit => success(validUnit),
+    invalidUnit =>
+      failure(
+        makeInvalidUnitError('unit', invalidUnit, {
+          endpoint: walkingSkeletonInventoryEndpoint,
+          seriesId,
+        }),
+      ),
+  )(unitCandidate)
+
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
 
-  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonInventoryEndpoint, success)
+  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonInventoryEndpoint, candidate => validateUnitCandidate(candidate, seriesId))
 
   return requireUnit(unitCandidate)
 }

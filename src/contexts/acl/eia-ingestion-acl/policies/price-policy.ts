@@ -5,7 +5,7 @@ export const walkingSkeletonPriceSeriesIdentifiers: readonly string[] = ['RWTC',
 
 export const walkingSkeletonPriceMeasureKindCandidates: readonly string[] = ['WTISpotPrice']
 
-export const walkingSkeletonPriceUnitCandidates: readonly string[] = ['usd/bbl', 'usd per barrel', 'dollars per barrel', 'usdperbarrel']
+export const walkingSkeletonPriceUnitCandidates: readonly string[] = ['usd/bbl', '$/bbl', 'usd per barrel', 'dollars per barrel', 'usdperbarrel']
 
 export const walkingSkeletonPriceEndpoint = '/v2/petroleum/pri/spt/data/'
 

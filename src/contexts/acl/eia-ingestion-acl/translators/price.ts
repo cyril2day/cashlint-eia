@@ -12,6 +12,7 @@ import {
   makeFrequencyMismatchError,
   makeInvalidDateOrPeriodError,
   makeInvalidNumericValueError,
+  makeInvalidUnitError,
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
@@ -137,10 +138,26 @@ const readPriceRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly 
 const translatePriceRows = (rows: readonly RawEiaRow[]): BR<readonly PriceBoundaryDto[]> =>
   sequenceResults(rows.map(translatePriceRow))
 
+const validateUnitCandidate = (
+  unitCandidate: string,
+  seriesId: string,
+): BR<string> =>
+  ifElse(
+    isWalkingSkeletonPriceUnitCandidate,
+    validUnit => success(validUnit),
+    invalidUnit =>
+      failure(
+        makeInvalidUnitError('unit', invalidUnit, {
+          endpoint: walkingSkeletonPriceEndpoint,
+          seriesId,
+        }),
+      ),
+  )(unitCandidate)
+
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
 
-  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonPriceEndpoint, success)
+  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonPriceEndpoint, candidate => validateUnitCandidate(candidate, seriesId))
 
   return requireUnit(unitCandidate)
 }
