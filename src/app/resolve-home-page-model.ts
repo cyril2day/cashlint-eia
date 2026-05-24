@@ -6,7 +6,7 @@ import type { SummaryViewModel } from '@/presentation/contracts/summary-view-mod
 import type { PresentationErrorViewModel } from '@/presentation/contracts/presentation-error-view-model'
 import { createRealEiaClient, validateEiaRuntimeConfig, type EiaRuntimeConfig, type EiaRuntimeConfigurationError } from '@/infrastructure/eia'
 import type { EiaRuntimeConfigInput } from '@/infrastructure/eia'
-import { cond, ifElse } from '@/shared/fp'
+import { allPass, cond, ifElse, isNil } from '@/shared/fp'
 import { none, some, type Maybe } from '@/shared/maybe'
 import type { Result } from '@/shared/result'
 
@@ -230,9 +230,15 @@ const measurementFailureViewModel = (
   retryHint: none(),
 })
 
+const isObjectCandidate = (input: unknown): input is object =>
+  allPass([
+    (candidate: unknown) => typeof candidate === 'object',
+    (candidate: unknown) => isNil(candidate) === false,
+  ])(input)
+
 const formatMeasurementFailureMessage = (error: unknown): string =>
   ifElse(
-    (candidate: unknown): candidate is object => typeof candidate === 'object' && candidate !== null,
+    isObjectCandidate,
     candidate => JSON.stringify(candidate),
     candidate => String(candidate),
   )(error)
