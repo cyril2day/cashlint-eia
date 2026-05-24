@@ -359,6 +359,16 @@ const maybeUnit = (row: Record<string, unknown>): Maybe<string> =>
     None: () => maybeString(row.units),
   })(maybeString(row.unit))
 
+const maybeGeography = (row: Record<string, unknown>): Maybe<string> =>
+  matchMaybe<string, Maybe<string>>({
+    Some: candidate => some(candidate),
+    None: () =>
+      matchMaybe<string, Maybe<string>>({
+        Some: candidate => some(candidate),
+        None: () => maybeString(row.duoarea),
+      })(maybeString(row['area-name'])),
+  })(maybeString(row.geography))
+
 const maybeNumberPeriodCandidate = (value: unknown): Maybe<PeriodCandidate> =>
   ifElse(
     (candidate: unknown): candidate is number => typeof candidate === 'number',
@@ -441,7 +451,7 @@ const normalizeRow = (row: Record<string, unknown>): RawEiaRow => ({
   series_id: maybeString(row.series_id),
   series: maybeString(row.series),
   product: maybeString(row.product),
-  geography: maybeString(row.geography),
+  geography: maybeGeography(row),
   frequency: maybeString(row.frequency),
   description: maybeString(row.description),
   notes: maybeString(row.notes),

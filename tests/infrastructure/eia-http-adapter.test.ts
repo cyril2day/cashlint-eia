@@ -45,6 +45,7 @@ describe('real EIA HTTP adapter', () => {
               value: '10',
               units: 'MBBL',
               series_id: 'WCRSTUS1',
+              'area-name': 'U.S.',
               frequency: 'weekly',
             },
           ],
@@ -70,7 +71,7 @@ describe('real EIA HTTP adapter', () => {
     expect(fetchCalls[0]).toContain('api_key=secret-test-key')
     expect(Reflect.get(Reflect.get(result, 'value'), 'data')).toMatchObject({
       kind: 'Some',
-      value: [{ period: some('2026-05-19'), unit: some('MBBL') }],
+      value: [{ period: some('2026-05-19'), unit: some('MBBL'), geography: some('U.S.') }],
     })
     expect(Reflect.get(Reflect.get(result, 'value'), 'request')).toMatchObject({
       kind: 'Some',

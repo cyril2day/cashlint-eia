@@ -50,6 +50,8 @@ describe('EIA request URL construction', () => {
     expect(url.toString()).toContain('facets%5Bseries%5D%5B%5D=WCRSTUS1')
     expect(url.toString()).toContain('facets%5Bduoarea%5D%5B%5D=NUS')
     expect(buildEiaRequestUrl(unwrapConfig(), buildPriceRequest('2026-05-19')).toString()).toContain('facets%5Bseries%5D%5B%5D=RWTC')
+    expect(buildEiaRequestUrl(unwrapConfig(), buildRefineryRequest('2026-05-19')).toString()).toContain('facets%5Bseries%5D%5B%5D=WCRRIUS2')
+    expect(buildEiaRequestUrl(unwrapConfig(), buildSupplyRequest('2026-05-19')).toString()).toContain('facets%5Bseries%5D%5B%5D=WCRFPUS2')
     expect(sanitizeEiaUrl(url)).toContain('api_key=%5BREDACTED%5D')
     expect(sanitizeEiaUrl(url)).not.toContain('secret-test-key')
   })
