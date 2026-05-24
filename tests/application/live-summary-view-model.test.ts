@@ -56,6 +56,10 @@ describe('live summary view model', () => {
     expect(summary.cards[1].valueText).toContain('76.31')
     expect(summary.cards[0].subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
     expect(summary.cards[1].subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
+    expect(summary.cards[0].trendLabel).toEqual({ kind: 'Some', value: 'Down' })
+    expect(summary.cards[1].trendLabel).toEqual({ kind: 'Some', value: 'Up' })
+    expect(summary.headline).toContain('Crude inventory drew and WTI rose')
+    expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('missing-previous-observation')
     expect(summary.summary).toContain('Full system balance is not computed in this walking skeleton.')
   })
 

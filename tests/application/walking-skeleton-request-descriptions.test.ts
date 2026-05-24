@@ -12,6 +12,10 @@ describe('walking-skeleton request descriptions', () => {
       start: '2026-01-09',
       frequency: 'weekly',
       'data[]': 'value',
+      'sort[0][column]': 'period',
+      'sort[0][direction]': 'desc',
+      offset: '0',
+      length: '2',
       'facets[series][]': 'WCRSTUS1',
       'facets[duoarea][]': 'NUS',
     })
@@ -19,6 +23,10 @@ describe('walking-skeleton request descriptions', () => {
       start: '2026-01-09',
       frequency: 'weekly',
       'data[]': 'value',
+      'sort[0][column]': 'period',
+      'sort[0][direction]': 'desc',
+      offset: '0',
+      length: '2',
       'facets[series][]': 'RWTC',
     })
   })
