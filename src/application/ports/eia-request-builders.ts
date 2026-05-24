@@ -11,4 +11,13 @@ export const buildPriceRequest = (reportWeekIso: string): EiaRequest => ({
   params: some({ start: reportWeekIso, frequency: 'weekly' }),
 })
 
+export const buildRefineryRequest = (reportWeekIso: string): EiaRequest => ({
+  endpoint: '/v2/petroleum/pnp/wiup/data/',
+  params: some({ start: reportWeekIso, frequency: 'weekly' }),
+})
+
+export const buildSupplyRequest = (reportWeekIso: string): EiaRequest => ({
+  endpoint: '/v2/petroleum/sum/sndw/data/',
+  params: some({ start: reportWeekIso, frequency: 'weekly' }),
+})
 

@@ -4,6 +4,7 @@ coverage
 dist
 *.log
 *.tsbuildinfo
+.env*.local
 .DS_Store
 docs
 .vscode
