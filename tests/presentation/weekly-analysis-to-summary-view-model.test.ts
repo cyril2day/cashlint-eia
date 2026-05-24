@@ -112,7 +112,7 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
     expect(viewModel.cards[1]).toEqual(expect.objectContaining({
       kind: 'price',
       title: 'WTI price',
-      valueText: '72 USDPerBarrel',
+      valueText: '72.00 USDPerBarrel',
       statusLabel: 'Unknown',
       subtitleText: { kind: 'Some', value: '2026-05-19 · USTotal' },
       trendLabel: { kind: 'Some', value: 'Up' },

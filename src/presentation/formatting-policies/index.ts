@@ -2,6 +2,7 @@ import type { Signal } from '@/contexts/interpretation/model/signal'
 import { formatGeographyScope } from '@/contexts/measurement/model/geography-scope'
 import { formatMeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
 import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
+import { cond } from '@/shared/fp'
 
 export const oilLintPresentationFormattingLabels: Readonly<{
   readonly inventory: string
@@ -19,8 +20,34 @@ export const formatSummaryReportWeekText = (reportWeek: Signal['reportWeek']): s
 export const formatSummaryGeographyText = (geography: Signal['geography']): string =>
   formatGeographyScope(geography)
 
+const wholeNumberFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 0,
+})
+
+const decimalFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+})
+
+const fixedMoneyFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const percentageFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+})
+
+const formatSignalAmount = (signal: Signal): string =>
+  cond<[Signal], string>([
+    [candidate => candidate.unit.unit === 'USDPerBarrel', candidate => fixedMoneyFormatter.format(candidate.value)],
+    [candidate => candidate.unit.unit === 'Percent', candidate => percentageFormatter.format(candidate.value)],
+    [candidate => candidate.unit.unit === 'ThousandBarrels', candidate => wholeNumberFormatter.format(candidate.value)],
+    [candidate => candidate.unit.unit === 'ThousandBarrelsPerDay', candidate => wholeNumberFormatter.format(candidate.value)],
+    [() => true, candidate => decimalFormatter.format(candidate.value)],
+  ])(signal)
+
 export const formatSummarySignalValueText = (signal: Signal): string =>
-  `${String(signal.value)} ${formatMeasurementUnit(signal.unit)}`
+  `${formatSignalAmount(signal)} ${formatMeasurementUnit(signal.unit)}`
 
 export const formatSummarySignalSubtitleText = (signal: Signal): string =>
   `${formatReportWeekIso(signal.reportWeek)} · ${formatGeographyScope(signal.geography)}`

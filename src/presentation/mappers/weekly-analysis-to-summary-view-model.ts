@@ -1,6 +1,7 @@
 import type { WeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
+import type { SystemBalanceAnalysis } from '@/contexts/system-balance/model'
 import { formatSummaryConditionLabel, formatSummaryConfidenceLabel, formatSummaryTrendLabel, formatSummaryAnomalyLabel } from '@/presentation/display-policies'
 import {
   formatSummaryGeographyText,
@@ -30,6 +31,9 @@ const createCaveat = (
 })
 
 type InterpretationCaveat = ContextualizedSignal['caveats'][number]
+type WeeklyAnalysisWithTrace = WeeklyAnalysis & Readonly<{
+  readonly trace: Extract<WeeklyAnalysis['trace'], { readonly kind: 'Some' }>
+}>
 
 const hasReason = (candidate: object): candidate is Readonly<{ readonly reason: string }> =>
   both(
@@ -39,6 +43,14 @@ const hasReason = (candidate: object): candidate is Readonly<{ readonly reason: 
 
 const hasSource = (candidate: object): candidate is Readonly<{ readonly source: InterpretationCaveat }> =>
   'source' in candidate
+
+const isPropagatedSystemBalanceCaveat = (
+  caveat: AnalysisCaveat,
+): caveat is Extract<AnalysisCaveat, { readonly kind: 'PropagatedSystemBalanceCaveat' }> =>
+  caveat.kind === 'PropagatedSystemBalanceCaveat'
+
+const hasAnalysisTrace = (analysis: WeeklyAnalysis): analysis is WeeklyAnalysisWithTrace =>
+  analysis.trace.kind === 'Some'
 
 const getCaveatReasonOrDefault = (fallback: string) => (candidate: object): string =>
   ifElse(
@@ -93,6 +105,26 @@ const formatAnalysisCaveatMessage = (caveat: AnalysisCaveat): PresentationCaveat
         createCaveat('trend-not-computed', 'Trend not computed', 'A propagated interpretation caveat is present.'),
       )(candidate),
     ],
+    [
+      isPropagatedSystemBalanceCaveat,
+      () => createCaveat('system-balance-caveat', 'System balance caveat', 'System balance emitted a caveat.', 'info'),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'MixedEvidence', hasReason)(candidate),
+      candidate => createCaveat('trend-not-computed', 'Mixed evidence', getCaveatReasonOrDefault('The live evidence is mixed.')(candidate), 'info'),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'LowConfidence', hasReason)(candidate),
+      candidate => createCaveat('trend-not-computed', 'Low confidence', getCaveatReasonOrDefault('Confidence is low.')(candidate), 'warning'),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'PartialInterpretation', hasReason)(candidate),
+      candidate => createCaveat('trend-not-computed', 'Partial interpretation', getCaveatReasonOrDefault('Some interpretation context is partial.')(candidate), 'warning'),
+    ],
+    [
+      candidate => both((value: AnalysisCaveat) => value.kind === 'PriceContradiction', hasReason)(candidate),
+      candidate => createCaveat('trend-not-computed', 'Price contradiction', getCaveatReasonOrDefault('Price contradicts the balance signal.')(candidate), 'warning'),
+    ],
     [() => true, () =>
       createCaveat('trend-not-computed', 'Trend not computed', 'A propagated interpretation caveat is present.')],
   ])(caveat)
@@ -133,6 +165,31 @@ const summaryCardDefinitions: ReadonlyArray<Readonly<{
   { kind: 'price', title: 'WTI price', getSignal: analysis => analysis.keySignals.price },
 ]
 
+const systemBalanceCard = (
+  conditionLabel: string,
+  balance: SystemBalanceAnalysis,
+): SummaryCardViewModel => ({
+  kind: 'system',
+  title: 'System balance',
+  valueText: balance.balanceState,
+  statusLabel: conditionLabel,
+  subtitleText: some(`${formatSummaryReportWeekText(balance.reportWeek)} · ${formatSummaryGeographyText(balance.geography)}`),
+  trendLabel: none(),
+  anomalyLabel: none(),
+  caveatLabel: toMaybeJoinedMessages(' · ')(balance.caveats.map(caveat => caveat.kind)),
+  drilldownTarget: none(),
+})
+
+const systemBalanceCards = (
+  analysis: WeeklyAnalysis,
+  conditionLabel: string,
+): readonly SummaryCardViewModel[] =>
+  ifElse(
+    hasAnalysisTrace,
+    candidate => [systemBalanceCard(conditionLabel, candidate.trace.value.systemBalanceAnalysis)],
+    () => [],
+  )(analysis)
+
 const mapDisplayState = (analysis: WeeklyAnalysis): SummaryDisplayState =>
   ifElse(
     (candidate: WeeklyAnalysis) => candidate.caveats.length > 0,
@@ -150,9 +207,12 @@ export const mapWeeklyAnalysisToSummaryViewModel = (analysis: WeeklyAnalysis): S
     summary: analysis.summary,
     conditionLabel,
     confidenceLabel: formatSummaryConfidenceLabel(analysis.confidence),
-    cards: summaryCardDefinitions.map(definition =>
-      mapCard(definition.kind, definition.title, definition.getSignal(analysis), conditionLabel),
-    ),
+    cards: [
+      ...systemBalanceCards(analysis, conditionLabel),
+      ...summaryCardDefinitions.map(definition =>
+        mapCard(definition.kind, definition.title, definition.getSignal(analysis), conditionLabel),
+      ),
+    ],
     caveats: analysis.caveats.map(formatAnalysisCaveatMessage),
     displayState: mapDisplayState(analysis),
     displayStateMessage: ifElse(

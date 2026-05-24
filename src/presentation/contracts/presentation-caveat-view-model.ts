@@ -1,5 +1,6 @@
 export type PresentationCaveatKind =
   | 'full-system-balance-not-computed'
+  | 'system-balance-caveat'
   | 'refinery-data-not-included'
   | 'supply-data-not-included'
   | 'missing-previous-observation'
