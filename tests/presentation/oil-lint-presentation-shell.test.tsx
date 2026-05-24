@@ -12,7 +12,7 @@ describe('OilLintPresentationShell', () => {
   it('renders the presentation shell regions', () => {
     const markup = renderToStaticMarkup(<OilLintPresentationShell viewModel={oilLintPresentationViewModel} />)
 
-    expect(markup).toContain('Weekly analysis presentation shell')
+    expect(markup).toContain('Live weekly petroleum summary')
     expect(markup).toContain('Walking-skeleton summary ready for presentation')
     expect(markup).toContain('USTotal')
     expect(markup).toContain('Inventory and WTI price cards')

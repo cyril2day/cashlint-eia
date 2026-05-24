@@ -41,11 +41,10 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
         <header className="oil-lint-shell__header">
           <p className="oil-lint-shell__eyebrow">Oil Lint</p>
           <h1 className="oil-lint-shell__title" id="oil-lint-shell-title">
-            Weekly analysis presentation shell
+            Live weekly petroleum summary
           </h1>
           <p className="oil-lint-shell__lede">
-            Temporary presentation-safe SummaryViewModel data is rendered here until route
-            integration is wired up.
+            Real EIA data flows through the adapter, application workflow, and presentation shell.
           </p>
 
           <dl className="oil-lint-shell__meta" aria-label="Display context">
