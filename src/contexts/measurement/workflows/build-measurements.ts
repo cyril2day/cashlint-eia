@@ -33,12 +33,16 @@ type MeasurementBuilderError = Readonly<{ readonly kind: 'InvalidInventoryInput'
 type MeasurementBuilderErrorKind = MeasurementBuilderError['kind']
 
 const unitLabels: Record<string, string> = {
-  MBBL: 'ThousandBarrels',
-  'MBBL/D': 'ThousandBarrelsPerDay',
-  PCT: 'Percent',
+  mbbl: 'ThousandBarrels',
+  'thousand barrels': 'ThousandBarrels',
+  thousandbarrels: 'ThousandBarrels',
+  'mbbl/d': 'ThousandBarrelsPerDay',
+  pct: 'Percent',
   '%': 'Percent',
-  'USD/bbl': 'USDPerBarrel',
-  'USDPerBarrel': 'USDPerBarrel',
+  'usd/bbl': 'USDPerBarrel',
+  'usd per barrel': 'USDPerBarrel',
+  'dollars per barrel': 'USDPerBarrel',
+  usdperbarrel: 'USDPerBarrel',
 }
 
 const geographyLabels: Record<string, string> = {
@@ -50,6 +54,20 @@ const geographyLabels: Record<string, string> = {
 }
 
 const makeBuilderError = (kind: MeasurementBuilderErrorKind, input: string): MeasurementBuilderError => ({ kind, input })
+
+const hasStringInput = (input: unknown): input is Readonly<{ readonly input: string }> =>
+  ifElse(
+    (candidate: unknown): candidate is Readonly<{ readonly input: unknown }> => typeof candidate === 'object' && candidate !== null && 'input' in candidate,
+    candidate => typeof candidate.input === 'string',
+    () => false,
+  )(input)
+
+const serializeBuilderErrorInput = (input: unknown): string =>
+  ifElse(
+    hasStringInput,
+    candidate => candidate.input,
+    candidate => String(candidate),
+  )(input)
 
 const mapParsedValue = <ParsedValue, NextValue>(
   parsedResult: Result<ParsedValue, unknown>,
@@ -67,7 +85,7 @@ const normalizeUnitLabel = (input: unknown): string =>
     (s: string) => Object.prototype.hasOwnProperty.call(unitLabels, s),
     (s: string) => unitLabels[s],
     (s: string) => s,
-  )(String(input))
+  )(String(input).trim().toLowerCase())
 
 const normalizeGeographyLabel = (input: unknown): string =>
   ifElse(
@@ -113,7 +131,7 @@ export const buildInventoryMeasurements = (
   reportWeek: ReportWeek,
   dtos: readonly InventoryBoundaryDto[],
 ): Result<readonly ReturnType<typeof createInventoryMeasurement>[], MeasurementBuilderError> =>
-  mapError(sequenceResults(dtos.map(buildInventoryFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidInventoryInput', String(e)))
+  mapError(sequenceResults(dtos.map(buildInventoryFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidInventoryInput', serializeBuilderErrorInput(e)))
 
 const buildPriceFromDto = (reportWeek: ReportWeek) => (d: PriceBoundaryDto): Result<ReturnType<typeof createPriceMeasurement>, MeasurementBuilderError> => {
   const withValue = (_d: PriceBoundaryDto) =>
@@ -154,7 +172,7 @@ export const buildPriceMeasurement = (
 ): Result<ReturnType<typeof createPriceMeasurement>, MeasurementBuilderError> =>
   ifElse(
     (arr: readonly PriceBoundaryDto[]) => arr.length > 0,
-    (arr: readonly PriceBoundaryDto[]) => mapError(buildPriceFromDto(reportWeek)(arr[0]), (e): MeasurementBuilderError => makeBuilderError('InvalidPriceInput', String(e))),
+    (arr: readonly PriceBoundaryDto[]) => mapError(buildPriceFromDto(reportWeek)(arr[0]), (e): MeasurementBuilderError => makeBuilderError('InvalidPriceInput', serializeBuilderErrorInput(e))),
     () => failure<MeasurementBuilderError>(makeBuilderError('InvalidPriceInput', 'missing-price')),
   )(dtos)
 
@@ -195,7 +213,7 @@ export const buildRefineryMeasurements = (
   reportWeek: ReportWeek,
   dtos: readonly RefineryBoundaryDto[],
 ): Result<readonly ReturnType<typeof createRefineryMeasurement>[], MeasurementBuilderError> =>
-  mapError(sequenceResults(dtos.map(buildRefineryFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidRefineryInput', String(e)))
+  mapError(sequenceResults(dtos.map(buildRefineryFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidRefineryInput', serializeBuilderErrorInput(e)))
 
 const buildSupplyFromDto = (reportWeek: ReportWeek) => (d: SupplyBoundaryDto): Result<ReturnType<typeof createSupplyMeasurement>, MeasurementBuilderError> => {
   const withValue = (_d: SupplyBoundaryDto) =>
@@ -234,7 +252,7 @@ export const buildSupplyMeasurements = (
   reportWeek: ReportWeek,
   dtos: readonly SupplyBoundaryDto[],
 ): Result<readonly ReturnType<typeof createSupplyMeasurement>[], MeasurementBuilderError> =>
-  mapError(sequenceResults(dtos.map(buildSupplyFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidSupplyInput', String(e)))
+  mapError(sequenceResults(dtos.map(buildSupplyFromDto(reportWeek))), (e): MeasurementBuilderError => makeBuilderError('InvalidSupplyInput', serializeBuilderErrorInput(e)))
 
 export type { MeasurementBuilderError }
 

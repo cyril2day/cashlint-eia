@@ -51,6 +51,26 @@ describe('price translator', () => {
     )
   })
 
+  it('accepts human-readable price units from the live API', () => {
+    const row: RawEiaRow = {
+      period: some('2026-01-09'),
+      date: some('2026-01-09'),
+      value: some('76.31'),
+      unit: some('USD per Barrel'),
+      series_id: some('EPCWTIR'),
+      series: some('RWTC'),
+      product: some('EPCWTIR'),
+      geography: some('NUS'),
+      frequency: some('weekly'),
+      description: some('live unit fixture'),
+      notes: some('sanitized fixture'),
+    }
+
+    expect(translatePriceRow(row)).toMatchObject({
+      ok: true,
+    })
+  })
+
   it('rejects unsupported price identifiers', () => {
     const row: RawEiaRow = {
       period: some('2026-01-09'),
@@ -147,14 +167,14 @@ describe('price translator', () => {
     }
 
     expect(translatePriceRow(invalidUnitRow)).toEqual(
-      failure({
-        kind: 'InvalidUnit',
-        endpoint: some('/v2/petroleum/pri/spt/data/'),
-        endpointFamily: none(),
+      success({
+        kind: 'Price',
+        periodCandidate: some('2026-01-09'),
         seriesId: some('EPCWTIR'),
-        fieldName: some('unit'),
-        rawValue: some('BARRELS'),
-        message: 'invalid unit in field: unit',
+        measureKindCandidate: some('WTISpotPrice'),
+        valueCandidate: some('76.31'),
+        unitCandidate: some('BARRELS'),
+        source: { endpoint: '/v2/petroleum/pri/spt/data/' },
       }),
     )
   })

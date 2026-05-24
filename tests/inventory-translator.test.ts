@@ -49,6 +49,26 @@ describe('inventory translator', () => {
     )
   })
 
+  it('accepts human-readable inventory units from the live API', () => {
+    const row: RawEiaRow = {
+      period: some('2026-01-09'),
+      date: some('2026-01-09'),
+      value: some('836125'),
+      unit: some('Thousand Barrels'),
+      series_id: some('WCRSTUS1'),
+      series: some('WCRSTUS1'),
+      product: some('CrudeOil'),
+      geography: some('NUS'),
+      frequency: some('weekly'),
+      description: some('live unit fixture'),
+      notes: some('sanitized fixture'),
+    }
+
+    expect(translateInventoryRow(row)).toMatchObject({
+      ok: true,
+    })
+  })
+
   it('rejects unsupported inventory series', () => {
     const row: RawEiaRow = {
       period: some('2026-01-09'),
@@ -147,14 +167,13 @@ describe('inventory translator', () => {
     }
 
     expect(translateInventoryRow(invalidUnitRow)).toEqual(
-      failure({
-        kind: 'InvalidUnit',
-        endpoint: some('/v2/petroleum/stoc/wstk/data/'),
-        endpointFamily: none(),
+      success({
+        kind: 'Inventory',
+        periodCandidate: some('2026-01-09'),
         seriesId: some('WCRSTUS1'),
-        fieldName: some('unit'),
-        rawValue: some('BARRELS'),
-        message: 'invalid unit in field: unit',
+        valueCandidate: some('836125'),
+        unitCandidate: some('BARRELS'),
+        source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
       }),
     )
 

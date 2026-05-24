@@ -225,10 +225,17 @@ const measurementFailureViewModel = (
   error: Extract<ApplicationError, { readonly kind: 'MeasurementFailure' }>,
 ): PresentationErrorViewModel => ({
   title: 'Live analysis could not be composed',
-  message: String(error.error),
+  message: formatMeasurementFailureMessage(error.error),
   correlationId: none(),
   retryHint: none(),
 })
+
+const formatMeasurementFailureMessage = (error: unknown): string =>
+  ifElse(
+    (candidate: unknown): candidate is object => typeof candidate === 'object' && candidate !== null,
+    candidate => JSON.stringify(candidate),
+    candidate => String(candidate),
+  )(error)
 
 const applicationErrorMeasurementFallbackViewModel = (error: ApplicationError): PresentationErrorViewModel =>
   ifElse(

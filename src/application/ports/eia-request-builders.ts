@@ -3,12 +3,23 @@ import { some } from '@/shared/maybe'
 
 export const buildInventoryRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/stoc/wstk/data/',
-  params: some({ start: reportWeekIso, frequency: 'weekly' }),
+  params: some({
+    start: reportWeekIso,
+    frequency: 'weekly',
+    'data[]': 'value',
+    'facets[series][]': 'WCRSTUS1',
+    'facets[duoarea][]': 'NUS',
+  }),
 })
 
 export const buildPriceRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/pri/spt/data/',
-  params: some({ start: reportWeekIso, frequency: 'weekly' }),
+  params: some({
+    start: reportWeekIso,
+    frequency: 'weekly',
+    'data[]': 'value',
+    'facets[series][]': 'RWTC',
+  }),
 })
 
 export const buildRefineryRequest = (reportWeekIso: string): EiaRequest => ({

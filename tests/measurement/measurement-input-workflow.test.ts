@@ -90,5 +90,68 @@ describe('processTrustedBoundaryMeasurements', () => {
     expect(isFailure(r)).toBe(true)
     const json = JSON.parse(JSON.stringify(r))
     expect(json.error.kind).toBe('BuilderError')
+    expect(json.error.input).not.toBe('[object Object]')
+  })
+
+  it('preserves the leaf input when price unit is invalid', () => {
+    const priceRaw = {
+      period: some('2026-01-09'),
+      date: none(),
+      value: some('76.31'),
+      unit: some('NOT-A-UNIT'),
+      series_id: some('EPCWTIR'),
+      series: none(),
+      product: none(),
+      geography: none(),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }
+
+    const price = fromRawPriceRow(priceRaw)
+
+    const r = processTrustedBoundaryMeasurements({ inputs: [price] })
+
+    expect(isFailure(r)).toBe(true)
+    const json = JSON.parse(JSON.stringify(r))
+    expect(json.error.kind).toBe('BuilderError')
+    expect(json.error.input).toContain('invalid-unit')
+  })
+
+  it('accepts dollars per barrel as the live price unit label', () => {
+    const invRaw = {
+      period: some('2026-01-09'),
+      date: none(),
+      value: some('836125'),
+      unit: some('MBBL'),
+      series_id: some('WCRSTUS1'),
+      series: none(),
+      product: none(),
+      geography: none(),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }
+
+    const priceRaw = {
+      period: some('2026-01-09'),
+      date: none(),
+      value: some('76.31'),
+      unit: some('dollars per barrel'),
+      series_id: some('EPCWTIR'),
+      series: none(),
+      product: none(),
+      geography: none(),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }
+
+    const inv = fromRawInventoryRow(invRaw)
+    const price = fromRawPriceRow(priceRaw)
+
+    const r = processTrustedBoundaryMeasurements({ inputs: [inv, price] })
+
+    expect(r.ok).toBe(true)
   })
 })

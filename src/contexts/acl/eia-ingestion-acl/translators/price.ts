@@ -12,7 +12,6 @@ import {
   makeFrequencyMismatchError,
   makeInvalidDateOrPeriodError,
   makeInvalidNumericValueError,
-  makeInvalidUnitError,
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
@@ -129,19 +128,6 @@ const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | numbe
   return requireValue(valueCandidate)
 }
 
-const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<string> =>
-  ifElse(
-    isWalkingSkeletonPriceUnitCandidate,
-    (validUnitCandidate: string) => success(validUnitCandidate),
-    (invalidUnitCandidate: string) =>
-      failure(
-        makeInvalidUnitError('unit', invalidUnitCandidate, {
-          endpoint: walkingSkeletonPriceEndpoint,
-          seriesId,
-        }),
-      ),
-  )(unitCandidate)
-
 const readPriceRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> => {
   const requireData = requireFieldThen<readonly RawEiaRow[], BR<readonly RawEiaRow[]>>('data', walkingSkeletonPriceEndpoint, success)
 
@@ -154,7 +140,7 @@ const translatePriceRows = (rows: readonly RawEiaRow[]): BR<readonly PriceBounda
 const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
   const unitCandidate = unwrap(row.unit)
 
-  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonPriceEndpoint, candidate => validateUnitCandidate(candidate, seriesId))
+  const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>('unit', walkingSkeletonPriceEndpoint, success)
 
   return requireUnit(unitCandidate)
 }

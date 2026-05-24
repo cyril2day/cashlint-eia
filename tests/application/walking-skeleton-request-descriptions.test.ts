@@ -8,7 +8,18 @@ describe('walking-skeleton request descriptions', () => {
 
     expect(requests.inventoryRequest.endpoint).toBe('/v2/petroleum/stoc/wstk/data/')
     expect(requests.priceRequest.endpoint).toBe('/v2/petroleum/pri/spt/data/')
-    expect(unwrap(requests.inventoryRequest.params)).toEqual({ start: '2026-01-09', frequency: 'weekly' })
-    expect(unwrap(requests.priceRequest.params)).toEqual({ start: '2026-01-09', frequency: 'weekly' })
+    expect(unwrap(requests.inventoryRequest.params)).toEqual({
+      start: '2026-01-09',
+      frequency: 'weekly',
+      'data[]': 'value',
+      'facets[series][]': 'WCRSTUS1',
+      'facets[duoarea][]': 'NUS',
+    })
+    expect(unwrap(requests.priceRequest.params)).toEqual({
+      start: '2026-01-09',
+      frequency: 'weekly',
+      'data[]': 'value',
+      'facets[series][]': 'RWTC',
+    })
   })
 })

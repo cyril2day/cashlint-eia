@@ -5,7 +5,7 @@ export const walkingSkeletonPriceSeriesIdentifiers: readonly string[] = ['RWTC',
 
 export const walkingSkeletonPriceMeasureKindCandidates: readonly string[] = ['WTISpotPrice']
 
-export const walkingSkeletonPriceUnitCandidates: readonly string[] = ['USD/bbl']
+export const walkingSkeletonPriceUnitCandidates: readonly string[] = ['usd/bbl', 'usd per barrel', 'dollars per barrel', 'usdperbarrel']
 
 export const walkingSkeletonPriceEndpoint = '/v2/petroleum/pri/spt/data/'
 
@@ -16,7 +16,7 @@ export const isWalkingSkeletonPriceMeasureKindCandidate = (measureKindCandidate:
   walkingSkeletonPriceMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
 
 export const isWalkingSkeletonPriceUnitCandidate = (unitCandidate: string): boolean =>
-  walkingSkeletonPriceUnitCandidates.some(candidate => candidate === unitCandidate)
+  walkingSkeletonPriceUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
 
 export const isWalkingSkeletonPricePeriodCandidate = (periodCandidate: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/.test(periodCandidate)

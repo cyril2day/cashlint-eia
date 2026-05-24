@@ -24,7 +24,28 @@ export type MeasurementInputWorkflowError =
   | WeeklyPetroleumFactsError
   | WeeklyFactsValidationError
 
-const mapBuilderError = (e: MeasurementBuilderError): MeasurementInputWorkflowError => ({ kind: 'BuilderError', input: String(e) })
+const hasStringInput = (input: unknown): input is Readonly<{ readonly input: string }> =>
+  ifElse(
+    (candidate: unknown): candidate is Readonly<{ readonly input: unknown }> => typeof candidate === 'object' && candidate !== null && 'input' in candidate,
+    candidate => typeof candidate.input === 'string',
+    () => false,
+  )(input)
+
+const serializeUnknownInput = (input: unknown): string =>
+  ifElse(
+    hasStringInput,
+    candidate => candidate.input,
+    candidate => JSON.stringify(candidate),
+  )(input)
+
+const serializeWorkflowErrorInput = (input: unknown): string =>
+  ifElse(
+    hasStringInput,
+    candidate => candidate.input,
+    candidate => String(candidate),
+  )(input)
+
+const mapBuilderError = (e: MeasurementBuilderError): MeasurementInputWorkflowError => ({ kind: 'BuilderError', input: serializeWorkflowErrorInput(e) })
 
 type NormalizedEntry = NormalizedWeeklyInput[number]
 type StageWithInventories = { entry: NormalizedEntry; inventories: readonly InventoryMeasurement[] }
@@ -39,9 +60,9 @@ const mapBuilderResult = <T>(r: Result<T, MeasurementBuilderError>): Result<T, M
 
 const identityError = <T, E>(r: Result<T, E>): Result<T, E | MeasurementInputWorkflowError> => mapError(r, e => e)
 
-const mapRefinerySetError = (e: RefinerySetError): MeasurementInputWorkflowError => ({ kind: 'RefinerySetError', input: String(e) })
+const mapRefinerySetError = (e: RefinerySetError): MeasurementInputWorkflowError => ({ kind: 'RefinerySetError', input: serializeWorkflowErrorInput(e) })
 
-const mapSupplySetError = (e: SupplySetError): MeasurementInputWorkflowError => ({ kind: 'SupplySetError', input: String(e) })
+const mapSupplySetError = (e: SupplySetError): MeasurementInputWorkflowError => ({ kind: 'SupplySetError', input: serializeWorkflowErrorInput(e) })
 
 const mapSetToMaybe = <SetValue, SetError>(
   setResult: Result<SetValue, SetError>,

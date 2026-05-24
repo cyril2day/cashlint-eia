@@ -180,6 +180,12 @@ const maybeString = (value: unknown): Maybe<string> =>
     () => none(),
   )(value)
 
+const maybeUnit = (row: Record<string, unknown>): Maybe<string> =>
+  matchMaybe<string, Maybe<string>>({
+    Some: candidate => some(candidate),
+    None: () => maybeString(row.units),
+  })(maybeString(row.unit))
+
 const maybeNumberPeriodCandidate = (value: unknown): Maybe<PeriodCandidate> =>
   ifElse(
     (candidate: unknown): candidate is number => typeof candidate === 'number',
@@ -226,7 +232,7 @@ const normalizeRow = (row: Record<string, unknown>): RawEiaRow => ({
   period: maybePeriodCandidate(row.period),
   date: maybeString(row.date),
   value: maybeValueCandidate(row.value),
-  unit: maybeString(row.unit),
+  unit: maybeUnit(row),
   series_id: maybeString(row.series_id),
   series: maybeString(row.series),
   product: maybeString(row.product),
