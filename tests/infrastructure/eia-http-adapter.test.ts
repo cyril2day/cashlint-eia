@@ -49,6 +49,11 @@ describe('real EIA HTTP adapter', () => {
             },
           ],
         },
+        request: {
+          params: {
+            api_key: 'secret-test-key',
+          },
+        },
       })
     }
 
@@ -67,7 +72,12 @@ describe('real EIA HTTP adapter', () => {
       kind: 'Some',
       value: [{ period: some('2026-05-19'), unit: some('MBBL') }],
     })
+    expect(Reflect.get(Reflect.get(result, 'value'), 'request')).toMatchObject({
+      kind: 'Some',
+      value: { params: { api_key: '[REDACTED]' } },
+    })
     expect(Reflect.get(Reflect.get(result, 'value'), 'endpoint')).toEqual(some('/v2/petroleum/stoc/wstk/data/'))
+    expect(JSON.stringify(result)).not.toContain('secret-test-key')
   })
 
   it('maps HTTP statuses to typed sanitized upstream errors', async () => {

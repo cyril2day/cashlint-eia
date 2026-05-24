@@ -1,3 +1,7 @@
+import type { ClientRequest, IncomingHttpHeaders, IncomingMessage, RequestOptions } from 'node:http'
+import { request as httpRequest } from 'node:http'
+import { request as httpsRequest } from 'node:https'
+
 import type { EiaClient, EiaRequest, UpstreamError } from '@/application/ports/eia-client'
 import type { PeriodCandidate, RawEiaEnvelope, RawEiaRow, ValueCandidate } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
 import { allPass, both, cond, ifElse, isNil } from '@/shared/fp'
@@ -35,8 +39,177 @@ const defaultDelay = (ms: number): Promise<void> =>
     setTimeout(resolve, ms)
   })
 
+type NodeRequest = (
+  url: URL,
+  options: RequestOptions,
+  callback: (response: IncomingMessage) => void,
+) => ClientRequest
+
+const requestForUrl = (url: URL): NodeRequest =>
+  ifElse(
+    (candidate: URL) => candidate.protocol === 'http:',
+    () => httpRequest,
+    () => httpsRequest,
+  )(url)
+
+const emptyHeaderEntries = (): [string, string][] => []
+
+const responseHeaderArrayEntries =
+  (key: string) =>
+  (value: string | readonly string[] | undefined): [string, string][] =>
+    ifElse(
+      (candidate: string | readonly string[] | undefined): candidate is readonly string[] => Array.isArray(candidate),
+      values => values.map((valueItem): [string, string] => [key, valueItem]),
+      emptyHeaderEntries,
+    )(value)
+
+const singleResponseHeaderEntry =
+  (key: string) =>
+  (value: string): [string, string][] => [[key, value]]
+
+const responseHeaderValueEntries = (
+  key: string,
+  value: string | readonly string[] | undefined,
+): [string, string][] =>
+  ifElse(
+    (candidate: string | readonly string[] | undefined): candidate is string => typeof candidate === 'string',
+    singleResponseHeaderEntry(key),
+    responseHeaderArrayEntries(key),
+  )(value)
+
+const responseHeaders = (headers: IncomingHttpHeaders): Headers =>
+  new Headers(
+    Object.entries(headers).flatMap(([key, value]) => responseHeaderValueEntries(key, value)),
+  )
+
+const bufferFromChunk = (chunk: unknown): Buffer =>
+  ifElse(
+    Buffer.isBuffer,
+    candidate => candidate,
+    candidate => Buffer.from(String(candidate)),
+  )(chunk)
+
+const collectResponseBody = (response: IncomingMessage): Promise<Buffer> =>
+  new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+
+    response.on('data', chunk => {
+      chunks.push(bufferFromChunk(chunk))
+    })
+
+    response.on('end', () => {
+      resolve(Buffer.concat(chunks))
+    })
+
+    response.on('error', reject)
+  })
+
+const createAbortError = (): DOMException => new DOMException('aborted', 'AbortError')
+
+const isAbortSignal = (
+  signal: AbortSignal | null | undefined,
+): signal is AbortSignal => isNil(signal) === false
+
+const removeAbortListener =
+  (listener: () => void) =>
+  (signal: AbortSignal): void => {
+    signal.removeEventListener('abort', listener)
+  }
+
+const detachAbortListener = (
+  signal: AbortSignal | null | undefined,
+  listener: () => void,
+): void =>
+  ifElse(
+    isAbortSignal,
+    removeAbortListener(listener),
+    () => undefined,
+  )(signal)
+
+const addAbortListener =
+  (listener: () => void) =>
+  (signal: AbortSignal): void => {
+    signal.addEventListener('abort', listener, { once: true })
+  }
+
+const handleAbortSignal =
+  (listener: () => void) =>
+  (signal: AbortSignal): void =>
+    ifElse(
+      (candidate: AbortSignal) => candidate.aborted,
+      () => listener(),
+      addAbortListener(listener),
+    )(signal)
+
+const attachAbortListener = (
+  signal: AbortSignal | null | undefined,
+  request: ClientRequest,
+): (() => void) => {
+  const abortRequest = (): void => {
+    request.destroy(createAbortError())
+  }
+
+  ifElse(
+    isAbortSignal,
+    handleAbortSignal(abortRequest),
+    () => undefined,
+  )(signal)
+
+  return () => {
+    detachAbortListener(signal, abortRequest)
+  }
+}
+
+const requestSignal = (init: RequestInit): AbortSignal | undefined =>
+  ifElse(
+    isAbortSignal,
+    signal => signal,
+    () => undefined,
+  )(init.signal)
+
+const nodeRequestOptions = (init: RequestInit): RequestOptions => ({
+  method: 'GET',
+  headers: {
+    Accept: 'application/json',
+  },
+  signal: requestSignal(init),
+})
+
+const responseStatusCode = (response: IncomingMessage): number =>
+  ifElse(
+    (candidate: number | undefined): candidate is number => typeof candidate === 'number',
+    statusCode => statusCode,
+    () => 500,
+  )(response.statusCode)
+
+const responseFromIncomingMessage = (response: IncomingMessage): Promise<Response> =>
+  collectResponseBody(response).then(body =>
+    new Response(new Uint8Array(body), {
+      status: responseStatusCode(response),
+      statusText: response.statusMessage,
+      headers: responseHeaders(response.headers),
+    }),
+  )
+
+const nodeEiaFetch: EiaFetch = (input, init) =>
+  new Promise((resolve, reject) => {
+    const url = new URL(input.toString())
+    const request = requestForUrl(url)(url, nodeRequestOptions(init), response => {
+      responseFromIncomingMessage(response).then(resolve).catch(reject)
+    })
+    const detachAbort = attachAbortListener(init.signal, request)
+
+    request.on('error', error => {
+      detachAbort()
+      reject(error)
+    })
+
+    request.on('close', detachAbort)
+    request.end()
+  })
+
 export const defaultEiaAdapterDependencies = (): EiaAdapterDependencies => ({
-  fetch: (input, init) => fetch(input, init),
+  fetch: nodeEiaFetch,
   delay: defaultDelay,
   logger: none(),
   correlationId: none(),
@@ -228,6 +401,38 @@ const maybeUnknown = (value: unknown): Maybe<unknown> =>
     candidate => some(candidate),
   )(value)
 
+const isSecretEchoKey = (key: string): boolean =>
+  ['api_key', 'apiKey', 'apikey', 'key'].includes(key)
+
+const sanitizeEchoValue = (key: string, value: unknown): unknown =>
+  ifElse(
+    isSecretEchoKey,
+    () => '[REDACTED]',
+    () => sanitizeEcho(value),
+  )(key)
+
+const sanitizeEchoRecord = (record: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(record).map(([key, value]) => [key, sanitizeEchoValue(key, value)]),
+  )
+
+const sanitizeEchoArray = (values: readonly unknown[]): readonly unknown[] =>
+  values.map(sanitizeEcho)
+
+const sanitizeEchoRecordCandidate = (value: unknown): unknown =>
+  ifElse(
+    isRecord,
+    sanitizeEchoRecord,
+    candidate => candidate,
+  )(value)
+
+const sanitizeEcho = (value: unknown): unknown =>
+  ifElse(
+    Array.isArray,
+    sanitizeEchoArray,
+    sanitizeEchoRecordCandidate,
+  )(value)
+
 const normalizeRow = (row: Record<string, unknown>): RawEiaRow => ({
   period: maybePeriodCandidate(row.period),
   date: maybeString(row.date),
@@ -272,7 +477,7 @@ const normalizeEnvelopeFromRecord = (
     responseDataIsRowArray,
     rows => success<RawEiaEnvelope>({
       api: maybeString(body.api),
-      request: maybeUnknown(body.request),
+      request: maybeUnknown(sanitizeEcho(body.request)),
       response: maybeUnknown(body.response),
       data: some(rows.map(normalizeRow)),
       endpoint: some(request.endpoint),
@@ -306,6 +511,7 @@ const fetchWithTimeout = (
 
   return deps.fetch(url, {
     signal: controller.signal,
+    cache: 'no-store',
     headers: {
       Accept: 'application/json',
     },
