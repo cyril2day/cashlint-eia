@@ -167,13 +167,14 @@ describe('inventory translator', () => {
     }
 
     expect(translateInventoryRow(invalidUnitRow)).toEqual(
-      success({
-        kind: 'Inventory',
-        periodCandidate: some('2026-01-09'),
+      failure({
+        kind: 'InvalidUnit',
+        endpoint: some('/v2/petroleum/stoc/wstk/data/'),
+        endpointFamily: none(),
         seriesId: some('WCRSTUS1'),
-        valueCandidate: some('836125'),
-        unitCandidate: some('BARRELS'),
-        source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+        fieldName: some('unit'),
+        rawValue: some('BARRELS'),
+        message: 'invalid unit in field: unit',
       }),
     )
 
