@@ -1,6 +1,6 @@
 import { unwrap } from '@/shared/maybe'
 import { bindResultStep, sequenceResults, mapError, mapResult, success, failure } from '@/shared/result'
-import { ifElse, pipeWith } from '@/shared/fp'
+import { allPass, ifElse, isNil, pipeWith } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 import type { InventoryBoundaryDto, PriceBoundaryDto, RefineryBoundaryDto, SupplyBoundaryDto } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import { parseDecimal } from '@/shared/decimal'
@@ -40,6 +40,7 @@ const unitLabels: Record<string, string> = {
   pct: 'Percent',
   '%': 'Percent',
   'usd/bbl': 'USDPerBarrel',
+  '$/bbl': 'USDPerBarrel',
   'usd per barrel': 'USDPerBarrel',
   'dollars per barrel': 'USDPerBarrel',
   usdperbarrel: 'USDPerBarrel',
@@ -55,9 +56,22 @@ const geographyLabels: Record<string, string> = {
 
 const makeBuilderError = (kind: MeasurementBuilderErrorKind, input: string): MeasurementBuilderError => ({ kind, input })
 
+const isObjectCandidate = (input: unknown): input is object =>
+  allPass([
+    (candidate: unknown) => typeof candidate === 'object',
+    (candidate: unknown) => isNil(candidate) === false,
+  ])(input)
+
+const hasUnknownInput = (input: unknown): input is Readonly<{ readonly input: unknown }> =>
+  ifElse(
+    isObjectCandidate,
+    candidate => 'input' in candidate,
+    () => false,
+  )(input)
+
 const hasStringInput = (input: unknown): input is Readonly<{ readonly input: string }> =>
   ifElse(
-    (candidate: unknown): candidate is Readonly<{ readonly input: unknown }> => typeof candidate === 'object' && candidate !== null && 'input' in candidate,
+    hasUnknownInput,
     candidate => typeof candidate.input === 'string',
     () => false,
   )(input)

@@ -1,6 +1,6 @@
 import type { TrustedBoundaryInput } from '@/contexts/acl/eia-ingestion-acl/contracts/boundary-dtos'
 import { bindResultStep, mapError, mapResult, sequenceResults, success } from '@/shared/result'
-import { ifElse, pipeWith } from '@/shared/fp'
+import { allPass, ifElse, isNil, pipeWith } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 import { normalizeWeeklyFacts, type NormalizedWeeklyInput } from '@/contexts/measurement/normalizers/normalizeWeeklyFacts'
 import { buildInventoryMeasurements, buildPriceMeasurement, buildRefineryMeasurements, buildSupplyMeasurements, type MeasurementBuilderError } from './build-measurements'
@@ -24,18 +24,24 @@ export type MeasurementInputWorkflowError =
   | WeeklyPetroleumFactsError
   | WeeklyFactsValidationError
 
-const hasStringInput = (input: unknown): input is Readonly<{ readonly input: string }> =>
+const isObjectCandidate = (input: unknown): input is object =>
+  allPass([
+    (candidate: unknown) => typeof candidate === 'object',
+    (candidate: unknown) => isNil(candidate) === false,
+  ])(input)
+
+const hasUnknownInput = (input: unknown): input is Readonly<{ readonly input: unknown }> =>
   ifElse(
-    (candidate: unknown): candidate is Readonly<{ readonly input: unknown }> => typeof candidate === 'object' && candidate !== null && 'input' in candidate,
-    candidate => typeof candidate.input === 'string',
+    isObjectCandidate,
+    candidate => 'input' in candidate,
     () => false,
   )(input)
 
-const serializeUnknownInput = (input: unknown): string =>
+const hasStringInput = (input: unknown): input is Readonly<{ readonly input: string }> =>
   ifElse(
-    hasStringInput,
-    candidate => candidate.input,
-    candidate => JSON.stringify(candidate),
+    hasUnknownInput,
+    candidate => typeof candidate.input === 'string',
+    () => false,
   )(input)
 
 const serializeWorkflowErrorInput = (input: unknown): string =>

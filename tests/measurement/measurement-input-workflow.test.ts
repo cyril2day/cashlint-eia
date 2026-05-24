@@ -154,4 +154,41 @@ describe('processTrustedBoundaryMeasurements', () => {
 
     expect(r.ok).toBe(true)
   })
+
+  it('accepts the live EIA WTI unit token', () => {
+    const invRaw = {
+      period: some('2026-05-15'),
+      date: none(),
+      value: some('819188'),
+      unit: some('MBBL'),
+      series_id: some('WCRSTUS1'),
+      series: none(),
+      product: none(),
+      geography: none(),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }
+
+    const priceRaw = {
+      period: some('2026-05-15'),
+      date: none(),
+      value: some('105.1'),
+      unit: some('$/BBL'),
+      series_id: some('RWTC'),
+      series: none(),
+      product: none(),
+      geography: none(),
+      frequency: none(),
+      description: none(),
+      notes: none(),
+    }
+
+    const inv = fromRawInventoryRow(invRaw)
+    const price = fromRawPriceRow(priceRaw)
+
+    const r = processTrustedBoundaryMeasurements({ inputs: [inv, price] })
+
+    expect(r.ok).toBe(true)
+  })
 })
