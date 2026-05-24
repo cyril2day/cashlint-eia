@@ -18,6 +18,14 @@ describe('inventory translator', () => {
           unitCandidate: some('MBBL'),
           source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
         },
+        {
+          kind: 'Inventory',
+          periodCandidate: some('2026-01-02'),
+          seriesId: some('WCRSTUS1'),
+          valueCandidate: some('838500'),
+          unitCandidate: some('MBBL'),
+          source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+        },
       ]),
     )
   })

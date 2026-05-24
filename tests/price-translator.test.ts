@@ -19,6 +19,15 @@ describe('price translator', () => {
           unitCandidate: some('USD/bbl'),
           source: { endpoint: '/v2/petroleum/pri/spt/data/' },
         },
+        {
+          kind: 'Price',
+          periodCandidate: some('2026-01-02'),
+          seriesId: some('EPCWTIR'),
+          measureKindCandidate: some('WTISpotPrice'),
+          valueCandidate: some('74.75'),
+          unitCandidate: some('USD/bbl'),
+          source: { endpoint: '/v2/petroleum/pri/spt/data/' },
+        },
       ]),
     )
   })
