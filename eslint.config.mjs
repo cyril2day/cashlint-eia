@@ -211,6 +211,13 @@ const restrictedSyntaxRules = [
     message:
       'Nested bindResult calls are not allowed. Use flatter pipelines, sequenceResults, or a pipeWith runner instead.',
   },
+    // 15. Throw statements NOT allowed
+    // -----------------------------
+    {
+    selector: 'ThrowStatement',
+    message:
+        'Throw statements are not allowed. Use Result.failure to represent expected errors and handle them explicitly in workflows.',
+    },
 ];
 
 export default [
@@ -303,7 +310,8 @@ export default [
             rule.selector !== 'AwaitExpression' &&
             rule.selector !== 'CallExpression[callee.name="ifElse"] ArrowFunctionExpression[expression=false]' &&
             rule.selector !== 'NewExpression[callee.name="Date"]' &&
-            rule.selector !== "MemberExpression[object.name='Date']"
+            rule.selector !== "MemberExpression[object.name='Date']" &&
+            rule.selector !== 'ThrowStatement'
         ),
       ],
     },
