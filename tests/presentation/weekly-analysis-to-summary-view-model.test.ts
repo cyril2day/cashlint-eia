@@ -66,7 +66,7 @@ const buildAnalysis = () => {
     geography,
     createAnalysisCondition('Unknown'),
     'Inventory drew while price rose, which suggests a tighter signal.',
-    'Full system balance is not computed, so the walking skeleton stays cautious.',
+    'Full system balance is not computed, so this read stays cautious.',
     'Inventory is the physical storage signal, and price is market context.',
     keySignals,
     [],
@@ -90,7 +90,7 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
     expect(viewModel.reportWeekText).toBe('2026-05-19')
     expect(viewModel.geographyText).toBe('USTotal')
     expect(viewModel.headline).toContain('Inventory drew while price rose')
-    expect(viewModel.summary).toContain('walking skeleton stays cautious')
+    expect(viewModel.summary).toContain('this read stays cautious')
     expect(viewModel.conditionLabel).toBe('Unknown')
     expect(viewModel.confidenceLabel).toBe('Medium')
     expect(viewModel.displayState).toBe('partial')

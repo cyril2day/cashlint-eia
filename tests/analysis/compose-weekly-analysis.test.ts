@@ -161,7 +161,7 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(analysis.condition.condition).toBe('Unknown')
     expect(analysis.confidence.confidence).toBe('Medium')
     expect(analysis.headline).toContain('suggests a tighter signal')
-    expect(analysis.summary).toContain('Full system balance is not computed')
+    expect(analysis.summary).toContain('full system balance is not computed')
     expect(analysis.explanation).toContain('physical storage signal')
     expect(analysis.headline).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
     expect(analysis.summary).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
@@ -194,9 +194,9 @@ describe('Walking-skeleton Analysis composition', () => {
 
     expect(explanation).toContain('physical storage signal')
     expect(explanation).toContain('market context')
-    expect(explanation).toContain('Full system balance is not computed')
-    expect(explanation).toContain('Refinery data is not included')
-    expect(explanation).toContain('Supply data is not included')
+    expect(explanation).toContain('Full system balance is not part of this weekly run yet')
+    expect(explanation).toContain('Refinery data is not part of this weekly run yet')
+    expect(explanation).toContain('Supply data is not part of this weekly run yet')
     expect(explanation).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
   })
 

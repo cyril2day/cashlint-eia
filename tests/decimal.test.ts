@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseDecimal } from '@/shared/decimal'
+import {
+  formatDecimal,
+  formatDecimalCoordinate,
+  formatFixedMoneyDecimal,
+  formatPercentageDecimal,
+  formatWholeDecimal,
+  parseDecimal,
+} from '@/shared/decimal'
 
 describe('decimal', () => {
   it('parses finite numeric inputs', () => {
@@ -54,5 +61,13 @@ describe('decimal', () => {
         input: '   ',
       },
     })
+  })
+
+  it('formats decimal values for presentation and svg coordinates', () => {
+    expect(formatWholeDecimal(1234.56)).toBe('1,235')
+    expect(formatDecimal(1234.567)).toBe('1,234.57')
+    expect(formatFixedMoneyDecimal(72)).toBe('72.00')
+    expect(formatPercentageDecimal(12.345)).toBe('12.3')
+    expect(formatDecimalCoordinate(12.34567)).toBe('12.346')
   })
 })

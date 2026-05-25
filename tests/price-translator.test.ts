@@ -28,6 +28,33 @@ describe('price translator', () => {
           unitCandidate: some('USD/bbl'),
           source: { endpoint: '/v2/petroleum/pri/spt/data/' },
         },
+        {
+          kind: 'Price',
+          periodCandidate: some('2025-12-26'),
+          seriesId: some('EPCWTIR'),
+          measureKindCandidate: some('WTISpotPrice'),
+          valueCandidate: some('74.2'),
+          unitCandidate: some('USD/bbl'),
+          source: { endpoint: '/v2/petroleum/pri/spt/data/' },
+        },
+        {
+          kind: 'Price',
+          periodCandidate: some('2025-12-19'),
+          seriesId: some('EPCWTIR'),
+          measureKindCandidate: some('WTISpotPrice'),
+          valueCandidate: some('75.1'),
+          unitCandidate: some('USD/bbl'),
+          source: { endpoint: '/v2/petroleum/pri/spt/data/' },
+        },
+        {
+          kind: 'Price',
+          periodCandidate: some('2025-12-12'),
+          seriesId: some('EPCWTIR'),
+          measureKindCandidate: some('WTISpotPrice'),
+          valueCandidate: some('74.9'),
+          unitCandidate: some('USD/bbl'),
+          source: { endpoint: '/v2/petroleum/pri/spt/data/' },
+        },
       ]),
     )
   })

@@ -20,24 +20,24 @@ describe('walking-skeleton request descriptions', () => {
       'WCREXUS2',
     ])
     expect(unwrap(requests.inventoryRequest.params)).toEqual({
-      start: '2026-01-09',
+      end: '2026-01-09',
       frequency: 'weekly',
       'data[]': 'value',
       'sort[0][column]': 'period',
       'sort[0][direction]': 'desc',
       offset: '0',
-      length: '2',
+      length: '12',
       'facets[series][]': 'WCRSTUS1',
       'facets[duoarea][]': 'NUS',
     })
     expect(unwrap(requests.priceRequest.params)).toEqual({
-      start: '2026-01-09',
+      end: '2026-01-09',
       frequency: 'weekly',
       'data[]': 'value',
       'sort[0][column]': 'period',
       'sort[0][direction]': 'desc',
       offset: '0',
-      length: '2',
+      length: '12',
       'facets[series][]': 'RWTC',
     })
   })

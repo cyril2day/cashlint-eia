@@ -75,7 +75,7 @@ describe('rich UI view models', () => {
     expect(viewModel.controls.submitLabel).toBe('Refresh live data')
     expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['MetricCard', 'Sparkline', 'TimeSeries'])
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
-    expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Weekly Analysis composed')
+    expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Weekly story composed')
   })
 
   it('creates a gallery with all eight chart kinds and honest unavailable states', () => {
@@ -93,6 +93,12 @@ describe('rich UI view models', () => {
     ])
     expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(7)
     expect(gallery.panels.filter(panel => panel.state === 'Complete')).toHaveLength(1)
+    expect(gallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
+      'Ready:1',
+      'Cautious:0',
+      'Waiting:7',
+      'Needs history:0',
+    ])
   })
 
   it('maps detail pages without losing card caveats or substituting missing values with zero', () => {

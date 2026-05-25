@@ -33,6 +33,29 @@ const supplySeriesValues: Readonly<Record<string, SeriesValues>> = {
 
 const defaultSeriesValues: SeriesValues = { current: '0', previous: '0', unit: 'MBBL/D' }
 
+const fixturePeriods: readonly string[] = [
+  '2026-01-09',
+  '2026-01-02',
+  '2025-12-26',
+  '2025-12-19',
+  '2025-12-12',
+]
+
+const stringOrEmpty = (value: string | undefined): string =>
+  ifElse(
+    (candidate: string | undefined): candidate is string => candidate !== undefined,
+    candidate => candidate,
+    () => '',
+  )(value)
+
+const valuesForHistory = (values: SeriesValues): readonly string[] => [
+  values.current,
+  values.previous,
+  values.previous,
+  values.previous,
+  values.previous,
+]
+
 const rowFor = (seriesId: string, period: string, value: string, unit: string): RawEiaRow => ({
   period: some(period),
   date: some(period),
@@ -58,21 +81,15 @@ const envelopeFor = (endpoint: string, seriesId: string, valuesBySeries: Readonl
     api: none(),
     request: none(),
     response: none(),
-    data: some([
-      rowFor(seriesId, '2026-01-09', values.current, values.unit),
-      rowFor(seriesId, '2026-01-02', values.previous, values.unit),
-    ]),
+    data: some(
+      fixturePeriods.map((period, index) =>
+        rowFor(seriesId, period, stringOrEmpty(valuesForHistory(values)[index]), values.unit),
+      ),
+    ),
     endpoint: some(endpoint),
     received_at: none(),
   }
 }
-
-const stringOrEmpty = (value: string | undefined): string =>
-  ifElse(
-    (candidate: string | undefined): candidate is string => candidate !== undefined,
-    candidate => candidate,
-    () => '',
-  )(value)
 
 const paramsAreSome = (
   params: EiaRequest['params'],
@@ -194,9 +211,16 @@ describe('live summary view model', () => {
       'AreaChart',
       'VarianceChart',
     ])
-    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'TimeSeries')?.state).toBe('Partial')
-    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Sparkline')?.state).toBe('Partial')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'TimeSeries')?.state).toBe('Complete')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Sparkline')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'BarChart')?.state).toBe('Partial')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'VarianceChart')?.state).toBe('Complete')
+    expect(viewModel.chartsGallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
+      'Ready:6',
+      'Cautious:2',
+      'Waiting:0',
+      'Needs history:0',
+    ])
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('836125')
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('76.31')
   })

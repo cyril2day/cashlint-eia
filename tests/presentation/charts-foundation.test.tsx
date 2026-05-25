@@ -13,6 +13,9 @@ import {
 } from '@/presentation'
 import {
   createContextualizedSignal,
+  createBaseline,
+  createComputedBaselineResult,
+  createNormalAnomalyState,
   createNotComputedAnomalyState,
   createNotComputedBaselineResult,
   createPriceSignal,
@@ -26,9 +29,9 @@ import {
   parsePriceKind,
   parseReportWeek,
 } from '@/contexts/measurement/model'
-import { ifElse } from '@/shared/fp'
+import { allPass, ifElse } from '@/shared/fp'
 import { isSuccess, type Result } from '@/shared/result'
-import { none } from '@/shared/maybe'
+import { matchMaybe, none } from '@/shared/maybe'
 
 const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue =>
   ifElse(
@@ -61,6 +64,14 @@ const contextualizedSignal = createContextualizedSignal(
   none(),
   createNotComputedBaselineResult('history unavailable'),
   createNotComputedAnomalyState('insufficient baseline history'),
+  [],
+)
+
+const baselineSignal = createContextualizedSignal(
+  signal,
+  none(),
+  createComputedBaselineResult(createBaseline(identity, 3, 80, 4, unit)),
+  createNormalAnomalyState(0.5),
   [],
 )
 
@@ -128,6 +139,34 @@ describe('Presentation chart foundation', () => {
     expect(lineGeometry.linePath.kind).toBe('Some')
     expect(lineGeometry.xTicks.length).toBeGreaterThan(0)
     expect(sparklineGeometry.linePath.kind).toBe('Some')
+  })
+
+  it('keeps computed baseline bands inside the time-series plot domain', () => {
+    const dimensions = unwrapSuccess(createChartDimensions(480, 220))
+
+    const timeSeries = mapContextualizedSignalToTimeSeriesChart({
+      id: 'wti-time-series',
+      title: 'WTI weekly history',
+      subtitle: none(),
+      signal: baselineSignal,
+      historicalPoints,
+    })
+
+    const geometry = composeTimeSeriesChartGeometry(timeSeries, dimensions)
+    const plotTop = dimensions.margin.top
+    const plotBottom = dimensions.margin.top + dimensions.innerHeight
+    const isInsidePlot = allPass([
+      (value: number): boolean => value >= plotTop,
+      (value: number): boolean => value <= plotBottom,
+    ])
+
+    expect(matchMaybe<Readonly<{ readonly yTop: number; readonly yBottom: number }>, boolean>({
+      Some: band => allPass([
+        (candidate: Readonly<{ readonly yTop: number; readonly yBottom: number }>): boolean => isInsidePlot(candidate.yTop),
+        (candidate: Readonly<{ readonly yTop: number; readonly yBottom: number }>): boolean => isInsidePlot(candidate.yBottom),
+      ])(band),
+      None: () => false,
+    })(geometry.baselineBand)).toBe(true)
   })
 
   it('renders modular chart components without DOM mutation', () => {

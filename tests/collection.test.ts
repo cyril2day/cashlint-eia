@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { firstArrayItem, isNonEmptyArray } from '@/shared/collection'
+import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
 
 describe('collection', () => {
   it('identifies non-empty arrays', () => {
@@ -15,5 +15,11 @@ describe('collection', () => {
     const values: readonly [string, string] = ['alpha', 'beta']
 
     expect(firstArrayItem(values)).toBe('alpha')
+  })
+
+  it('returns the last item from a non-empty array', () => {
+    const values: readonly [string, string] = ['alpha', 'beta']
+
+    expect(lastArrayItem(values)).toBe('beta')
   })
 })

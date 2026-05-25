@@ -26,6 +26,30 @@ describe('inventory translator', () => {
           unitCandidate: some('MBBL'),
           source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
         },
+        {
+          kind: 'Inventory',
+          periodCandidate: some('2025-12-26'),
+          seriesId: some('WCRSTUS1'),
+          valueCandidate: some('839100'),
+          unitCandidate: some('MBBL'),
+          source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+        },
+        {
+          kind: 'Inventory',
+          periodCandidate: some('2025-12-19'),
+          seriesId: some('WCRSTUS1'),
+          valueCandidate: some('837900'),
+          unitCandidate: some('MBBL'),
+          source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+        },
+        {
+          kind: 'Inventory',
+          periodCandidate: some('2025-12-12'),
+          seriesId: some('WCRSTUS1'),
+          valueCandidate: some('838200'),
+          unitCandidate: some('MBBL'),
+          source: { endpoint: '/v2/petroleum/stoc/wstk/data/' },
+        },
       ]),
     )
   })

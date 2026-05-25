@@ -10,10 +10,10 @@ const seriesParam = (request: EiaRequest): string =>
     () => '',
   )(request.params)
 
-const isLatestTwoRowRequest = (request: EiaRequest): boolean =>
+const isWeeklyHistoryRequest = (request: EiaRequest): boolean =>
   ifElse(
     (params: EiaRequest['params']) => params.kind === 'Some',
-    params => params.value.length === '2',
+    params => params.value.length === '12',
     () => false,
   )(request.params)
 
@@ -27,13 +27,13 @@ describe('EIA request builders', () => {
       params: {
         kind: 'Some',
         value: {
-          start: week,
+          end: week,
           frequency: 'weekly',
           'data[]': 'value',
           'sort[0][column]': 'period',
           'sort[0][direction]': 'desc',
           offset: '0',
-          length: '2',
+          length: '12',
           'facets[series][]': 'WCRSTUS1',
           'facets[duoarea][]': 'NUS',
         },
@@ -50,20 +50,20 @@ describe('EIA request builders', () => {
       params: {
         kind: 'Some',
         value: {
-          start: week,
+          end: week,
           frequency: 'weekly',
           'data[]': 'value',
           'sort[0][column]': 'period',
           'sort[0][direction]': 'desc',
           offset: '0',
-          length: '2',
+          length: '12',
           'facets[series][]': 'RWTC',
         },
       },
     })
   })
 
-  it('builds one latest-two-row request per refinery and supply series', () => {
+  it('builds one weekly history request per refinery and supply series', () => {
     const week = '2026-01-01'
     const refinery = buildRefineryRequests(week)
     const supply = buildSupplyRequests(week)
@@ -85,6 +85,6 @@ describe('EIA request builders', () => {
       'WCRIMUS2',
       'WCREXUS2',
     ])
-    expect(refinery.concat(supply).every(isLatestTwoRowRequest)).toBe(true)
+    expect(refinery.concat(supply).every(isWeeklyHistoryRequest)).toBe(true)
   })
 })

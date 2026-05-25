@@ -51,13 +51,16 @@ describe('rich UI components', () => {
     expect(navMarkup).toContain('aria-label="Product navigation"')
     expect(navMarkup).toContain('aria-current="page"')
     expect(controlMarkup).toContain('Refresh live data')
-    expect(controlMarkup).toContain('Advanced report-week search is deferred')
+    expect(controlMarkup).toContain('Date search can come later')
   })
 
   it('renders the chart gallery with all chart panels visible', () => {
     const markup = renderToStaticMarkup(<ChartGallery viewModel={mapSummaryToChartsGalleryViewModel(summary)} />)
 
     expect(markup).toContain('Visual analysis gallery')
+    expect(markup).toContain('Chart readiness summary')
+    expect(markup).toContain('Ready')
+    expect(markup).toContain('Waiting')
     expect(markup).toContain('TimeSeries')
     expect(markup).toContain('Sparkline')
     expect(markup).toContain('MetricCard')
@@ -77,6 +80,6 @@ describe('rich UI components', () => {
 
     expect(detailMarkup).toContain('Detail rows')
     expect(detailMarkup).toContain('Inventory facts and visual states')
-    expect(stateMarkup).toContain('runtime history loading is deferred')
+    expect(stateMarkup).toContain('current run did not return')
   })
 })
