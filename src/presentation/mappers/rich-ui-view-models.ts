@@ -1,4 +1,6 @@
 import type { SummaryCardKind, SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
+import type { ContextualizedSignalSet } from '@/contexts/interpretation/model/current-signal-set'
+import type { SystemBalanceAnalysis } from '@/contexts/system-balance/model'
 import type {
   AnalysisControlViewModel,
   AnalysisDetailViewModel,
@@ -33,6 +35,17 @@ import type {
   TimeSeriesChartViewModel,
   VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
+import {
+  mapContextualizedSignalToAreaChart,
+  mapContextualizedSignalToBoxPlot,
+  mapContextualizedSignalToHistogram,
+  mapContextualizedSignalToSparkline,
+  mapContextualizedSignalToStandaloneMetricCard,
+  mapContextualizedSignalToTimeSeriesChart,
+  mapContextualizedSignalToVarianceChart,
+  mapSystemBalanceAnalysisToDriverBarChart,
+  type HistoricalSignalPointInput,
+} from '@/presentation/charts/mappers'
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 
@@ -319,6 +332,100 @@ const chartPanel = (
   accessibilitySummary: chartViewModel.accessibilitySummary,
 })
 
+type LiveChartsGalleryInput = Readonly<{
+  readonly summary: SummaryViewModel
+  readonly signals: ContextualizedSignalSet
+  readonly systemBalance: Maybe<SystemBalanceAnalysis>
+  readonly inventoryHistory: readonly HistoricalSignalPointInput[]
+  readonly priceHistory: readonly HistoricalSignalPointInput[]
+}>
+
+const partialBoxPlot = (viewModel: BoxPlotViewModel): BoxPlotViewModel => ({
+  ...viewModel,
+  displayState: 'Partial',
+})
+
+const balanceBarChart = (input: LiveChartsGalleryInput): BarChartViewModel =>
+  matchMaybe<SystemBalanceAnalysis, BarChartViewModel>({
+    Some: analysis => mapSystemBalanceAnalysisToDriverBarChart({
+      id: 'balance-driver-bars',
+      title: 'Balance driver bars',
+      analysis,
+    }),
+    None: () => unavailableBarChart('balance-driver-bars', 'Balance driver bars'),
+  })(input.systemBalance)
+
+export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGalleryInput): ChartsGalleryViewModel => {
+  const inventoryMetric = mapContextualizedSignalToStandaloneMetricCard({
+    id: 'inventory-metric',
+    title: 'Inventory metric card',
+    signal: input.signals.inventory,
+  })
+  const inventoryTimeSeries = mapContextualizedSignalToTimeSeriesChart({
+    id: 'inventory-time-series',
+    title: 'Inventory time series',
+    subtitle: some('Loaded weekly observations'),
+    signal: input.signals.inventory,
+    historicalPoints: input.inventoryHistory,
+  })
+  const priceSparkline = mapContextualizedSignalToSparkline({
+    id: 'price-sparkline',
+    label: 'WTI price sparkline',
+    signal: input.signals.price,
+    historicalPoints: input.priceHistory,
+  })
+  const priceHistogram = mapContextualizedSignalToHistogram({
+    id: 'price-histogram',
+    title: 'WTI distribution histogram',
+    subtitle: some('Loaded weekly observations'),
+    signal: input.signals.price,
+    historicalPoints: input.priceHistory,
+    binStrategy: { kind: 'Automatic', requestedBinCount: 6 },
+  })
+  const inventoryBoxPlot = partialBoxPlot(mapContextualizedSignalToBoxPlot({
+    id: 'inventory-box-plot',
+    title: 'Inventory box plot',
+    subtitle: some('Five-number summary remains partial with the loaded runtime window'),
+    signal: input.signals.inventory,
+    historicalPoints: input.inventoryHistory,
+    summary: none(),
+    outliers: [],
+  }))
+  const inventoryAreaChart = mapContextualizedSignalToAreaChart({
+    id: 'inventory-area-chart',
+    title: 'Inventory area chart',
+    subtitle: some('Loaded weekly observations'),
+    signal: input.signals.inventory,
+    historicalPoints: input.inventoryHistory,
+    baseline: none(),
+  })
+  const balanceVariance = mapContextualizedSignalToVarianceChart({
+    id: 'balance-variance-chart',
+    title: 'Inventory baseline variance',
+    subtitle: some('Reference baseline comes from interpretation context'),
+    signal: input.signals.inventory,
+    referenceLabel: 'Baseline',
+    referenceSemantics: 'Interpretation baseline average',
+  })
+
+  return {
+    title: 'Visual analysis gallery',
+    description: 'All chart and widget types are visible; loaded runtime observations back the short-history charts.',
+    panels: [
+      chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', inventoryTimeSeries),
+      chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', priceSparkline),
+      chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
+      chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', balanceBarChart(input)),
+      chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', priceHistogram),
+      chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', inventoryBoxPlot),
+      chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', inventoryAreaChart),
+      chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', balanceVariance),
+    ],
+    caveats: [presentationHistoryCaveat],
+    state: 'Partial',
+  }
+}
+
 export const mapSummaryToChartsGalleryViewModel = (summary: SummaryViewModel): ChartsGalleryViewModel => {
   const inventoryMetric = metricCardFromMaybe('Inventory')(summaryCardByKind(summary, 'inventory'))
 
@@ -385,6 +492,14 @@ const panelsByKind = (
 
 export const mapSummaryToInventoryDetailViewModel = (summary: SummaryViewModel): InventoryDetailViewModel => {
   const gallery = mapSummaryToChartsGalleryViewModel(summary)
+
+  return mapSummaryWithChartsToInventoryDetailViewModel(summary, gallery)
+}
+
+export const mapSummaryWithChartsToInventoryDetailViewModel = (
+  summary: SummaryViewModel,
+  gallery: ChartsGalleryViewModel,
+): InventoryDetailViewModel => {
   const inventoryCards = summary.cards.filter(card => card.kind === 'inventory')
 
   return detailPage(
@@ -403,6 +518,14 @@ export const mapSummaryToInventoryDetailViewModel = (summary: SummaryViewModel):
 
 export const mapSummaryToPriceDetailViewModel = (summary: SummaryViewModel): PriceDetailViewModel => {
   const gallery = mapSummaryToChartsGalleryViewModel(summary)
+
+  return mapSummaryWithChartsToPriceDetailViewModel(summary, gallery)
+}
+
+export const mapSummaryWithChartsToPriceDetailViewModel = (
+  summary: SummaryViewModel,
+  gallery: ChartsGalleryViewModel,
+): PriceDetailViewModel => {
   const priceCards = summary.cards.filter(card => card.kind === 'price')
 
   return detailPage(
@@ -420,6 +543,14 @@ export const mapSummaryToPriceDetailViewModel = (summary: SummaryViewModel): Pri
 
 export const mapSummaryToBalanceDetailViewModel = (summary: SummaryViewModel): BalanceDetailViewModel => {
   const gallery = mapSummaryToChartsGalleryViewModel(summary)
+
+  return mapSummaryWithChartsToBalanceDetailViewModel(summary, gallery)
+}
+
+export const mapSummaryWithChartsToBalanceDetailViewModel = (
+  summary: SummaryViewModel,
+  gallery: ChartsGalleryViewModel,
+): BalanceDetailViewModel => {
   const balanceCards = summary.cards.filter(card => card.kind === 'system')
 
   return detailPage(
@@ -435,28 +566,40 @@ export const mapSummaryToBalanceDetailViewModel = (summary: SummaryViewModel): B
 }
 
 export const mapSummaryToAnalysisDetailViewModel = (summary: SummaryViewModel): AnalysisDetailViewModel =>
+  mapSummaryWithChartsToAnalysisDetailViewModel(summary, mapSummaryToChartsGalleryViewModel(summary))
+
+export const mapSummaryWithChartsToAnalysisDetailViewModel = (
+  summary: SummaryViewModel,
+  gallery: ChartsGalleryViewModel,
+): AnalysisDetailViewModel =>
   detailPage(
     'Weekly analysis',
     some(summary.headline),
     summary.cards,
-    mapSummaryToChartsGalleryViewModel(summary).panels,
+    gallery.panels,
     summary,
   )
 
 export const mapSummaryToRichHomeViewModel = (summary: SummaryViewModel): RichHomeViewModel => {
   const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
-  return {
-    summary,
-    navigation: createProductNavigationViewModel('home'),
-    controls: createAnalysisControlViewModel(summary),
-    primaryCharts: [
-      ...panelsByKind(gallery, 'MetricCard'),
-      ...panelsByKind(gallery, 'Sparkline'),
-      ...panelsByKind(gallery, 'TimeSeries'),
-    ],
-    caveatPanel: createCaveatPanelViewModel(summary),
-    tracePanel: createAnalysisTraceViewModel(summary),
-    state: presentationStateFromSummaryState(summary.displayState),
-  }
+  return mapSummaryWithChartsToRichHomeViewModel(summary, gallery)
 }
+
+export const mapSummaryWithChartsToRichHomeViewModel = (
+  summary: SummaryViewModel,
+  gallery: ChartsGalleryViewModel,
+): RichHomeViewModel => ({
+  summary,
+  navigation: createProductNavigationViewModel('home'),
+  controls: createAnalysisControlViewModel(summary),
+  primaryCharts: [
+    ...panelsByKind(gallery, 'MetricCard'),
+    ...panelsByKind(gallery, 'Sparkline'),
+    ...panelsByKind(gallery, 'TimeSeries'),
+  ],
+  chartsGallery: gallery,
+  caveatPanel: createCaveatPanelViewModel(summary),
+  tracePanel: createAnalysisTraceViewModel(summary),
+  state: presentationStateFromSummaryState(summary.displayState),
+})
