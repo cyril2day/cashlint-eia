@@ -10,6 +10,7 @@ import type {
   CaveatPanelViewModel,
   ChartPanelKind,
   ChartPanelViewModel,
+  ChartGalleryStateSummaryItemViewModel,
   ChartsGalleryViewModel,
   DetailPageViewModel,
   DetailRowViewModel,
@@ -49,7 +50,7 @@ import {
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 
-const historyDeferredMessage = 'Runtime historical-series loading is deferred, so this chart is shown as unavailable instead of inventing missing observations.'
+const shortHistoryMessage = 'This view uses the weekly window returned by the current run. When the window is thin, the chart stays cautious instead of smoothing over the gaps.'
 
 const activeRoute = (routeId: ProductRouteId) => (candidate: ProductRouteId): boolean => candidate === routeId
 
@@ -76,27 +77,60 @@ const caveatPanelState = (summary: SummaryViewModel): PresentationDisplayState =
   )(summary)
 
 const chartCaveat: ChartCaveatViewModel = {
-  kind: 'runtime-history-deferred',
-  title: 'Runtime history deferred',
-  message: historyDeferredMessage,
+  kind: 'short-history-window',
+  title: 'Short history window',
+  message: shortHistoryMessage,
   severity: 'info',
 }
 
 const presentationHistoryCaveat: PresentationCaveatViewModel = {
-  kind: 'trend-not-computed',
-  title: 'Runtime history deferred',
-  message: historyDeferredMessage,
+  kind: 'short-history-window',
+  title: 'Short history window',
+  message: shortHistoryMessage,
   severity: 'info',
 }
 
+const presentationCaveatSeverityFromChartCaveat = (
+  caveat: ChartCaveatViewModel,
+): PresentationCaveatViewModel['severity'] =>
+  cond<[ChartCaveatViewModel], PresentationCaveatViewModel['severity']>([
+    [candidate => candidate.severity === 'info', () => 'info'],
+    [() => true, () => 'warning'],
+  ])(caveat)
+
+const presentationKindFromChartCaveat = (
+  caveat: ChartCaveatViewModel,
+): PresentationCaveatViewModel['kind'] =>
+  cond<[ChartCaveatViewModel], PresentationCaveatViewModel['kind']>([
+    [candidate => candidate.kind === 'short-history-window', () => 'short-history-window'],
+    [candidate => candidate.kind === 'TrendNotComputed', () => 'trend-not-computed'],
+    [candidate => candidate.kind === 'AnomalyNotComputed', () => 'anomaly-not-computed'],
+    [candidate => candidate.kind === 'ComparisonWindowUnavailable', () => 'comparison-window-unavailable'],
+    [() => true, () => 'chart-caveat'],
+  ])(caveat)
+
+const chartCaveatToPresentationCaveat = (
+  caveat: ChartCaveatViewModel,
+): PresentationCaveatViewModel => ({
+  kind: presentationKindFromChartCaveat(caveat),
+  title: caveat.title,
+  message: caveat.message,
+  severity: presentationCaveatSeverityFromChartCaveat(caveat),
+})
+
+const chartPanelCaveats = (
+  chartViewModel: ChartPanelViewModel['chartViewModel'],
+): readonly PresentationCaveatViewModel[] =>
+  chartViewModel.caveats.map(chartCaveatToPresentationCaveat)
+
 const routeDescription = (routeId: ProductRouteId): Maybe<string> =>
   cond<[ProductRouteId], Maybe<string>>([
-    [candidate => candidate === 'home', () => some('Weekly command surface and summary.')],
-    [candidate => candidate === 'inventory', () => some('Inventory facts, caveats, and chart states.')],
-    [candidate => candidate === 'price', () => some('WTI price facts, caveats, and chart states.')],
-    [candidate => candidate === 'balance', () => some('System balance summary and driver states.')],
-    [candidate => candidate === 'analysis', () => some('Reasoning trace, confidence, and synthesis.')],
-    [() => true, () => some('All visible chart and widget types.')],
+    [candidate => candidate === 'home', () => some('The weekly read, controls, and the first pass of the story.')],
+    [candidate => candidate === 'inventory', () => some('Storage levels, movement, and the caveats behind the read.')],
+    [candidate => candidate === 'price', () => some('WTI context beside the physical market signals.')],
+    [candidate => candidate === 'balance', () => some('What is pulling the weekly balance tighter or looser.')],
+    [candidate => candidate === 'analysis', () => some('How the app arrived at the headline.')],
+    [() => true, () => some('The chart workbench, with every visual type in one place.')],
   ])(routeId)
 
 const routeHref = (routeId: ProductRouteId): string =>
@@ -141,9 +175,9 @@ export const createProductNavigationViewModel = (
 export const createAnalysisControlViewModel = (summary: SummaryViewModel): AnalysisControlViewModel => ({
   reportWeekLabel: summary.reportWeekText,
   geographyLabel: summary.geographyText,
-  comparisonWindowLabel: 'Latest available weekly comparison',
+  comparisonWindowLabel: 'Latest weekly window',
   submitLabel: 'Refresh live data',
-  helperText: some('Advanced report-week search is deferred; refresh keeps the latest configured live workflow visible.'),
+  helperText: some('For now this refreshes the configured weekly run. Date search can come later; the current view stays grounded in the live feed.'),
   fieldsDisabled: true,
 })
 
@@ -153,8 +187,8 @@ export const createCaveatPanelViewModel = (summary: SummaryViewModel): CaveatPan
   state: caveatPanelState(summary),
   summary: ifElse(
     (candidate: SummaryViewModel) => candidate.caveats.length > 0,
-    candidate => some(`${String(candidate.caveats.length)} caveat(s) are preserved from the analysis path.`),
-    () => some('No presentation caveats were emitted for this view.'),
+    candidate => some(`${String(candidate.caveats.length)} note(s) came through with the analysis. They are shown here instead of being hidden in the fine print.`),
+    () => some('No caveats came through for this view. That is a good quiet signal, not a guarantee.'),
   )(summary),
 })
 
@@ -170,13 +204,13 @@ const traceStep = (
 })
 
 const traceSteps = (state: PresentationDisplayState): readonly AnalysisTraceStepViewModel[] => [
-  traceStep('EIA data loaded', 'The route resolver uses the existing live summary boundary.', state),
-  traceStep('ACL translation passed', 'Raw upstream rows stay outside presentation components.', state),
-  traceStep('Weekly facts constructed', 'Measurement output is represented through display-safe summary cards.', state),
-  traceStep('System Balance computed', 'System balance is visible when the summary card is available.', state),
-  traceStep('Interpretation contextualized signals', 'Trend, baseline, anomaly, and caveats are already mapped upstream.', state),
-  traceStep('Weekly Analysis composed', 'The headline, summary, confidence, and condition come from the application workflow.', state),
-  traceStep('Presentation mapped', 'This rich UI layer renders serializable ViewModels only.', 'Complete'),
+  traceStep('EIA data loaded', 'The app asked EIA for the configured weekly window.', state),
+  traceStep('Rows cleaned at the boundary', 'Raw API rows were translated before they reached the UI.', state),
+  traceStep('Weekly facts built', 'Inventory, price, refinery, and supply readings were shaped into petroleum facts.', state),
+  traceStep('Balance read prepared', 'The physical balance was summarized before presentation touched it.', state),
+  traceStep('Signals put in context', 'Trend, baseline, anomaly, and caveats were handled upstream.', state),
+  traceStep('Weekly story composed', 'The headline, summary, confidence, and condition came from the analysis workflow.', state),
+  traceStep('Display model prepared', 'The page received display-safe data: labels, states, chart payloads, and caveats.', 'Complete'),
 ]
 
 export const createAnalysisTraceViewModel = (summary: SummaryViewModel): AnalysisTraceViewModel => ({
@@ -192,14 +226,14 @@ const summaryCardByKind = (
 const fallbackMetricCard = (title: string): MetricCardViewModel => ({
   id: `${title.toLowerCase().replaceAll(' ', '-')}-metric`,
   title,
-  valueLabel: 'Unavailable',
+  valueLabel: 'Not in this run',
   unitLabel: none(),
   comparison: none(),
   trendLabel: none(),
-  statusLabel: some('Unavailable'),
+  statusLabel: some('Waiting on data'),
   caveats: [chartCaveat],
   sparkline: none(),
-  accessibilitySummary: `${title} metric unavailable.`,
+  accessibilitySummary: `${title} metric was not included in this run.`,
   displayState: 'Unavailable',
 })
 
@@ -229,14 +263,14 @@ const metricCardFromMaybe = (
 const unavailableTimeSeries = (id: string, title: string): TimeSeriesChartViewModel => ({
   id,
   title,
-  subtitle: some('Historical loading deferred'),
+  subtitle: some('Waiting for a usable weekly window'),
   unitLabel: none(),
   points: [],
   currentPoint: none(),
-  baseline: { kind: 'NotComputed', reason: historyDeferredMessage },
-  anomaly: { kind: 'NotComputed', reason: historyDeferredMessage },
+  baseline: { kind: 'NotComputed', reason: shortHistoryMessage },
+  anomaly: { kind: 'NotComputed', reason: shortHistoryMessage },
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} time series unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${title} time series is waiting on a usable weekly window.`,
   displayState: 'Unavailable',
 })
 
@@ -246,75 +280,94 @@ const unavailableSparkline = (id: string, label: string): SparklineViewModel => 
   points: [],
   currentPoint: none(),
   caveats: [chartCaveat],
-  accessibilitySummary: `${label} sparkline unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${label} sparkline is waiting on a usable weekly window.`,
   displayState: 'Unavailable',
 })
 
 const unavailableBarChart = (id: string, title: string): BarChartViewModel => ({
   id,
   title,
-  subtitle: some('Driver values are not exposed in the summary ViewModel.'),
+  subtitle: some('Driver values did not come through with this run.'),
   unitLabel: none(),
   ordering: 'InputOrder',
   points: [],
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} bar chart unavailable in this summary-only rich UI slice.`,
+  accessibilitySummary: `${title} bar chart is waiting on driver values.`,
   displayState: 'Unavailable',
 })
 
 const unavailableHistogram = (id: string, title: string): HistogramViewModel => ({
   id,
   title,
-  subtitle: some('Distribution requires runtime history.'),
+  subtitle: some('Needs a wider weekly window.'),
   unitLabel: none(),
   values: [],
   binStrategy: { kind: 'Automatic', requestedBinCount: 6 },
   currentMarker: none(),
   referenceMarkers: [],
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} histogram unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${title} histogram is waiting on more weekly values.`,
   displayState: 'Unavailable',
 })
 
 const unavailableBoxPlot = (id: string, title: string): BoxPlotViewModel => ({
   id,
   title,
-  subtitle: some('Five-number summary requires runtime history.'),
+  subtitle: some('Needs enough observations for a fair spread.'),
   unitLabel: none(),
   summary: none(),
   outliers: [],
   currentMarker: none(),
   referenceMarkers: [],
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} box plot unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${title} box plot is waiting on enough observations for a fair spread.`,
   displayState: 'Unavailable',
 })
 
 const unavailableAreaChart = (id: string, title: string): AreaChartViewModel => ({
   id,
   title,
-  subtitle: some('Area history requires runtime history.'),
+  subtitle: some('Needs weekly points before the shape means anything.'),
   unitLabel: none(),
   points: [],
   baseline: none(),
   currentMarker: none(),
   referenceMarkers: [],
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} area chart unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${title} area chart is waiting on weekly points.`,
   displayState: 'Unavailable',
 })
 
 const unavailableVarianceChart = (id: string, title: string): VarianceChartViewModel => ({
   id,
   title,
-  subtitle: some('Reference baseline requires interpreted historical context.'),
+  subtitle: some('Needs a baseline before the comparison is fair.'),
   unitLabel: none(),
-  referenceSemantics: 'Baseline reference is not computed in the presentation layer.',
+  referenceSemantics: 'Baseline reference comes from interpretation, not from the chart.',
   entries: [],
   caveats: [chartCaveat],
-  accessibilitySummary: `${title} variance chart unavailable because runtime history is deferred.`,
+  accessibilitySummary: `${title} variance chart is waiting on a baseline reference.`,
   displayState: 'Unavailable',
 })
+
+const chartPanelDescription = (
+  chartKind: ChartPanelKind,
+  state: PresentationDisplayState,
+): Maybe<string> =>
+  cond<[ChartPanelKind], Maybe<string>>([
+    [candidate => candidate === 'TimeSeries', () => some('A week-by-week line for the loaded inventory window.')],
+    [candidate => candidate === 'Sparkline', () => some('A compact WTI read for quick scanning.')],
+    [candidate => candidate === 'MetricCard', () => some('The current value, kept close to its status and caveats.')],
+    [candidate => candidate === 'BarChart', () => some('Balance drivers shown side by side, without turning them into a verdict.')],
+    [candidate => candidate === 'Histogram', () => some('A light distribution view of the weekly WTI values that came back.')],
+    [candidate => candidate === 'BoxPlot', () => ifElse(
+      (candidateState: PresentationDisplayState) => candidateState === 'Partial',
+      () => some('The shape is intentionally restrained until the weekly range is deep enough.'),
+      () => some('A compact spread view for the loaded weekly range.'),
+    )(state)],
+    [candidate => candidate === 'AreaChart', () => some('Inventory magnitude over the loaded weekly window.')],
+    [() => true, () => some('Current value against a baseline when interpretation has enough history to supply one.')],
+  ])(chartKind)
 
 const chartPanel = (
   id: string,
@@ -324,13 +377,59 @@ const chartPanel = (
 ): ChartPanelViewModel => ({
   id,
   title,
-  description: some(historyDeferredMessage),
+  description: chartPanelDescription(chartKind, chartViewModel.displayState),
   chartKind,
   chartViewModel,
   state: chartViewModel.displayState,
-  caveats: [presentationHistoryCaveat],
+  caveats: chartPanelCaveats(chartViewModel),
   accessibilitySummary: chartViewModel.accessibilitySummary,
 })
+
+const chartStateLabel = (state: PresentationDisplayState): string =>
+  cond<[PresentationDisplayState], string>([
+    [candidate => candidate === 'Complete', () => 'Ready'],
+    [candidate => candidate === 'Partial', () => 'Cautious'],
+    [candidate => candidate === 'Unavailable', () => 'Waiting'],
+    [candidate => candidate === 'NotComputed', () => 'Needs history'],
+    [candidate => candidate === 'Empty', () => 'No rows'],
+    [() => true, () => 'Review'],
+  ])(state)
+
+const chartStateDescription = (state: PresentationDisplayState): string =>
+  cond<[PresentationDisplayState], string>([
+    [candidate => candidate === 'Complete', () => 'Enough data came through for the panel to speak clearly.'],
+    [candidate => candidate === 'Partial', () => 'Useful, but still carrying caveats worth reading.'],
+    [candidate => candidate === 'Unavailable', () => 'The current run did not return what this panel needs.'],
+    [candidate => candidate === 'NotComputed', () => 'The source data exists, but the comparison would be overstated.'],
+    [candidate => candidate === 'Empty', () => 'No usable rows landed in this visual.'],
+    [() => true, () => 'The panel stayed visible, but its display state needs attention.'],
+  ])(state)
+
+const chartPanelCountByState =
+  (state: PresentationDisplayState) =>
+  (panels: readonly ChartPanelViewModel[]): number =>
+    panels.filter(panel => panel.state === state).length
+
+const chartGalleryStateSummaryItem =
+  (panels: readonly ChartPanelViewModel[]) =>
+  (state: PresentationDisplayState): ChartGalleryStateSummaryItemViewModel => ({
+    state,
+    label: chartStateLabel(state),
+    valueLabel: String(chartPanelCountByState(state)(panels)),
+    description: chartStateDescription(state),
+  })
+
+const chartGallerySummaryStates: readonly PresentationDisplayState[] = [
+  'Complete',
+  'Partial',
+  'Unavailable',
+  'NotComputed',
+]
+
+const chartGalleryStateSummary = (
+  panels: readonly ChartPanelViewModel[],
+): readonly ChartGalleryStateSummaryItemViewModel[] =>
+  chartGallerySummaryStates.map(chartGalleryStateSummaryItem(panels))
 
 type LiveChartsGalleryInput = Readonly<{
   readonly summary: SummaryViewModel
@@ -364,7 +463,7 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   const inventoryTimeSeries = mapContextualizedSignalToTimeSeriesChart({
     id: 'inventory-time-series',
     title: 'Inventory time series',
-    subtitle: some('Loaded weekly observations'),
+    subtitle: some('Weekly inventory observations from the current run'),
     signal: input.signals.inventory,
     historicalPoints: input.inventoryHistory,
   })
@@ -377,7 +476,7 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   const priceHistogram = mapContextualizedSignalToHistogram({
     id: 'price-histogram',
     title: 'WTI distribution histogram',
-    subtitle: some('Loaded weekly observations'),
+    subtitle: some('Weekly WTI observations from the current run'),
     signal: input.signals.price,
     historicalPoints: input.priceHistory,
     binStrategy: { kind: 'Automatic', requestedBinCount: 6 },
@@ -385,7 +484,7 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   const inventoryBoxPlot = partialBoxPlot(mapContextualizedSignalToBoxPlot({
     id: 'inventory-box-plot',
     title: 'Inventory box plot',
-    subtitle: some('Five-number summary remains partial with the loaded runtime window'),
+    subtitle: some('A box plot needs a deeper weekly range than this run returned'),
     signal: input.signals.inventory,
     historicalPoints: input.inventoryHistory,
     summary: none(),
@@ -394,7 +493,7 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   const inventoryAreaChart = mapContextualizedSignalToAreaChart({
     id: 'inventory-area-chart',
     title: 'Inventory area chart',
-    subtitle: some('Loaded weekly observations'),
+    subtitle: some('Weekly inventory observations from the current run'),
     signal: input.signals.inventory,
     historicalPoints: input.inventoryHistory,
     baseline: none(),
@@ -402,25 +501,27 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   const balanceVariance = mapContextualizedSignalToVarianceChart({
     id: 'balance-variance-chart',
     title: 'Inventory baseline variance',
-    subtitle: some('Reference baseline comes from interpretation context'),
+    subtitle: some('Baseline reference comes from interpretation context'),
     signal: input.signals.inventory,
     referenceLabel: 'Baseline',
     referenceSemantics: 'Interpretation baseline average',
   })
+  const panels = [
+    chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', inventoryTimeSeries),
+    chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', priceSparkline),
+    chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
+    chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', balanceBarChart(input)),
+    chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', priceHistogram),
+    chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', inventoryBoxPlot),
+    chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', inventoryAreaChart),
+    chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', balanceVariance),
+  ]
 
   return {
     title: 'Visual analysis gallery',
-    description: 'All chart and widget types are visible; loaded runtime observations back the short-history charts.',
-    panels: [
-      chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', inventoryTimeSeries),
-      chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', priceSparkline),
-      chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
-      chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', balanceBarChart(input)),
-      chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', priceHistogram),
-      chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', inventoryBoxPlot),
-      chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', inventoryAreaChart),
-      chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', balanceVariance),
-    ],
+    description: 'A single place to inspect the market read: what is backed by the current weekly window, and what is still too thin to overstate.',
+    stateSummary: chartGalleryStateSummary(panels),
+    panels,
     caveats: [presentationHistoryCaveat],
     state: 'Partial',
   }
@@ -428,20 +529,22 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
 
 export const mapSummaryToChartsGalleryViewModel = (summary: SummaryViewModel): ChartsGalleryViewModel => {
   const inventoryMetric = metricCardFromMaybe('Inventory')(summaryCardByKind(summary, 'inventory'))
+  const panels = [
+    chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', unavailableTimeSeries('inventory-time-series', 'Inventory time series')),
+    chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
+    chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
+    chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', unavailableBarChart('balance-driver-bars', 'Balance driver bars')),
+    chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', unavailableHistogram('price-histogram', 'WTI distribution histogram')),
+    chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', unavailableBoxPlot('inventory-box-plot', 'Inventory box plot')),
+    chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Inventory area chart')),
+    chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', unavailableVarianceChart('balance-variance-chart', 'Balance variance chart')),
+  ]
 
   return {
     title: 'Visual analysis gallery',
-    description: 'All chart and widget types are visible with honest complete, partial, and unavailable states.',
-    panels: [
-      chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', unavailableTimeSeries('inventory-time-series', 'Inventory time series')),
-      chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
-      chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
-      chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', unavailableBarChart('balance-driver-bars', 'Balance driver bars')),
-      chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', unavailableHistogram('price-histogram', 'WTI distribution histogram')),
-      chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', unavailableBoxPlot('inventory-box-plot', 'Inventory box plot')),
-      chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Inventory area chart')),
-      chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', unavailableVarianceChart('balance-variance-chart', 'Balance variance chart')),
-    ],
+    description: 'A single place to inspect every visual surface, including the places where the data is still too thin to push harder.',
+    stateSummary: chartGalleryStateSummary(panels),
+    panels,
     caveats: [presentationHistoryCaveat],
     state: 'Partial',
   }
@@ -530,7 +633,7 @@ export const mapSummaryWithChartsToPriceDetailViewModel = (
 
   return detailPage(
     'WTI price',
-    some('Price signal, caveats, and deferred history states'),
+    some('WTI context, caveats, and the weekly window behind the move'),
     priceCards,
     [
       ...panelsByKind(gallery, 'Sparkline'),

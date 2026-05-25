@@ -47,13 +47,13 @@ const presentationCaveats: readonly PresentationCaveatViewModel[] = [
   {
     kind: 'full-system-balance-not-computed',
     title: 'Full system balance not computed',
-    message: 'Full system balance is not computed.',
+    message: 'Full system balance is not part of this weekly run yet.',
     severity: 'warning',
   },
   {
     kind: 'refinery-data-not-included',
     title: 'Refinery data not included',
-    message: 'Refinery data is not included.',
+    message: 'Refinery data is not part of this weekly run yet.',
     severity: 'warning',
   },
   {

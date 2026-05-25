@@ -3,15 +3,21 @@ import { formatGeographyScope } from '@/contexts/measurement/model/geography-sco
 import { formatMeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
 import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
 import { cond } from '@/shared/fp'
+import {
+  formatDecimal,
+  formatFixedMoneyDecimal,
+  formatPercentageDecimal,
+  formatWholeDecimal,
+} from '@/shared/decimal'
 
 export const oilLintPresentationFormattingLabels: Readonly<{
   readonly inventory: string
   readonly price: string
   readonly unavailable: string
 }> = {
-  inventory: 'Inventory formatting pending',
-  price: 'Price formatting pending',
-  unavailable: 'Unavailable values stay explicit',
+  inventory: 'Inventory values use weekly petroleum units',
+  price: 'Price values use dollars per barrel',
+  unavailable: 'Missing values are named plainly',
 }
 
 export const formatSummaryReportWeekText = (reportWeek: Signal['reportWeek']): string =>
@@ -20,30 +26,13 @@ export const formatSummaryReportWeekText = (reportWeek: Signal['reportWeek']): s
 export const formatSummaryGeographyText = (geography: Signal['geography']): string =>
   formatGeographyScope(geography)
 
-const wholeNumberFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 0,
-})
-
-const decimalFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-})
-
-const fixedMoneyFormatter = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-const percentageFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-})
-
 const formatSignalAmount = (signal: Signal): string =>
   cond<[Signal], string>([
-    [candidate => candidate.unit.unit === 'USDPerBarrel', candidate => fixedMoneyFormatter.format(candidate.value)],
-    [candidate => candidate.unit.unit === 'Percent', candidate => percentageFormatter.format(candidate.value)],
-    [candidate => candidate.unit.unit === 'ThousandBarrels', candidate => wholeNumberFormatter.format(candidate.value)],
-    [candidate => candidate.unit.unit === 'ThousandBarrelsPerDay', candidate => wholeNumberFormatter.format(candidate.value)],
-    [() => true, candidate => decimalFormatter.format(candidate.value)],
+    [candidate => candidate.unit.unit === 'USDPerBarrel', candidate => formatFixedMoneyDecimal(candidate.value)],
+    [candidate => candidate.unit.unit === 'Percent', candidate => formatPercentageDecimal(candidate.value)],
+    [candidate => candidate.unit.unit === 'ThousandBarrels', candidate => formatWholeDecimal(candidate.value)],
+    [candidate => candidate.unit.unit === 'ThousandBarrelsPerDay', candidate => formatWholeDecimal(candidate.value)],
+    [() => true, candidate => formatDecimal(candidate.value)],
   ])(signal)
 
 export const formatSummarySignalValueText = (signal: Signal): string =>

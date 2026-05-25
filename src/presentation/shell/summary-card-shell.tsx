@@ -15,11 +15,11 @@ type CardMetaEntry = Readonly<{
 }>
 
 const createCardMetaEntries = (card: SummaryCardViewModel): readonly CardMetaEntry[] => [
-  { label: 'Subtitle', value: renderMaybeText('Unavailable')(card.subtitleText) },
-  { label: 'Trend', value: renderMaybeText('Unavailable')(card.trendLabel) },
-  { label: 'Anomaly', value: renderMaybeText('Unavailable')(card.anomalyLabel) },
-  { label: 'Caveat', value: renderMaybeText('Unavailable')(card.caveatLabel) },
-  { label: 'Drilldown', value: renderMaybeText('Unavailable')(card.drilldownTarget) },
+  { label: 'Subtitle', value: renderMaybeText('Not in this run')(card.subtitleText) },
+  { label: 'Trend', value: renderMaybeText('Not in this run')(card.trendLabel) },
+  { label: 'Anomaly', value: renderMaybeText('No anomaly call yet')(card.anomalyLabel) },
+  { label: 'Caveat', value: renderMaybeText('No caveat attached')(card.caveatLabel) },
+  { label: 'Drilldown', value: renderMaybeText('No drilldown yet')(card.drilldownTarget) },
 ]
 
 export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitleText, trendLabel, anomalyLabel, caveatLabel, drilldownTarget }: SummaryCardViewModel) {

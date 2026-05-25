@@ -9,6 +9,8 @@ export type PresentationCaveatKind =
   | 'trend-not-computed'
   | 'anomaly-not-computed'
   | 'comparison-window-unavailable'
+  | 'chart-caveat'
+  | 'short-history-window'
 
 export type PresentationCaveatSeverity = 'info' | 'warning'
 
