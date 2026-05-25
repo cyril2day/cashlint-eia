@@ -26,7 +26,7 @@
   position: absolute;
   inset: var(--inset-none);
   background:
-    radial-gradient(circle at 24% 0%, color-mix(in srgb, var(--oil-lint-accent-primary) 18%, transparent), transparent var(--space-64)),
+    linear-gradient(135deg, color-mix(in srgb, var(--oil-lint-accent-primary) 8%, transparent), transparent 42%),
     linear-gradient(120deg, color-mix(in srgb, var(--text-quinary) 70%, transparent) var(--border-width-1), transparent var(--border-width-1)),
     linear-gradient(0deg, color-mix(in srgb, var(--text-quinary) 70%, transparent) var(--border-width-1), transparent var(--border-width-1));
   background-size: auto, var(--space-12) var(--space-12), var(--space-12) var(--space-12);
@@ -118,6 +118,8 @@
 .oil-lint-shell__summary-region,
 .oil-lint-shell__cards-region,
 .oil-lint-shell__caveats-region,
+.oil-lint-shell__charts-region,
+.oil-lint-shell__trace-region,
 .oil-lint-shell__states-region {
   display: grid;
   gap: var(--oil-lint-section-gap);
@@ -129,6 +131,295 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+.product-nav {
+  padding-block-end: var(--space-2);
+  border-block-end: var(--oil-lint-panel-border);
+}
+
+.product-nav__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.product-nav__link {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 7.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--surface-color-secondary) 86%, transparent);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.product-nav__link[aria-current='page'] {
+  border-color: color-mix(in srgb, var(--oil-lint-accent-primary) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--oil-lint-accent-primary) 8%, var(--surface-color-secondary));
+}
+
+.product-nav__label,
+.analysis-control__label,
+.hero-analysis__eyebrow,
+.hero-analysis__metric-label,
+.caveat-panel__item-title,
+.analysis-trace__step-status,
+.detail-page__eyebrow,
+.detail-row-list__label {
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+.product-nav__label {
+  font-size: var(--text-sm);
+}
+
+.product-nav__description {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: var(--line-height-normal);
+}
+
+.analysis-control {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--oil-lint-card-padding);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
+}
+
+.analysis-control__fieldset {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+
+.analysis-control__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.analysis-control__label {
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.analysis-control__input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: var(--surface-color-primary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.analysis-control__submit {
+  width: fit-content;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-1) var(--border-style-solid) color-mix(in srgb, var(--oil-lint-accent-primary) 52%, var(--color-border));
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--oil-lint-accent-primary) 16%, var(--surface-color-secondary));
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: var(--font-weight-bold);
+}
+
+.analysis-control__helper,
+.hero-analysis__summary,
+.caveat-panel__summary,
+.caveat-panel__empty,
+.analysis-trace__step-description,
+.detail-page__headline,
+.detail-row-list__description {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.hero-analysis {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--oil-lint-card-padding);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--oil-lint-accent-primary) 10%, transparent), transparent),
+    var(--surface-color-secondary);
+}
+
+.hero-analysis__eyebrow {
+  margin: 0;
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.hero-analysis__title,
+.caveat-panel__title,
+.analysis-trace__title,
+.detail-page__title {
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.hero-analysis__title {
+  max-width: 28ch;
+  font-size: var(--text-3xl);
+  line-height: var(--line-height-tight);
+}
+
+.hero-analysis__metrics {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.hero-analysis__metric {
+  padding: var(--space-3);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--surface-color-primary) 82%, transparent);
+}
+
+.hero-analysis__metric-label,
+.detail-row-list__label {
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.hero-analysis__metric-value,
+.detail-row-list__value {
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.caveat-panel,
+.analysis-trace,
+.detail-page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.caveat-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.caveat-panel__state,
+.detail-page__state {
+  display: inline-flex;
+  width: fit-content;
+  padding: var(--space-1) var(--space-3);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.caveat-panel__list,
+.analysis-trace__steps,
+.analysis-trace__caveats,
+.detail-row-list__caveats {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.caveat-panel__item,
+.analysis-trace__step,
+.detail-row-list__row {
+  padding: var(--space-4);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
+}
+
+.caveat-panel__item--warning {
+  border-color: color-mix(in srgb, var(--oil-lint-accent-secondary) 36%, var(--color-border));
+}
+
+.caveat-panel__item-title,
+.analysis-trace__step-label,
+.detail-row-list__status {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.caveat-panel__item-message,
+.analysis-trace__caveat,
+.detail-row-list__meta,
+.detail-row-list__caveat {
+  margin: var(--space-1) 0 0;
+  color: var(--text-secondary);
+}
+
+.analysis-trace__step {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, max-content) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.analysis-trace__step-status {
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.detail-page {
+  min-height: 100vh;
+  padding: var(--oil-lint-page-padding);
+}
+
+.detail-page__header {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 76rem;
+}
+
+.detail-page__back-link {
+  color: var(--color-link);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.detail-page__eyebrow {
+  margin: 0;
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.detail-page__title {
+  font-size: var(--text-4xl);
+  line-height: var(--line-height-tight);
+}
+
+.detail-page__body,
+.detail-page__section,
+.detail-row-list {
+  display: grid;
+  gap: var(--space-4);
 }
 
 .oil-lint-shell__section-eyebrow {
@@ -397,7 +688,9 @@
   }
 
   .oil-lint-shell__meta,
-  .oil-lint-shell__summary-metrics {
+  .oil-lint-shell__summary-metrics,
+  .analysis-control__fieldset,
+  .hero-analysis__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -418,6 +711,15 @@
   .oil-lint-shell__card-grid,
   .oil-lint-shell__state-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-control {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+  }
+
+  .analysis-control__helper {
+    grid-column: 1 / -1;
   }
 
   .oil-lint-shell__section-title {

@@ -2,8 +2,10 @@ import type { ApplicationError } from '@/application/errors'
 import { createWalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
 import { buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
 import type { EiaClient, UpstreamError } from '@/application/ports/eia-client'
+import type { RichHomeViewModel } from '@/presentation/contracts/rich-home-view-model'
 import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 import type { PresentationErrorViewModel } from '@/presentation/contracts/presentation-error-view-model'
+import { mapSummaryToRichHomeViewModel } from '@/presentation/mappers'
 import { createRealEiaClient, validateEiaRuntimeConfig, type EiaRuntimeConfig, type EiaRuntimeConfigurationError } from '@/infrastructure/eia'
 import type { EiaRuntimeConfigInput } from '@/infrastructure/eia'
 import { allPass, cond, ifElse, isNil } from '@/shared/fp'
@@ -11,8 +13,8 @@ import { none, some, type Maybe } from '@/shared/maybe'
 import type { Result } from '@/shared/result'
 
 export type HomePageModel = Readonly<{
-  readonly kind: 'summary'
-  readonly viewModel: SummaryViewModel
+  readonly kind: 'home'
+  readonly viewModel: RichHomeViewModel
 } | {
   readonly kind: 'error'
   readonly viewModel: PresentationErrorViewModel
@@ -97,8 +99,8 @@ const configurationErrorViewModel = (
 })
 
 const createSummaryHomePageModel = (viewModel: SummaryViewModel): HomePageModel => ({
-  kind: 'summary',
-  viewModel,
+  kind: 'home',
+  viewModel: mapSummaryToRichHomeViewModel(viewModel),
 })
 
 const createErrorHomePageModel = (viewModel: PresentationErrorViewModel): HomePageModel => ({

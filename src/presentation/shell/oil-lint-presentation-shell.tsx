@@ -1,8 +1,14 @@
 import React from 'react'
 
+import { ChartPanel } from '../charts/components/chart-panel'
 import { SummaryCardShell } from './summary-card-shell'
-import type { SummaryDisplayState, SummaryViewModel } from '../contracts/summary-view-model'
+import type { RichHomeViewModel, SummaryDisplayState } from '../contracts'
 import { renderMaybeText } from '../utils/render-maybe-text'
+import { ProductNavigation } from './product-navigation'
+import { AnalysisControlPanel } from './analysis-control-panel'
+import { HeroAnalysisPanel } from './hero-analysis-panel'
+import { CaveatPanel } from './caveat-panel'
+import { AnalysisTracePanel } from './analysis-trace-panel'
 
 const summaryDisplayStateLabelByKind: Readonly<Record<SummaryDisplayState, string>> = {
   complete: 'Complete output',
@@ -32,53 +38,58 @@ function ShellSectionHeader({ eyebrow, title, titleId, tag }: ShellSectionHeader
   )
 }
 
-export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly viewModel: SummaryViewModel }>) {
+export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly viewModel: RichHomeViewModel }>) {
   return (
     <main className="oil-lint-shell" aria-labelledby="oil-lint-shell-title">
       <div className="oil-lint-shell__backdrop" aria-hidden="true" />
 
       <article className="oil-lint-shell__surface">
         <header className="oil-lint-shell__header">
+          <ProductNavigation viewModel={viewModel.navigation} />
           <p className="oil-lint-shell__eyebrow">Oil Lint</p>
           <h1 className="oil-lint-shell__title" id="oil-lint-shell-title">
-            Live weekly petroleum summary
+            Live petroleum intelligence workspace
           </h1>
           <p className="oil-lint-shell__lede">
-            Real EIA data flows through the adapter, application workflow, and presentation shell.
+            Real EIA data flows through the adapter, domain workflow, analysis synthesis, and rich presentation layer.
           </p>
 
           <dl className="oil-lint-shell__meta" aria-label="Display context">
             <div className="oil-lint-shell__meta-item">
               <dt className="oil-lint-shell__meta-label">Report week</dt>
-              <dd className="oil-lint-shell__meta-value">{viewModel.reportWeekText}</dd>
+              <dd className="oil-lint-shell__meta-value">{viewModel.summary.reportWeekText}</dd>
             </div>
             <div className="oil-lint-shell__meta-item">
               <dt className="oil-lint-shell__meta-label">Geography</dt>
-              <dd className="oil-lint-shell__meta-value">{viewModel.geographyText}</dd>
+              <dd className="oil-lint-shell__meta-value">{viewModel.summary.geographyText}</dd>
             </div>
           </dl>
         </header>
 
+        <AnalysisControlPanel viewModel={viewModel.controls} />
+
+        <HeroAnalysisPanel viewModel={viewModel.summary} />
+
         <section className="oil-lint-shell__summary-region" aria-labelledby="oil-lint-summary-title">
           <ShellSectionHeader
             eyebrow="Weekly summary"
-            title={viewModel.headline}
+            title={viewModel.summary.headline}
             titleId="oil-lint-summary-title"
-            tag={summaryDisplayStateLabelByKind[viewModel.displayState]}
+            tag={summaryDisplayStateLabelByKind[viewModel.summary.displayState]}
           />
 
           <div className="oil-lint-shell__summary-panel">
             <p className="oil-lint-shell__summary-label">Summary</p>
-            <p className="oil-lint-shell__summary-text">{viewModel.summary}</p>
+            <p className="oil-lint-shell__summary-text">{viewModel.summary.summary}</p>
 
             <dl className="oil-lint-shell__summary-metrics" aria-label="Summary metrics">
               <div className="oil-lint-shell__summary-metric">
                 <dt className="oil-lint-shell__summary-metric-label">Condition</dt>
-                <dd className="oil-lint-shell__summary-metric-value">{viewModel.conditionLabel}</dd>
+                <dd className="oil-lint-shell__summary-metric-value">{viewModel.summary.conditionLabel}</dd>
               </div>
               <div className="oil-lint-shell__summary-metric">
                 <dt className="oil-lint-shell__summary-metric-label">Confidence</dt>
-                <dd className="oil-lint-shell__summary-metric-value">{viewModel.confidenceLabel}</dd>
+                <dd className="oil-lint-shell__summary-metric-value">{viewModel.summary.confidenceLabel}</dd>
               </div>
             </dl>
           </div>
@@ -93,28 +104,31 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
           />
 
           <ul className="oil-lint-shell__card-grid">
-            {viewModel.cards.map(card => (
+            {viewModel.summary.cards.map(card => (
               <SummaryCardShell key={card.kind} {...card} />
             ))}
           </ul>
         </section>
 
-        <section className="oil-lint-shell__caveats-region" aria-labelledby="oil-lint-caveats-title">
+        <section className="oil-lint-shell__charts-region" aria-labelledby="oil-lint-charts-title">
           <ShellSectionHeader
-            eyebrow="Caveats"
-            title="Presentation caveats"
-            titleId="oil-lint-caveats-title"
-            tag="User trust display path"
+            eyebrow="Chart preview"
+            title="Visible visual analysis states"
+            titleId="oil-lint-charts-title"
+            tag="ChartPanelViewModel"
           />
 
-          <ul className="oil-lint-shell__caveat-list">
-            {viewModel.caveats.map((caveat, index) => (
-              <li key={`${caveat.kind}-${String(index)}`} className={`oil-lint-shell__caveat-item oil-lint-shell__caveat-item--${caveat.severity}`}>
-                <p className="oil-lint-shell__caveat-title">{caveat.title}</p>
-                <p className="oil-lint-shell__caveat-body">{caveat.message}</p>
-              </li>
-            ))}
-          </ul>
+          <div className="chart-gallery__grid">
+            {viewModel.primaryCharts.map(panel => <ChartPanel key={panel.id} viewModel={panel} />)}
+          </div>
+        </section>
+
+        <section className="oil-lint-shell__caveats-region" aria-labelledby="oil-lint-caveats-title">
+          <CaveatPanel viewModel={viewModel.caveatPanel} />
+        </section>
+
+        <section className="oil-lint-shell__trace-region" aria-labelledby="oil-lint-trace-title">
+          <AnalysisTracePanel viewModel={viewModel.tracePanel} />
         </section>
 
         <section className="oil-lint-shell__states-region" aria-labelledby="oil-lint-states-title">
@@ -122,13 +136,13 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
             eyebrow="State"
             title="Display state"
             titleId="oil-lint-states-title"
-            tag={summaryDisplayStateLabelByKind[viewModel.displayState]}
+            tag={viewModel.state}
           />
 
           <div className="oil-lint-shell__state-grid">
-            <section className={`oil-lint-shell__state oil-lint-shell__state--${viewModel.displayState}`}>
-              <p className="oil-lint-shell__state-title">{summaryDisplayStateLabelByKind[viewModel.displayState]}</p>
-              <p className="oil-lint-shell__state-body">{renderMaybeText('No additional state message.')(viewModel.displayStateMessage)}</p>
+            <section className={`oil-lint-shell__state oil-lint-shell__state--${viewModel.summary.displayState}`}>
+              <p className="oil-lint-shell__state-title">{summaryDisplayStateLabelByKind[viewModel.summary.displayState]}</p>
+              <p className="oil-lint-shell__state-body">{renderMaybeText('No additional state message.')(viewModel.summary.displayStateMessage)}</p>
             </section>
           </div>
         </section>

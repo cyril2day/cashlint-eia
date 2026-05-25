@@ -1,6 +1,6 @@
 import { parseTrendDirection, type TrendDirection } from '@/contexts/measurement/model/trend-direction'
 import { ifElse, cond } from '@/shared/fp'
-import { failure, success, bindResult, type Result } from '@/shared/result'
+import { failure, success, bindResult, mapError, type Result } from '@/shared/result'
 
 import type { HistoricalObservation } from '../model/historical-observation'
 import type { HistoricalSeries } from '../model/historical-series'
@@ -15,21 +15,6 @@ import {
   type InterpretationError,
 } from '../errors'
 import { matchPreviousObservation } from './match-previous-observation'
-
-function handleUnexpectedTrendDirectionParseFailure(): never {
-  throw new Error('unexpected trend direction parse failure')
-}
-
-const unwrapTrendDirection = (direction: TrendDirection['direction']): TrendDirection =>
-  ifElse(
-    (candidate: ReturnType<typeof parseTrendDirection>) => candidate.ok === true,
-    candidate => candidate.value,
-    handleUnexpectedTrendDirectionParseFailure,
-  )(parseTrendDirection(direction))
-
-const upDirection = unwrapTrendDirection('Up')
-const downDirection = unwrapTrendDirection('Down')
-const flatDirection = unwrapTrendDirection('Flat')
 
 const windowWeeks = (window: InterpretationPolicies['comparisonWindow']): Result<number, InterpretationError> =>
   cond<[InterpretationPolicies['comparisonWindow']], Result<number, InterpretationError>>([
@@ -58,11 +43,20 @@ const thresholdForSignal = (signal: Signal, policies: InterpretationPolicies): n
     [() => true, () => policies.flatThresholds.inventory],
   ])(signal)
 
-const resolveDirection = (delta: number, threshold: number): TrendDirection =>
-  cond<[number], TrendDirection>([
-    [value => Math.abs(value) <= threshold, () => flatDirection],
-    [value => value > 0, () => upDirection],
-    [() => true, () => downDirection],
+const trendDirectionFromLabel = (
+  signal: Signal,
+  label: TrendDirection['direction'],
+): Result<TrendDirection, InterpretationError> =>
+  mapError(
+    parseTrendDirection(label),
+    () => makeTrendComputationUndefinedError(signal.identity),
+  )
+
+const resolveDirection = (signal: Signal, delta: number, threshold: number): Result<TrendDirection, InterpretationError> =>
+  cond<[number], Result<TrendDirection, InterpretationError>>([
+    [value => Math.abs(value) <= threshold, () => trendDirectionFromLabel(signal, 'Flat')],
+    [value => value > 0, () => trendDirectionFromLabel(signal, 'Up')],
+    [() => true, () => trendDirectionFromLabel(signal, 'Down')],
   ])(delta)
 
 const unsupportedWindow = (
@@ -83,7 +77,11 @@ const trendFromObservation = (
 
   return ifElse(
     Number.isFinite,
-    (value: number) => success(createTrend(policies.comparisonWindow, resolveDirection(value, thresholdForSignal(signal, policies)), Math.abs(value))),
+    (value: number) =>
+      bindResult(
+        resolveDirection(signal, value, thresholdForSignal(signal, policies)),
+        direction => success(createTrend(policies.comparisonWindow, direction, Math.abs(value))),
+      ),
     () => failure(makeTrendComputationUndefinedError(signal.identity)),
   )(delta)
 }
