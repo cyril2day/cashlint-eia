@@ -1,0 +1,120 @@
+.oil-lint-time-series-chart,
+.oil-lint-sparkline {
+  --oil-lint-chart-line: var(--color-cyan);
+  --oil-lint-chart-marker: var(--color-orange);
+  --oil-lint-chart-baseline: var(--color-green);
+  --oil-lint-chart-border: var(--border-width-1) var(--border-style-solid) var(--color-border);
+  --oil-lint-chart-radius: var(--radius-md);
+
+  color: var(--text-primary);
+}
+
+.oil-lint-time-series-chart {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--oil-lint-chart-border);
+  border-radius: var(--oil-lint-chart-radius);
+  background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
+}
+
+.oil-lint-time-series-chart__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.oil-lint-time-series-chart__title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.oil-lint-time-series-chart__svg,
+.oil-lint-sparkline__svg {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.oil-lint-time-series-chart__baseline-band {
+  fill: color-mix(in srgb, var(--oil-lint-chart-baseline) 18%, transparent);
+  stroke: color-mix(in srgb, var(--oil-lint-chart-baseline) 48%, transparent);
+  stroke-dasharray: 4 4;
+}
+
+.oil-lint-time-series-chart__axis,
+.oil-lint-sparkline__axis,
+.histogram-chart__axis,
+.box-plot-chart__axis,
+.area-chart__axis,
+.variance-chart__axis {
+  stroke: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.oil-lint-time-series-chart__grid-line,
+.histogram-chart__grid-line,
+.area-chart__grid-line,
+.variance-chart__grid-line {
+  stroke: color-mix(in srgb, var(--text-quinary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.oil-lint-time-series-chart__axis-label,
+.oil-lint-time-series-chart__axis-tick-label,
+.oil-lint-sparkline__axis-tick-label,
+.histogram-chart__axis-label,
+.box-plot-chart__axis-label,
+.area-chart__axis-label,
+.area-chart__baseline-label,
+.variance-chart__axis-label,
+.variance-chart__actual-label,
+.variance-chart__reference-label {
+  fill: var(--text-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.oil-lint-time-series-chart__line,
+.oil-lint-sparkline__line {
+  stroke: var(--oil-lint-chart-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.oil-lint-time-series-chart__current-marker,
+.oil-lint-sparkline__current-marker {
+  fill: var(--oil-lint-chart-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.oil-lint-time-series-chart__caveats {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.oil-lint-time-series-chart__caveat-item {
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: var(--border-width-2) var(--border-style-solid) var(--oil-lint-chart-marker);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-normal);
+}
+
+.oil-lint-sparkline {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.oil-lint-sparkline__caption {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-normal);
+}

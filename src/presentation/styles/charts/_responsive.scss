@@ -1,0 +1,11 @@
+@use 'pristine-styles/scss' as ps;
+
+@include ps.breakpoint-up('md') {
+  .chart-gallery__summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .chart-gallery__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

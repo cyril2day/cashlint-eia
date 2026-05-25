@@ -1,0 +1,320 @@
+.metric-card-chart,
+.bar-chart,
+.histogram-chart,
+.box-plot-chart,
+.area-chart,
+.variance-chart {
+  width: 100%;
+  margin: 0;
+}
+
+.metric-card-chart {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+}
+
+.metric-card-chart__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.metric-card-chart__title,
+.bar-chart__category,
+.variance-chart__category {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.metric-card-chart__status {
+  display: inline-flex;
+  max-width: 12rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--oil-lint-chart-baseline) 18%, transparent);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.metric-card-chart__primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.metric-card-chart__value {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.metric-card-chart__unit,
+.metric-card-chart__comparison {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-normal);
+}
+
+.metric-card-chart__unit {
+  font-weight: var(--font-weight-bold);
+}
+
+.metric-card-chart__comparison {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.metric-card-chart__comparison-label,
+.metric-card-chart__comparison-delta {
+  color: var(--text-secondary);
+}
+
+.metric-card-chart__comparison-value {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.metric-card-chart__meta,
+.box-plot-chart__summary,
+.variance-chart__values {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.metric-card-chart__meta-item,
+.box-plot-chart__row,
+.variance-chart__value {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-block: var(--space-1);
+  border-block-end: var(--border-width-1) var(--border-style-solid) color-mix(in srgb, var(--color-border) 72%, transparent);
+}
+
+.metric-card-chart__meta-label,
+.box-plot-chart__label,
+.variance-chart__value dt {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+.metric-card-chart__meta-value,
+.box-plot-chart__value,
+.variance-chart__value dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.bar-chart__list,
+.box-plot-chart__markers,
+.area-chart__points,
+.variance-chart__entries {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.bar-chart__item {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.bar-chart__label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.bar-chart__value,
+.area-chart__point-value,
+.variance-chart__direction {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.bar-chart__track {
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--text-quinary) 60%, transparent);
+  overflow: hidden;
+}
+
+.bar-chart__bar {
+  display: block;
+  height: 100%;
+  min-width: var(--space-1);
+  border-radius: inherit;
+  background: var(--oil-lint-chart-line);
+}
+
+.bar-chart__item--Negative .bar-chart__bar {
+  background: var(--oil-lint-chart-marker);
+}
+
+.bar-chart__item--Zero .bar-chart__bar {
+  background: var(--text-tertiary);
+}
+
+.histogram-chart__svg,
+.box-plot-chart__svg,
+.area-chart__svg,
+.variance-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 10rem;
+  overflow: visible;
+}
+
+.histogram-chart__bar,
+.variance-chart__bar {
+  fill: color-mix(in srgb, var(--oil-lint-chart-line) 72%, transparent);
+}
+
+.histogram-chart__marker,
+.variance-chart__reference-line {
+  stroke: var(--oil-lint-chart-marker);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.area-chart__point-week {
+  color: var(--text-secondary);
+  fill: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.box-plot-chart__content {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.box-plot-chart__whisker,
+.box-plot-chart__cap {
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+}
+
+.box-plot-chart__box {
+  fill: color-mix(in srgb, var(--oil-lint-chart-line) 24%, transparent);
+  stroke: var(--oil-lint-chart-line);
+  stroke-width: 2;
+}
+
+.box-plot-chart__median {
+  stroke: var(--oil-lint-chart-marker);
+  stroke-width: 3;
+}
+
+.box-plot-chart__reference-marker {
+  fill: var(--oil-lint-chart-baseline);
+}
+
+.box-plot-chart__current-marker,
+.variance-chart__actual-marker {
+  fill: var(--oil-lint-chart-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.box-plot-chart__markers {
+  margin-block-start: var(--space-3);
+}
+
+.box-plot-chart__marker,
+.area-chart__empty,
+.area-chart__point,
+.bar-chart__empty,
+.histogram-chart__empty,
+.box-plot-chart__empty,
+.variance-chart__empty,
+.variance-chart__semantics {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.area-chart {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.area-chart__baseline {
+  stroke: color-mix(in srgb, var(--oil-lint-chart-baseline) 64%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+.area-chart__area {
+  fill: color-mix(in srgb, var(--oil-lint-chart-line) 14%, transparent);
+}
+
+.area-chart__line {
+  fill: none;
+  stroke: var(--oil-lint-chart-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.area-chart__reference-marker {
+  fill: var(--oil-lint-chart-line);
+}
+
+.area-chart__current-marker {
+  fill: var(--oil-lint-chart-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.area-chart__point {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.variance-chart {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.variance-chart__entry {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--oil-lint-chart-border);
+  border-radius: var(--oil-lint-chart-radius);
+}
+
+.chart-panel__caveat {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: var(--border-width-2) var(--border-style-solid) var(--oil-lint-chart-marker);
+}
+
+.chart-state-message {
+  padding: var(--space-2) var(--space-3);
+  border: var(--oil-lint-chart-border);
+  border-radius: var(--oil-lint-chart-radius);
+  background: color-mix(in srgb, var(--surface-color-primary) 84%, transparent);
+}

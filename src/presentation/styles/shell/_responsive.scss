@@ -1,0 +1,97 @@
+@use 'pristine-styles/scss' as ps;
+
+@include ps.breakpoint-up('sm') {
+  .oil-lint-shell {
+    --oil-lint-page-padding: var(--space-6);
+    --oil-lint-surface-padding: var(--space-6);
+    --oil-lint-section-gap: var(--space-5);
+    --oil-lint-card-padding: var(--space-5);
+    --oil-lint-grid-gap: var(--space-4);
+
+    place-items: center;
+  }
+
+  .app-nav {
+    padding-block-end: var(--space-4);
+  }
+
+  .app-nav__bar {
+    gap: var(--space-3);
+  }
+
+  .app-nav__menu-button {
+    display: none;
+  }
+
+  .app-nav__list {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app-nav__link {
+    min-height: 2.25rem;
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .oil-lint-shell__section-head {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .oil-lint-shell__meta,
+  .oil-lint-shell__summary-metrics,
+  .analysis-control__fieldset,
+  .hero-analysis__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@include ps.breakpoint-up('md') {
+  .oil-lint-shell {
+    --oil-lint-page-padding: var(--space-8);
+    --oil-lint-surface-padding: var(--space-8);
+    --oil-lint-section-gap: var(--space-6);
+    --oil-lint-card-padding: var(--space-6);
+    --oil-lint-grid-gap: var(--space-5);
+  }
+
+  .oil-lint-shell__title {
+    max-width: 16ch;
+  }
+
+  .oil-lint-shell__card-grid,
+  .oil-lint-shell__state-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-control {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+  }
+
+  .analysis-control__helper {
+    grid-column: 1 / -1;
+  }
+
+  .oil-lint-shell__section-title {
+    font-size: var(--text-2xl);
+  }
+}
+
+@include ps.breakpoint-up('lg') {
+  .oil-lint-shell {
+    --oil-lint-page-padding: var(--space-12);
+    --oil-lint-surface-padding: var(--space-10);
+  }
+
+  .oil-lint-shell__card-grid,
+  .oil-lint-shell__state-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

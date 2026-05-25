@@ -1,0 +1,5 @@
+export * from '@/presentation/icons/close-icon'
+export * from '@/presentation/icons/github-icon'
+export * from '@/presentation/icons/menu-icon'
+export * from '@/presentation/icons/moon-icon'
+export * from '@/presentation/icons/sun-icon'

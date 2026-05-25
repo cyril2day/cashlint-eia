@@ -1,0 +1,137 @@
+.oil-lint-shell {
+  --oil-lint-accent-primary: var(--color-cyan);
+  --oil-lint-accent-secondary: var(--color-orange);
+  --oil-lint-accent-tertiary: var(--color-green);
+  --oil-lint-panel-border: var(--border-width-1) var(--border-style-solid) var(--color-border);
+  --oil-lint-panel-radius: var(--radius-md);
+  --oil-lint-card-radius: var(--radius-md);
+  --oil-lint-pill-radius: var(--radius-full);
+  --oil-lint-page-padding: var(--space-4);
+  --oil-lint-surface-padding: var(--space-4);
+  --oil-lint-section-gap: var(--space-4);
+  --oil-lint-card-padding: var(--space-4);
+  --oil-lint-grid-gap: var(--space-3);
+
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: stretch;
+  padding: var(--oil-lint-page-padding);
+  overflow: hidden;
+}
+
+.oil-lint-shell__backdrop {
+  position: absolute;
+  inset: var(--inset-none);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--oil-lint-accent-primary) 8%, transparent), transparent 42%),
+    linear-gradient(120deg, color-mix(in srgb, var(--text-quinary) 70%, transparent) var(--border-width-1), transparent var(--border-width-1)),
+    linear-gradient(0deg, color-mix(in srgb, var(--text-quinary) 70%, transparent) var(--border-width-1), transparent var(--border-width-1));
+  background-size: auto, var(--space-12) var(--space-12), var(--space-12) var(--space-12);
+  mask-image: radial-gradient(circle at center, black 34%, transparent 94%);
+  opacity: var(--opacity-75);
+  pointer-events: none;
+}
+
+.oil-lint-shell__surface {
+  position: relative;
+  width: min(100%, 82rem);
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--oil-lint-surface-padding);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-panel-radius);
+  background: linear-gradient(180deg, var(--surface-color-secondary) 0%, var(--surface-color-primary) 100%);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(var(--space-4));
+}
+
+.oil-lint-shell__header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.oil-lint-shell__workspace {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.oil-lint-shell__eyebrow,
+.oil-lint-shell__section-eyebrow,
+.oil-lint-shell__summary-label,
+.oil-lint-shell__summary-metric-label,
+.oil-lint-shell__card-status,
+.oil-lint-shell__card-meta-label,
+.oil-lint-shell__caveat-title,
+.oil-lint-shell__error-eyebrow,
+.oil-lint-shell__error-meta-label {
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+}
+
+.oil-lint-shell__eyebrow {
+  margin: 0;
+  color: var(--color-link);
+  font-size: var(--text-xs);
+}
+
+.oil-lint-shell__title {
+  margin: 0;
+  max-width: 100%;
+  font-size: var(--text-5xl);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.oil-lint-shell__lede {
+  margin: 0;
+  max-width: 66ch;
+  color: var(--text-secondary);
+  font-size: var(--text-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.oil-lint-shell__meta {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--oil-lint-grid-gap);
+  margin: 0;
+}
+
+.oil-lint-shell__meta-item {
+  padding: var(--space-4);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
+}
+
+.oil-lint-shell__meta-label {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.oil-lint-shell__meta-value {
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.oil-lint-shell__summary-region,
+.oil-lint-shell__cards-region,
+.oil-lint-shell__caveats-region,
+.oil-lint-shell__charts-region,
+.oil-lint-shell__trace-region,
+.oil-lint-shell__states-region {
+  display: grid;
+  gap: var(--oil-lint-section-gap);
+}
+
+.oil-lint-shell__section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
