@@ -1,6 +1,6 @@
-import type { ChartPanelViewModel } from './chart-panel-view-model'
-import type { PresentationCaveatViewModel } from './presentation-caveat-view-model'
-import type { PresentationDisplayState } from './presentation-display-state'
+import type { ChartPanelViewModel } from '@/presentation/contracts/chart-panel-view-model'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { PresentationDisplayState } from '@/presentation/contracts/presentation-display-state'
 
 export type ChartGalleryStateSummaryItemViewModel = Readonly<{
   readonly state: PresentationDisplayState

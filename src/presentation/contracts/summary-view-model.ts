@@ -1,7 +1,7 @@
 import type { Maybe } from '@/shared/maybe'
 
-import type { PresentationCaveatViewModel } from './presentation-caveat-view-model'
-import type { SummaryCardViewModel } from './summary-card-view-model'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
 
 export type SummaryDisplayState = 'complete' | 'partial' | 'empty' | 'error'
 

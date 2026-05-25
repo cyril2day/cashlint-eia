@@ -1,6 +1,6 @@
 import type { Maybe } from '@/shared/maybe'
 
-import type { PresentationCaveatViewModel } from './presentation-caveat-view-model'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
 
 export type DetailRowViewModel = Readonly<{
   readonly label: string

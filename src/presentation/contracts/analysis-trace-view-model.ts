@@ -1,7 +1,7 @@
 import type { Maybe } from '@/shared/maybe'
 
-import type { PresentationCaveatViewModel } from './presentation-caveat-view-model'
-import type { PresentationDisplayState } from './presentation-display-state'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { PresentationDisplayState } from '@/presentation/contracts/presentation-display-state'
 
 export type AnalysisTraceStepViewModel = Readonly<{
   readonly label: string

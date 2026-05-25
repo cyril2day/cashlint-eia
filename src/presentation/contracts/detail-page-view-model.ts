@@ -1,10 +1,10 @@
 import type { Maybe } from '@/shared/maybe'
 
-import type { ChartPanelViewModel } from './chart-panel-view-model'
-import type { DetailRowViewModel } from './detail-row-view-model'
-import type { PresentationCaveatViewModel } from './presentation-caveat-view-model'
-import type { PresentationDisplayState } from './presentation-display-state'
-import type { SummaryCardViewModel } from './summary-card-view-model'
+import type { ChartPanelViewModel } from '@/presentation/contracts/chart-panel-view-model'
+import type { DetailRowViewModel } from '@/presentation/contracts/detail-row-view-model'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { PresentationDisplayState } from '@/presentation/contracts/presentation-display-state'
+import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
 
 export type DetailPageViewModel = Readonly<{
   readonly title: string
