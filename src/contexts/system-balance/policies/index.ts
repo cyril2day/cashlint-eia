@@ -1,1 +1,1 @@
-export * from './system-balance-policy'
+export * from '@/contexts/system-balance/policies/system-balance-policy'

@@ -1,5 +1,5 @@
-import type { BalanceCaveatKind } from '../model/system-balance-analysis'
-import type { BalanceConfidenceLevel } from '../model/system-balance-analysis'
+import type { BalanceCaveatKind } from '@/contexts/system-balance/model/system-balance-analysis'
+import type { BalanceConfidenceLevel } from '@/contexts/system-balance/model/system-balance-analysis'
 
 export type MissingEvidenceBehavior = 'ReturnUnknown' | 'ReturnError'
 

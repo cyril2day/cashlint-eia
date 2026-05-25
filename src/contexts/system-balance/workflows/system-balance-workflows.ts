@@ -17,9 +17,9 @@ import type { Result } from '@/shared/result'
 import { ifElse, cond, allPass, pipeWith } from '@/shared/fp'
 import { isSome, some, none, type Maybe } from '@/shared/maybe'
 
-import { createSystemBalanceError } from '../errors'
-import type { SystemBalanceError, SystemBalanceErrorKind } from '../errors'
-import type { SystemBalancePolicy } from '../policies'
+import { createSystemBalanceError } from '@/contexts/system-balance/errors'
+import type { SystemBalanceError, SystemBalanceErrorKind } from '@/contexts/system-balance/errors'
+import type { SystemBalancePolicy } from '@/contexts/system-balance/policies'
 import {
   type AvailableSupply,
   type BalanceCaveat,
@@ -36,7 +36,7 @@ import {
   type SupplyPressure,
   type SystemBalanceAnalysis,
   type SystemBalanceState,
-} from '../model'
+} from '@/contexts/system-balance/model'
 
 const sameUnit = (left: MeasurementUnit, right: MeasurementUnit): boolean =>
   formatMeasurementUnit(left) === formatMeasurementUnit(right)

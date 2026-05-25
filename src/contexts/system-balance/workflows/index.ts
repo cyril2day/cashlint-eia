@@ -1,1 +1,1 @@
-export * from './system-balance-workflows'
+export * from '@/contexts/system-balance/workflows/system-balance-workflows'
