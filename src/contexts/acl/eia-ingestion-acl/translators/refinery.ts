@@ -16,12 +16,12 @@ import {
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
-  isWalkingSkeletonRefineryNumericCandidate,
-  isWalkingSkeletonRefineryPeriodCandidate,
-  isWalkingSkeletonRefinerySeriesIdentifier,
-  isWalkingSkeletonRefineryUnitCandidate,
+  isCoreWeeklyRefineryNumericCandidate,
+  isCoreWeeklyRefineryPeriodCandidate,
+  isCoreWeeklyRefinerySeriesIdentifier,
+  isCoreWeeklyRefineryUnitCandidate,
   mapSeriesIdToRefineryMeasureKind,
-  walkingSkeletonRefineryEndpoint,
+  coreWeeklyRefineryEndpoint,
 } from '@/contexts/acl/eia-ingestion-acl/policies'
 import { parseIsoDate } from '@/shared/date'
 
@@ -63,12 +63,12 @@ type BR<T> = Result<T, BoundaryError>
 
 const validateSeriesId = (seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonRefinerySeriesIdentifier,
+    isCoreWeeklyRefinerySeriesIdentifier,
     (validSeriesId: string) => success(validSeriesId),
     (invalidSeriesId: string) =>
       failure(
         makeUnsupportedSeriesError(invalidSeriesId, {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId: invalidSeriesId,
         }),
       ),
@@ -79,7 +79,7 @@ const readSeriesId = (row: RawEiaRow): BR<string> => {
 
   const requireSeries = requireFieldThen<string, Result<string, BoundaryError>>(
     'series',
-    walkingSkeletonRefineryEndpoint,
+    coreWeeklyRefineryEndpoint,
     validateSeriesId,
   )
 
@@ -88,18 +88,18 @@ const readSeriesId = (row: RawEiaRow): BR<string> => {
 
 const validatePeriodCandidate = (periodCandidate: string | number, seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonRefineryPeriodCandidate,
+    isCoreWeeklyRefineryPeriodCandidate,
     (candidate: string) =>
       mapError(parseIsoDate(candidate), () =>
         makeInvalidDateOrPeriodError('period', candidate, {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId,
         }),
       ),
     (invalidCandidate: string) =>
       failure(
         makeInvalidDateOrPeriodError('period', invalidCandidate, {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId,
         }),
       ),
@@ -110,7 +110,7 @@ const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | numb
 
   const requirePeriod = requireFieldThen<string | number, Result<string | number, BoundaryError>>(
     'period',
-    walkingSkeletonRefineryEndpoint,
+    coreWeeklyRefineryEndpoint,
     candidate => validatePeriodCandidate(candidate, seriesId),
   )
 
@@ -119,12 +119,12 @@ const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | numb
 
 const validateValueCandidate = (valueCandidate: string | number | null, seriesId: string): BR<string | number | null> =>
   ifElse(
-    isWalkingSkeletonRefineryNumericCandidate,
+    isCoreWeeklyRefineryNumericCandidate,
     () => success(valueCandidate),
     (invalidCandidate: unknown) =>
       failure(
         makeInvalidNumericValueError('value', String(invalidCandidate), {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId,
         }),
       ),
@@ -135,7 +135,7 @@ const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | numbe
 
   const requireValue = requireFieldThen<string | number | null, Result<string | number | null, BoundaryError>>(
     'value',
-    walkingSkeletonRefineryEndpoint,
+    coreWeeklyRefineryEndpoint,
     candidate => validateValueCandidate(candidate, seriesId),
   )
 
@@ -145,7 +145,7 @@ const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | numbe
 const readRefineryRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> => {
   const requireData = requireFieldThen<readonly RawEiaRow[], BR<readonly RawEiaRow[]>>(
     'data',
-    walkingSkeletonRefineryEndpoint,
+    coreWeeklyRefineryEndpoint,
     success,
   )
 
@@ -157,12 +157,12 @@ const translateRefineryRows = (rows: readonly RawEiaRow[]): BR<readonly Refinery
 
 const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonRefineryUnitCandidate,
+    isCoreWeeklyRefineryUnitCandidate,
     validUnit => success(validUnit),
     invalidUnit =>
       failure(
         makeInvalidUnitError('unit', invalidUnit, {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId,
         }),
       ),
@@ -173,7 +173,7 @@ const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
 
   const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>(
     'unit',
-    walkingSkeletonRefineryEndpoint,
+    coreWeeklyRefineryEndpoint,
     candidate => validateUnitCandidate(candidate, seriesId),
   )
 
@@ -187,7 +187,7 @@ const validateGeographyCandidate = (geographyCandidate: string | undefined, seri
     () =>
       failure(
         makeInvalidDateOrPeriodError('geography', String(geographyCandidate), {
-          endpoint: walkingSkeletonRefineryEndpoint,
+          endpoint: coreWeeklyRefineryEndpoint,
           seriesId,
         }),
       ),
@@ -207,7 +207,7 @@ const hasUnsupportedWeeklyFrequency = allPass([
 const readWeeklyFrequency = (row: RawEiaRow, seriesId: string): BR<RawEiaRow> =>
   ifElse(
     hasUnsupportedWeeklyFrequency,
-    () => failure(makeFrequencyMismatchError({ endpoint: walkingSkeletonRefineryEndpoint, seriesId })),
+    () => failure(makeFrequencyMismatchError({ endpoint: coreWeeklyRefineryEndpoint, seriesId })),
     () => success(row),
   )(row)
 
@@ -254,7 +254,7 @@ const toRefineryBoundaryDto = (context: RefineryGeoContext): Result<RefineryBoun
     valueCandidate: some(context.valueCandidate),
     unitCandidate: some(context.unitCandidate),
     geographyCandidate: some(context.geographyCandidate),
-    source: { endpoint: walkingSkeletonRefineryEndpoint },
+    source: { endpoint: coreWeeklyRefineryEndpoint },
   })
 }
 

@@ -1,27 +1,27 @@
 import { parseDecimal } from '@/shared/decimal'
 import { isSuccess } from '@/shared/result'
 
-export const walkingSkeletonSupplySeriesIdentifiers: readonly string[] = ['WCRFPUS2', 'WCRIMUS2', 'WCREXUS2']
+export const coreWeeklySupplySeriesIdentifiers: readonly string[] = ['WCRFPUS2', 'WCRIMUS2', 'WCREXUS2']
 
-export const walkingSkeletonSupplyMeasureKindCandidates: readonly string[] = ['DomesticProduction', 'Imports', 'Exports']
+export const coreWeeklySupplyMeasureKindCandidates: readonly string[] = ['DomesticProduction', 'Imports', 'Exports']
 
-export const walkingSkeletonSupplyUnitCandidates: readonly string[] = ['mbbl/d', 'thousand barrels per day', 'thousandbarrelsperday']
+export const coreWeeklySupplyUnitCandidates: readonly string[] = ['mbbl/d', 'thousand barrels per day', 'thousandbarrelsperday']
 
-export const walkingSkeletonSupplyEndpoint = '/v2/petroleum/sum/sndw/data/'
+export const coreWeeklySupplyEndpoint = '/v2/petroleum/sum/sndw/data/'
 
-export const isWalkingSkeletonSupplySeriesIdentifier = (seriesId: string): boolean =>
-  walkingSkeletonSupplySeriesIdentifiers.some(candidate => candidate === seriesId)
+export const isCoreWeeklySupplySeriesIdentifier = (seriesId: string): boolean =>
+  coreWeeklySupplySeriesIdentifiers.some(candidate => candidate === seriesId)
 
-export const isWalkingSkeletonSupplyMeasureKindCandidate = (measureKindCandidate: string): boolean =>
-  walkingSkeletonSupplyMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
+export const isCoreWeeklySupplyMeasureKindCandidate = (measureKindCandidate: string): boolean =>
+  coreWeeklySupplyMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
 
-export const isWalkingSkeletonSupplyUnitCandidate = (unitCandidate: string): boolean =>
-  walkingSkeletonSupplyUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
+export const isCoreWeeklySupplyUnitCandidate = (unitCandidate: string): boolean =>
+  coreWeeklySupplyUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
 
-export const isWalkingSkeletonSupplyPeriodCandidate = (periodCandidate: string): boolean =>
+export const isCoreWeeklySupplyPeriodCandidate = (periodCandidate: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/.test(periodCandidate)
 
-export const isWalkingSkeletonSupplyNumericCandidate = (valueCandidate: unknown): boolean =>
+export const isCoreWeeklySupplyNumericCandidate = (valueCandidate: unknown): boolean =>
   isSuccess(parseDecimal(valueCandidate))
 
 export const mapSeriesIdToSupplyMeasureKind = (seriesId: string): string | undefined => {

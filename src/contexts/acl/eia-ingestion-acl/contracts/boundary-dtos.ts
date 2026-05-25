@@ -1,4 +1,4 @@
-import type { RawEiaRow, PeriodCandidate, ValueCandidate, MaybeString } from './raw-eia'
+import type { RawEiaRow, PeriodCandidate, ValueCandidate, MaybeString } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
 import type { Maybe } from '@/shared/maybe'
 import { some } from '@/shared/maybe'
 

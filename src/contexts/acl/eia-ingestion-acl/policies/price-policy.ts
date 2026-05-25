@@ -1,25 +1,25 @@
 import { parseDecimal } from '@/shared/decimal'
 import { isSuccess } from '@/shared/result'
 
-export const walkingSkeletonPriceSeriesIdentifiers: readonly string[] = ['RWTC', 'EPCWTIR']
+export const coreWeeklyPriceSeriesIdentifiers: readonly string[] = ['RWTC', 'EPCWTIR']
 
-export const walkingSkeletonPriceMeasureKindCandidates: readonly string[] = ['WTISpotPrice']
+export const coreWeeklyPriceMeasureKindCandidates: readonly string[] = ['WTISpotPrice']
 
-export const walkingSkeletonPriceUnitCandidates: readonly string[] = ['usd/bbl', '$/bbl', 'usd per barrel', 'dollars per barrel', 'usdperbarrel']
+export const coreWeeklyPriceUnitCandidates: readonly string[] = ['usd/bbl', '$/bbl', 'usd per barrel', 'dollars per barrel', 'usdperbarrel']
 
-export const walkingSkeletonPriceEndpoint = '/v2/petroleum/pri/spt/data/'
+export const coreWeeklyPriceEndpoint = '/v2/petroleum/pri/spt/data/'
 
-export const isWalkingSkeletonPriceSeriesIdentifier = (seriesId: string): boolean =>
-  walkingSkeletonPriceSeriesIdentifiers.some(candidate => candidate === seriesId)
+export const isCoreWeeklyPriceSeriesIdentifier = (seriesId: string): boolean =>
+  coreWeeklyPriceSeriesIdentifiers.some(candidate => candidate === seriesId)
 
-export const isWalkingSkeletonPriceMeasureKindCandidate = (measureKindCandidate: string): boolean =>
-  walkingSkeletonPriceMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
+export const isCoreWeeklyPriceMeasureKindCandidate = (measureKindCandidate: string): boolean =>
+  coreWeeklyPriceMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
 
-export const isWalkingSkeletonPriceUnitCandidate = (unitCandidate: string): boolean =>
-  walkingSkeletonPriceUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
+export const isCoreWeeklyPriceUnitCandidate = (unitCandidate: string): boolean =>
+  coreWeeklyPriceUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
 
-export const isWalkingSkeletonPricePeriodCandidate = (periodCandidate: string): boolean =>
+export const isCoreWeeklyPricePeriodCandidate = (periodCandidate: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/.test(periodCandidate)
 
-export const isWalkingSkeletonPriceNumericCandidate = (valueCandidate: unknown): boolean =>
+export const isCoreWeeklyPriceNumericCandidate = (valueCandidate: unknown): boolean =>
   isSuccess(parseDecimal(valueCandidate))

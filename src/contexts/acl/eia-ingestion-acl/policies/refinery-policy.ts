@@ -1,27 +1,27 @@
 import { parseDecimal } from '@/shared/decimal'
 import { isSuccess } from '@/shared/result'
 
-export const walkingSkeletonRefinerySeriesIdentifiers: readonly string[] = ['WCRRIUS2', 'WGIRIUS2', 'WOCLEUS2', 'WPULEUS3']
+export const coreWeeklyRefinerySeriesIdentifiers: readonly string[] = ['WCRRIUS2', 'WGIRIUS2', 'WOCLEUS2', 'WPULEUS3']
 
-export const walkingSkeletonRefineryMeasureKindCandidates: readonly string[] = ['RefineryNetInput', 'RefineryGrossInput', 'RefineryOperableCapacity', 'RefineryUtilization']
+export const coreWeeklyRefineryMeasureKindCandidates: readonly string[] = ['RefineryNetInput', 'RefineryGrossInput', 'RefineryOperableCapacity', 'RefineryUtilization']
 
-export const walkingSkeletonRefineryUnitCandidates: readonly string[] = ['mbbl/d', 'thousand barrels per day', 'thousandbarrelsperday', 'pct', '%']
+export const coreWeeklyRefineryUnitCandidates: readonly string[] = ['mbbl/d', 'thousand barrels per day', 'thousandbarrelsperday', 'pct', '%']
 
-export const walkingSkeletonRefineryEndpoint = '/v2/petroleum/pnp/wiup/data/'
+export const coreWeeklyRefineryEndpoint = '/v2/petroleum/pnp/wiup/data/'
 
-export const isWalkingSkeletonRefinerySeriesIdentifier = (seriesId: string): boolean =>
-  walkingSkeletonRefinerySeriesIdentifiers.some(candidate => candidate === seriesId)
+export const isCoreWeeklyRefinerySeriesIdentifier = (seriesId: string): boolean =>
+  coreWeeklyRefinerySeriesIdentifiers.some(candidate => candidate === seriesId)
 
-export const isWalkingSkeletonRefineryMeasureKindCandidate = (measureKindCandidate: string): boolean =>
-  walkingSkeletonRefineryMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
+export const isCoreWeeklyRefineryMeasureKindCandidate = (measureKindCandidate: string): boolean =>
+  coreWeeklyRefineryMeasureKindCandidates.some(candidate => candidate === measureKindCandidate)
 
-export const isWalkingSkeletonRefineryUnitCandidate = (unitCandidate: string): boolean =>
-  walkingSkeletonRefineryUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
+export const isCoreWeeklyRefineryUnitCandidate = (unitCandidate: string): boolean =>
+  coreWeeklyRefineryUnitCandidates.some(candidate => candidate === unitCandidate.trim().toLowerCase())
 
-export const isWalkingSkeletonRefineryPeriodCandidate = (periodCandidate: string): boolean =>
+export const isCoreWeeklyRefineryPeriodCandidate = (periodCandidate: string): boolean =>
   /^\d{4}-\d{2}-\d{2}$/.test(periodCandidate)
 
-export const isWalkingSkeletonRefineryNumericCandidate = (valueCandidate: unknown): boolean =>
+export const isCoreWeeklyRefineryNumericCandidate = (valueCandidate: unknown): boolean =>
   isSuccess(parseDecimal(valueCandidate))
 
 export const mapSeriesIdToRefineryMeasureKind = (seriesId: string): string | undefined => {

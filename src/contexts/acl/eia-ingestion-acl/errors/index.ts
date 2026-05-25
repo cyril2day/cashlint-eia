@@ -1,1 +1,1 @@
-export * from './boundary-error'
+export * from '@/contexts/acl/eia-ingestion-acl/errors/boundary-error'

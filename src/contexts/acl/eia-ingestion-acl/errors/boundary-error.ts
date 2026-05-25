@@ -99,7 +99,7 @@ export const makeInvalidUnitError = (
 export const makeFrequencyMismatchError = (
   details: BoundaryErrorInput = {},
 ): BoundaryError =>
-  makeBoundaryError('FrequencyMismatch', 'frequency does not match walking-skeleton policy', details)
+  makeBoundaryError('FrequencyMismatch', 'frequency does not match core-weekly policy', details)
 
 export const makeUnsupportedSeriesError = (
   rawValue: string | undefined,

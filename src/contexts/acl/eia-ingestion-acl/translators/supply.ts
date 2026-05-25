@@ -16,12 +16,12 @@ import {
   makeUnsupportedSeriesError,
 } from '@/contexts/acl/eia-ingestion-acl/errors'
 import {
-  isWalkingSkeletonSupplyNumericCandidate,
-  isWalkingSkeletonSupplyPeriodCandidate,
-  isWalkingSkeletonSupplySeriesIdentifier,
-  isWalkingSkeletonSupplyUnitCandidate,
+  isCoreWeeklySupplyNumericCandidate,
+  isCoreWeeklySupplyPeriodCandidate,
+  isCoreWeeklySupplySeriesIdentifier,
+  isCoreWeeklySupplyUnitCandidate,
   mapSeriesIdToSupplyMeasureKind,
-  walkingSkeletonSupplyEndpoint,
+  coreWeeklySupplyEndpoint,
 } from '@/contexts/acl/eia-ingestion-acl/policies'
 import { parseIsoDate } from '@/shared/date'
 
@@ -63,12 +63,12 @@ type BR<T> = Result<T, BoundaryError>
 
 const validateSeriesId = (seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonSupplySeriesIdentifier,
+    isCoreWeeklySupplySeriesIdentifier,
     (validSeriesId: string) => success(validSeriesId),
     (invalidSeriesId: string) =>
       failure(
         makeUnsupportedSeriesError(invalidSeriesId, {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId: invalidSeriesId,
         }),
       ),
@@ -79,7 +79,7 @@ const readSeriesId = (row: RawEiaRow): BR<string> => {
 
   const requireSeries = requireFieldThen<string, Result<string, BoundaryError>>(
     'series',
-    walkingSkeletonSupplyEndpoint,
+    coreWeeklySupplyEndpoint,
     validateSeriesId,
   )
 
@@ -88,18 +88,18 @@ const readSeriesId = (row: RawEiaRow): BR<string> => {
 
 const validatePeriodCandidate = (periodCandidate: string | number, seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonSupplyPeriodCandidate,
+    isCoreWeeklySupplyPeriodCandidate,
     (candidate: string) =>
       mapError(parseIsoDate(candidate), () =>
         makeInvalidDateOrPeriodError('period', candidate, {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId,
         }),
       ),
     (invalidCandidate: string) =>
       failure(
         makeInvalidDateOrPeriodError('period', invalidCandidate, {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId,
         }),
       ),
@@ -110,7 +110,7 @@ const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | numb
 
   const requirePeriod = requireFieldThen<string | number, Result<string | number, BoundaryError>>(
     'period',
-    walkingSkeletonSupplyEndpoint,
+    coreWeeklySupplyEndpoint,
     candidate => validatePeriodCandidate(candidate, seriesId),
   )
 
@@ -119,12 +119,12 @@ const readPeriodCandidate = (row: RawEiaRow, seriesId: string): BR<string | numb
 
 const validateValueCandidate = (valueCandidate: string | number | null, seriesId: string): BR<string | number | null> =>
   ifElse(
-    isWalkingSkeletonSupplyNumericCandidate,
+    isCoreWeeklySupplyNumericCandidate,
     () => success(valueCandidate),
     (invalidCandidate: unknown) =>
       failure(
         makeInvalidNumericValueError('value', String(invalidCandidate), {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId,
         }),
       ),
@@ -135,7 +135,7 @@ const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | numbe
 
   const requireValue = requireFieldThen<string | number | null, Result<string | number | null, BoundaryError>>(
     'value',
-    walkingSkeletonSupplyEndpoint,
+    coreWeeklySupplyEndpoint,
     candidate => validateValueCandidate(candidate, seriesId),
   )
 
@@ -145,7 +145,7 @@ const readValueCandidate = (row: RawEiaRow, seriesId: string): BR<string | numbe
 const readSupplyRows = (dataRows: readonly RawEiaRow[] | undefined): BR<readonly RawEiaRow[]> => {
   const requireData = requireFieldThen<readonly RawEiaRow[], BR<readonly RawEiaRow[]>>(
     'data',
-    walkingSkeletonSupplyEndpoint,
+    coreWeeklySupplyEndpoint,
     success,
   )
 
@@ -157,12 +157,12 @@ const translateSupplyRows = (rows: readonly RawEiaRow[]): BR<readonly SupplyBoun
 
 const validateUnitCandidate = (unitCandidate: string, seriesId: string): BR<string> =>
   ifElse(
-    isWalkingSkeletonSupplyUnitCandidate,
+    isCoreWeeklySupplyUnitCandidate,
     validUnit => success(validUnit),
     invalidUnit =>
       failure(
         makeInvalidUnitError('unit', invalidUnit, {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId,
         }),
       ),
@@ -173,7 +173,7 @@ const readUnitCandidate = (row: RawEiaRow, seriesId: string): BR<string> => {
 
   const requireUnit = requireFieldThen<string, Result<string, BoundaryError>>(
     'unit',
-    walkingSkeletonSupplyEndpoint,
+    coreWeeklySupplyEndpoint,
     candidate => validateUnitCandidate(candidate, seriesId),
   )
 
@@ -187,7 +187,7 @@ const validateGeographyCandidate = (geographyCandidate: string | undefined, seri
     () =>
       failure(
         makeInvalidDateOrPeriodError('geography', String(geographyCandidate), {
-          endpoint: walkingSkeletonSupplyEndpoint,
+          endpoint: coreWeeklySupplyEndpoint,
           seriesId,
         }),
       ),
@@ -207,7 +207,7 @@ const hasUnsupportedWeeklyFrequency = allPass([
 const readWeeklyFrequency = (row: RawEiaRow, seriesId: string): BR<RawEiaRow> =>
   ifElse(
     hasUnsupportedWeeklyFrequency,
-    () => failure(makeFrequencyMismatchError({ endpoint: walkingSkeletonSupplyEndpoint, seriesId })),
+    () => failure(makeFrequencyMismatchError({ endpoint: coreWeeklySupplyEndpoint, seriesId })),
     () => success(row),
   )(row)
 
@@ -254,7 +254,7 @@ const toSupplyBoundaryDto = (context: SupplyGeoContext): Result<SupplyBoundaryDt
     valueCandidate: some(context.valueCandidate),
     unitCandidate: some(context.unitCandidate),
     geographyCandidate: some(context.geographyCandidate),
-    source: { endpoint: walkingSkeletonSupplyEndpoint },
+    source: { endpoint: coreWeeklySupplyEndpoint },
   })
 }
 
