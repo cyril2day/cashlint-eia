@@ -1,6 +1,7 @@
 import React, { type ReactNode } from 'react'
 
 import type { AppNavigationViewModel } from '@/presentation/contracts'
+import { AppFooter } from '@/presentation/shell/app-footer'
 import { AppNavigation } from '@/presentation/shell/app-navigation'
 
 export function AppShell({
@@ -17,6 +18,7 @@ export function AppShell({
       <article className="oil-lint-shell__surface">
         <AppNavigation viewModel={navigation} />
         {children}
+        <AppFooter />
       </article>
     </main>
   )
