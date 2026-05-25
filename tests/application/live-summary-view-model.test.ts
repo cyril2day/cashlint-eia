@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
+import { buildLiveRichUiViewModel, buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
 import { createFakeEiaClient } from '@/application/ports/fake-eia-client'
 import { createWalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
 import { cond } from '@/shared/fp'
@@ -170,5 +170,34 @@ describe('live summary view model', () => {
     expect(result.ok).toBe(false)
     expect(error.kind).toBe('UpstreamFailure')
     expect(JSON.stringify(result)).not.toContain('secret-test-key')
+  })
+
+  it('maps live EIA fixtures into data-backed chart panels', async () => {
+    const fakeClient = createFakeEiaClient((request: EiaRequest) =>
+      Promise.resolve(success(requestForEnvelope(request))),
+    )
+
+    const runner = buildLiveRichUiViewModel(
+      createWalkingSkeletonDependencies({ eiaClient: fakeClient }),
+    )
+
+    const result = await runner({ reportWeekIso: '2026-01-09' })
+    const viewModel = unwrapSuccess(result)
+
+    expect(viewModel.chartsGallery.panels.map(panel => panel.chartKind)).toEqual([
+      'TimeSeries',
+      'Sparkline',
+      'MetricCard',
+      'BarChart',
+      'Histogram',
+      'BoxPlot',
+      'AreaChart',
+      'VarianceChart',
+    ])
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'TimeSeries')?.state).toBe('Partial')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Sparkline')?.state).toBe('Partial')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'BarChart')?.state).toBe('Partial')
+    expect(JSON.stringify(viewModel.chartsGallery)).toContain('836125')
+    expect(JSON.stringify(viewModel.chartsGallery)).toContain('76.31')
   })
 })
