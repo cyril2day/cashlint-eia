@@ -1,6 +1,6 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { none, type Maybe } from '@/shared/maybe'
-import type { MetricCardComparisonViewModel, MetricCardViewModel, SparklineViewModel } from '../contracts'
+import type { MetricCardComparisonViewModel, MetricCardViewModel, SparklineViewModel } from '@/presentation/charts/contracts'
 import {
   anomalyStatusLabelFromSignal,
   chartCaveatsFromSignal,
@@ -8,7 +8,7 @@ import {
   signalValueLabel,
   trendLabelFromSignal,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type MetricCardMapperInput = Readonly<{
   readonly id: string

@@ -2,14 +2,14 @@ import type { ContextualizedSignal } from '@/contexts/interpretation/model/conte
 import { formatDecimal, formatPercentageDecimal } from '@/shared/decimal'
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
-import type { ChartDisplayState, VarianceChartEntryViewModel, VarianceChartViewModel, VarianceReferenceViewModel } from '../contracts'
+import type { ChartDisplayState, VarianceChartEntryViewModel, VarianceChartViewModel, VarianceReferenceViewModel } from '@/presentation/charts/contracts'
 import {
   baselineAverageMarker,
   chartCaveatsFromSignal,
   chartDisplayStateFromSignal,
   signalValueLabel,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type VarianceChartMapperInput = Readonly<{
   readonly id: string

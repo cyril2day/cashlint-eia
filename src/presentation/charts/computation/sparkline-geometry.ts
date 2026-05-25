@@ -1,7 +1,7 @@
 import { line, scaleLinear } from 'd3'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import { chartDomainBounds, numericDomain, toSvgPathMaybe } from '@/shared/chart-svg'
-import type { ChartDimensions, SparklineViewModel } from '../contracts'
+import type { ChartDimensions, SparklineViewModel } from '@/presentation/charts/contracts'
 
 type GeometryPoint = Readonly<{ readonly x: number; readonly y: number }>
 

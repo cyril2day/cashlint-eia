@@ -1,6 +1,6 @@
 import type { Maybe } from '@/shared/maybe'
-import type { ChartCaveatViewModel } from './chart-caveat-view-model'
-import type { ChartDisplayState } from './chart-display-state'
+import type { ChartCaveatViewModel } from '@/presentation/charts/contracts/chart-caveat-view-model'
+import type { ChartDisplayState } from '@/presentation/charts/contracts/chart-display-state'
 
 export type AreaChartPointViewModel = Readonly<{
   readonly x: number

@@ -4,7 +4,7 @@ import type { InterpretationAnomalyState } from '@/contexts/interpretation/model
 import { formatDecimal } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
 import { none, type Maybe } from '@/shared/maybe'
-import type { TimeSeriesAnomalyVisualModel, TimeSeriesBaselineVisualModel, TimeSeriesChartPointViewModel, TimeSeriesChartViewModel } from '../contracts'
+import type { TimeSeriesAnomalyVisualModel, TimeSeriesBaselineVisualModel, TimeSeriesChartPointViewModel, TimeSeriesChartViewModel } from '@/presentation/charts/contracts'
 import {
   chartDisplayStateFromSignal,
   createSignalAccessibilitySummary,
@@ -15,7 +15,7 @@ import {
   reportWeekIso,
   sortHistoricalPoints,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type TimeSeriesMapperInput = Readonly<{
   readonly id: string

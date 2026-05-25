@@ -1,2 +1,2 @@
-export * from './time-series-chart-geometry'
-export * from './sparkline-geometry'
+export * from '@/presentation/charts/computation/time-series-chart-geometry'
+export * from '@/presentation/charts/computation/sparkline-geometry'

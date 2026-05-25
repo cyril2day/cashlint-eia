@@ -1,7 +1,7 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { matchMaybe, some, type Maybe } from '@/shared/maybe'
 import { formatDecimal } from '@/shared/decimal'
-import type { BoxPlotMarkerViewModel, BoxPlotViewModel, FiveNumberSummaryViewModel } from '../contracts'
+import type { BoxPlotMarkerViewModel, BoxPlotViewModel, FiveNumberSummaryViewModel } from '@/presentation/charts/contracts'
 import {
   baselineAverageMarker,
   chartCaveatsFromSignal,
@@ -10,7 +10,7 @@ import {
   HistoricalSignalPointInput,
   signalCurrentMarkerLabel,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type BoxPlotMapperInput = Readonly<{
   readonly id: string

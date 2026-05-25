@@ -1,6 +1,6 @@
 import { cond, ifElse } from '@/shared/fp'
 import type { Maybe } from '@/shared/maybe'
-import type { BarChartDirection, BarChartOrdering, BarChartPointViewModel, BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '../contracts'
+import type { BarChartDirection, BarChartOrdering, BarChartPointViewModel, BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '@/presentation/charts/contracts'
 
 export type BarChartPointInput = Readonly<{
   readonly category: string

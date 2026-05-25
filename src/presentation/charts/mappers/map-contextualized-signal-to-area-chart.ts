@@ -1,7 +1,7 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { formatDecimal } from '@/shared/decimal'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
-import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '../contracts'
+import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '@/presentation/charts/contracts'
 import {
   chartCaveatsFromSignal,
   chartDisplayStateFromHistory,
@@ -12,7 +12,7 @@ import {
   signalCurrentMarkerLabel,
   sortHistoricalPoints,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type AreaChartMapperInput = Readonly<{
   readonly id: string

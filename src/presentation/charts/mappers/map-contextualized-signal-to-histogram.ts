@@ -1,7 +1,7 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { matchMaybe, some, type Maybe } from '@/shared/maybe'
 import { formatDecimal } from '@/shared/decimal'
-import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '../contracts'
+import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '@/presentation/charts/contracts'
 import {
   baselineAverageMarker,
   chartCaveatsFromSignal,
@@ -12,7 +12,7 @@ import {
   signalCurrentMarkerLabel,
   sortHistoricalPoints,
   unitLabelFromSignal,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type HistogramMapperInput = Readonly<{
   readonly id: string

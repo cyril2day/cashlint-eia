@@ -3,8 +3,8 @@ import { formatMeasurementUnit } from '@/contexts/measurement/model'
 import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
-import type { BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '../contracts'
-import { mapBarChartInput, type BarChartPointInput } from './map-bar-chart-input'
+import type { BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '@/presentation/charts/contracts'
+import { mapBarChartInput, type BarChartPointInput } from '@/presentation/charts/mappers/map-bar-chart-input'
 
 type SystemBalanceDriverChartSource = Pick<SystemBalanceAnalysis, 'balanceState' | 'drivers' | 'caveats'>
 

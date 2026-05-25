@@ -4,7 +4,7 @@ import { ifElse } from '@/shared/fp'
 import { none, some, matchMaybe, type Maybe } from '@/shared/maybe'
 import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
 import { chartDomainBounds, numericDomain, paddedNumericDomain, toSvgPathMaybe } from '@/shared/chart-svg'
-import type { ChartDimensions, TimeSeriesChartViewModel } from '../contracts'
+import type { ChartDimensions, TimeSeriesChartViewModel } from '@/presentation/charts/contracts'
 
 type GeometryPoint = Readonly<{ readonly x: number; readonly y: number }>
 

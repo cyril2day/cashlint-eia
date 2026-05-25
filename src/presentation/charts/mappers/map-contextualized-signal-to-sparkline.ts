@@ -1,7 +1,7 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { ifElse } from '@/shared/fp'
 import { none } from '@/shared/maybe'
-import type { SparklinePointViewModel, SparklineViewModel } from '../contracts'
+import type { SparklinePointViewModel, SparklineViewModel } from '@/presentation/charts/contracts'
 import {
   chartDisplayStateFromSignal,
   createSignalAccessibilitySummary,
@@ -11,7 +11,7 @@ import {
   mapInterpretationCaveat,
   reportWeekIso,
   sortHistoricalPoints,
-} from './shared'
+} from '@/presentation/charts/mappers/shared'
 
 type SparklineMapperInput = Readonly<{
   readonly id: string

@@ -8,7 +8,7 @@ import { formatReportWeekIso, type ReportWeek } from '@/contexts/measurement/mod
 import { either, ifElse, isNonEmptyString, sortBy } from '@/shared/fp'
 import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
-import type { ChartCaveatViewModel, ChartDisplayState } from '../contracts'
+import type { ChartCaveatViewModel, ChartDisplayState } from '@/presentation/charts/contracts'
 
 export type HistoricalSignalPointInput = Readonly<{
   readonly reportWeek: ReportWeek
