@@ -3,7 +3,8 @@
 import React, { useEffect, useState, type ReactElement } from 'react'
 
 import type { AppNavigationItemViewModel, AppNavigationViewModel } from '@/presentation/contracts'
-import { ifElse } from '@/shared/fp'
+import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
+import { ifElse, isNil } from '@/shared/fp'
 import { AppNavigationItem } from '@/presentation/shell/app-navigation-item'
 import { AppNavigationMenuButton } from '@/presentation/shell/app-navigation-menu-button'
 import { RepositoryLink } from '@/presentation/shell/repository-link'
@@ -38,6 +39,8 @@ const toggleBoolean = (value: boolean): boolean =>
 
 const isDarkTheme = (theme: ThemeChoice): boolean => theme === darkTheme
 
+const isDarkThemeValue = (value: string): boolean => value === darkTheme
+
 const nextTheme = (theme: ThemeChoice): ThemeChoice =>
   ifElse(
     isDarkTheme,
@@ -45,12 +48,25 @@ const nextTheme = (theme: ThemeChoice): ThemeChoice =>
     () => darkTheme,
   )(theme)
 
-const themeFromStoredValue = (value: string | null): ThemeChoice =>
+const maybeStorageValue = (value: string | null): Maybe<string> =>
   ifElse(
-    (candidate: string | null) => candidate === darkTheme,
+    isNil,
+    () => none(),
+    candidate => some(String(candidate)),
+  )(value)
+
+const themeFromStoredText = (value: string): ThemeChoice =>
+  ifElse(
+    isDarkThemeValue,
     () => darkTheme,
     () => lightTheme,
   )(value)
+
+const themeFromStoredValue = (value: string | null): ThemeChoice =>
+  matchMaybe<string, ThemeChoice>({
+    Some: themeFromStoredText,
+    None: () => lightTheme,
+  })(maybeStorageValue(value))
 
 const themeButtonLabel = (theme: ThemeChoice): string =>
   ifElse(

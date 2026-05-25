@@ -25,18 +25,26 @@
 
   .app-nav__list {
     position: static;
+    z-index: var(--z-index-auto);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-1);
+    padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
+    pointer-events: auto;
+    transform: none;
+    transition: none;
+    visibility: visible;
   }
 
   .app-nav__link {
     min-height: 2.25rem;
     padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
   }
 
   .oil-lint-shell__section-head {

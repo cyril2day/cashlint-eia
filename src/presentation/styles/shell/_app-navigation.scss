@@ -11,23 +11,37 @@
 }
 
 .app-nav__list {
-  position: absolute;
-  z-index: var(--z-index-dropdown);
-  inset-block-start: calc(100% + var(--space-2));
-  inset-inline: 0;
-  display: none;
-  gap: var(--space-1);
-  padding: 0;
+  position: fixed;
+  z-index: var(--z-index-modal);
+  inset: var(--inset-none);
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-20) var(--oil-lint-surface-padding) var(--oil-lint-surface-padding);
   margin: 0;
   list-style: none;
-  border: var(--oil-lint-panel-border);
-  border-radius: var(--oil-lint-card-radius);
-  background: color-mix(in srgb, var(--surface-color-primary) 96%, transparent);
+  border-radius: var(--oil-lint-panel-radius);
+  background: var(--surface-color-primary);
   box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  transform: translateX(-100%);
+  transition:
+    transform var(--transition-normal),
+    visibility var(--transition-normal);
+  visibility: hidden;
 }
 
 .app-nav[data-menu-state='open'] .app-nav__list {
-  display: grid;
+  pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
+}
+
+.app-nav[data-menu-state='open'] .app-nav__menu-button {
+  position: fixed;
+  z-index: var(--z-index-popover);
+  inset-block-start: var(--oil-lint-page-padding);
+  inset-inline-start: var(--oil-lint-page-padding);
 }
 
 .app-nav__link {
@@ -35,7 +49,7 @@
   align-items: center;
   min-height: 2.5rem;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  border-radius: var(--oil-lint-panel-radius);
   color: var(--text-primary);
   text-decoration: none;
   transition:
@@ -64,6 +78,7 @@
 
 .app-nav__icon-button {
   display: inline-flex;
+  position: relative;
   width: 2.5rem;
   height: 2.5rem;
   align-items: center;
