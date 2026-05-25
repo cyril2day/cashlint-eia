@@ -1,11 +1,11 @@
 import type { ApplicationError } from '@/application/errors'
-import type { WalkingSkeletonCommand } from '@/application/commands/walking-skeleton-command'
-import type { WalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
-import { buildWalkingSkeletonFactSeries } from '@/application/workflows/walking-skeleton'
+import type { LiveWeeklyCommand } from '@/application/commands/live-weekly-command'
+import type { LiveWeeklyDependencies } from '@/application/dependencies/live-weekly-dependencies'
+import { buildLiveWeeklyFactSeries } from '@/application/workflows/live-weekly'
 import { toMeasurementAppError } from '@/application/errors'
-import { createFullAnalysisPolicies, createWalkingSkeletonAnalysisPolicies } from '@/contexts/analysis/policies'
+import { createFullAnalysisPolicies, createCoreWeeklyAnalysisPolicies } from '@/contexts/analysis/policies'
 import { composeFullWeeklyAnalysis, composeWeeklyAnalysis } from '@/contexts/analysis/workflows'
-import { buildPreviousObservationMap, contextualizeFullSignalSet, contextualizeWalkingSkeletonSignalSet, extractCurrentSignalSet, createWalkingSkeletonInterpretationPolicies } from '@/contexts/interpretation'
+import { buildPreviousObservationMap, contextualizeFullSignalSet, contextualizeCoreWeeklySignalSet, extractCurrentSignalSet, createCoreWeeklyInterpretationPolicies } from '@/contexts/interpretation'
 import type { ContextualizedSignalSet } from '@/contexts/interpretation/model/current-signal-set'
 import type { CurrentSignalSet } from '@/contexts/interpretation/model/current-signal-set'
 import { createHistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
@@ -37,7 +37,7 @@ type LiveSummaryInput = Readonly<{
   readonly previousObservations: PreviousObservationMap
 }>
 
-export type LiveRichUiViewModel = Readonly<{
+export type LiveAppViewModel = Readonly<{
   readonly summary: SummaryViewModel
   readonly chartsGallery: ChartsGalleryViewModel
 }>
@@ -60,7 +60,7 @@ type LiveContextualizedSignalHistory = Readonly<{
 const createLiveInterpretationPolicies = (): Result<InterpretationPolicies, ApplicationError> =>
   mapError(
     mapResult(parseComparisonWindow('OneWeek'), comparisonWindow =>
-      createWalkingSkeletonInterpretationPolicies(
+      createCoreWeeklyInterpretationPolicies(
         comparisonWindow,
         liveInventoryFlatThreshold,
         livePriceFlatThreshold,
@@ -142,7 +142,7 @@ const buildSummaryViewModel =
   (contextualizedSignals: ContextualizedSignalSet): Result<SummaryViewModel, ApplicationError> =>
     mapResult(
       mapError(
-        composeWeeklyAnalysis(facts, contextualizedSignals, createWalkingSkeletonAnalysisPolicies()),
+        composeWeeklyAnalysis(facts, contextualizedSignals, createCoreWeeklyAnalysisPolicies()),
         toMeasurementAppError,
       ),
       mapWeeklyAnalysisToSummaryViewModel,
@@ -295,12 +295,12 @@ const contextualizeFullSignalHistory =
       toLiveContextualizedSignalHistory(signalHistory.history),
     )
 
-const contextualizeWalkingSignalHistory =
+const contextualizeCoreSignalHistory =
   (input: LiveSummaryInput, policies: InterpretationPolicies) =>
   (signalHistory: LiveSignalHistory): Result<LiveContextualizedSignalHistory, ApplicationError> =>
     mapResult(
       mapError(
-        contextualizeWalkingSkeletonSignalSet(signalHistory.currentSignals, input.previousObservations, policies),
+        contextualizeCoreWeeklySignalSet(signalHistory.currentSignals, input.previousObservations, policies),
         toMeasurementAppError,
       ),
       toLiveContextualizedSignalHistory(signalHistory.history),
@@ -312,7 +312,7 @@ const contextualizeSignalHistory =
     ifElse(
       hasPriorSignalHistory,
       contextualizeFullSignalHistory(policies),
-      contextualizeWalkingSignalHistory(input, policies),
+      contextualizeCoreSignalHistory(input, policies),
     )(signalHistory)
 
 const buildContextualizedSignalHistory =
@@ -341,10 +341,10 @@ const buildSystemBalanceMaybe = (
     () => success(none()),
   )(input)
 
-const buildRichChartsForSignals = (
+const buildChartsForSignals = (
   summary: SummaryViewModel,
   contextualizedSignals: ContextualizedSignalSet,
-): ((systemBalance: Maybe<SystemBalanceAnalysis>, history: LiveChartHistory) => LiveRichUiViewModel) =>
+): ((systemBalance: Maybe<SystemBalanceAnalysis>, history: LiveChartHistory) => LiveAppViewModel) =>
   (systemBalance, history) => ({
     summary,
     chartsGallery: mapLiveAnalysisToChartsGalleryViewModel({
@@ -356,32 +356,32 @@ const buildRichChartsForSignals = (
     }),
   })
 
-const combineRichUiParts = (
+const combineAppParts = (
   input: LiveSummaryInput,
   signalHistory: LiveContextualizedSignalHistory,
 ) =>
-  (summary: SummaryViewModel): Result<LiveRichUiViewModel, ApplicationError> =>
+  (summary: SummaryViewModel): Result<LiveAppViewModel, ApplicationError> =>
     mapResult(
       buildSystemBalanceMaybe(input),
       systemBalance =>
-        buildRichChartsForSignals(
+        buildChartsForSignals(
           summary,
           signalHistory.contextualizedSignals,
         )(systemBalance, signalHistory.history),
     )
 
-const buildLiveRichUiForSignals = (
+const buildLiveAppForSignals = (
   input: LiveSummaryInput,
 ) =>
-  (signalHistory: LiveContextualizedSignalHistory): Result<LiveRichUiViewModel, ApplicationError> => {
+  (signalHistory: LiveContextualizedSignalHistory): Result<LiveAppViewModel, ApplicationError> => {
     const summaryResult = buildSummaryFromSignalHistory(input)(signalHistory)
 
-    return bindResult(summaryResult, combineRichUiParts(input, signalHistory))
+    return bindResult(summaryResult, combineAppParts(input, signalHistory))
   }
 
-const buildLiveRichUiResult = (
+const buildLiveAppResult = (
   input: LiveSummaryInput,
-): Result<LiveRichUiViewModel, ApplicationError> => {
+): Result<LiveAppViewModel, ApplicationError> => {
   const interpretationPoliciesResult = createLiveInterpretationPolicies()
   const contextualizedSignalHistoryResult = bindResult(
     interpretationPoliciesResult,
@@ -390,24 +390,24 @@ const buildLiveRichUiResult = (
 
   return bindResult(
     contextualizedSignalHistoryResult,
-    buildLiveRichUiForSignals(input),
+    buildLiveAppForSignals(input),
   )
 }
 
 export const buildLiveSummaryViewModel = (
-  dependencies: WalkingSkeletonDependencies,
+  dependencies: LiveWeeklyDependencies,
 ) =>
-  (command: WalkingSkeletonCommand) =>
+  (command: LiveWeeklyCommand) =>
     bindAsyncResult(
-      buildWalkingSkeletonFactSeries(dependencies)(command),
+      buildLiveWeeklyFactSeries(dependencies)(command),
       factSeries => Promise.resolve(bindResult(buildLiveSummaryInput(factSeries), buildLiveSummaryResult)),
     )
 
-export const buildLiveRichUiViewModel = (
-  dependencies: WalkingSkeletonDependencies,
+export const buildLiveAppViewModel = (
+  dependencies: LiveWeeklyDependencies,
 ) =>
-  (command: WalkingSkeletonCommand) =>
+  (command: LiveWeeklyCommand) =>
     bindAsyncResult(
-      buildWalkingSkeletonFactSeries(dependencies)(command),
-      factSeries => Promise.resolve(bindResult(buildLiveSummaryInput(factSeries), buildLiveRichUiResult)),
+      buildLiveWeeklyFactSeries(dependencies)(command),
+      factSeries => Promise.resolve(bindResult(buildLiveSummaryInput(factSeries), buildLiveAppResult)),
     )

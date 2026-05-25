@@ -1,7 +1,7 @@
 import type { Result } from '@/shared/result'
 import { success, failure } from '@/shared/result'
 import type { RawEiaEnvelope } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
-import type { EiaClient, EiaRequest, UpstreamError } from './eia-client'
+import type { EiaClient, EiaRequest, UpstreamError } from '@/application/ports/eia-client'
 
 // Create a simple static fake EiaClient from a chooser function.
 export const createFakeEiaClient = (
