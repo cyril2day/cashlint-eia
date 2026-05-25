@@ -1,4 +1,5 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
+import { formatDecimal } from '@/shared/decimal'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '../contracts'
 import {
@@ -28,7 +29,7 @@ const toAreaPoint = (
   x: point.reportWeek.date.getTime(),
   y: some(point.value),
   reportWeekIso: reportWeekIso(point.reportWeek),
-  valueLabel: some(String(point.value)),
+  valueLabel: some(formatDecimal(point.value)),
   caveats: [],
 })
 

@@ -26,6 +26,7 @@ const toSparklinePoint = (
 ): SparklinePointViewModel => ({
   x: point.reportWeek.date.getTime(),
   y: point.value,
+  reportWeekIso: reportWeekIso(point.reportWeek),
   isCurrent: reportWeekIso(point.reportWeek) === currentReportWeekIso,
 })
 

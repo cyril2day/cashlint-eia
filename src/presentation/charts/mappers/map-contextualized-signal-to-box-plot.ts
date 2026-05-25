@@ -1,5 +1,6 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { matchMaybe, some, type Maybe } from '@/shared/maybe'
+import { formatDecimal } from '@/shared/decimal'
 import type { BoxPlotMarkerViewModel, BoxPlotViewModel, FiveNumberSummaryViewModel } from '../contracts'
 import {
   baselineAverageMarker,
@@ -33,7 +34,7 @@ const baselineReferenceMarkers = (signal: ContextualizedSignal): readonly BoxPlo
     None: () => [],
   })(baselineAverageMarker(signal, average => ({
     value: average,
-    label: `Baseline ${String(average)}`,
+    label: `Baseline ${formatDecimal(average)}`,
   })))
 
 export const mapContextualizedSignalToBoxPlot = (input: BoxPlotMapperInput): BoxPlotViewModel => ({

@@ -6,6 +6,7 @@ import type { Trend } from '@/contexts/interpretation/model/trend'
 import { formatMeasurementUnit } from '@/contexts/measurement/model'
 import { formatReportWeekIso, type ReportWeek } from '@/contexts/measurement/model/report-week'
 import { either, ifElse, isNonEmptyString, sortBy } from '@/shared/fp'
+import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import type { ChartCaveatViewModel, ChartDisplayState } from '../contracts'
 
@@ -149,7 +150,7 @@ const anomalySentence = (signal: ContextualizedSignal): string =>
 
 const baselineSentence = (signal: ContextualizedSignal): string =>
   matchBaseline<string>({
-    Computed: candidate => `baseline computed from ${String(candidate.baseline.observationCount)} observations`,
+    Computed: candidate => `baseline computed from ${formatWholeDecimal(candidate.baseline.observationCount)} observations`,
     NotComputed: candidate => `baseline not computed (${candidate.reason})`,
   })(signal.baseline)
 
@@ -161,13 +162,13 @@ export const createSignalAccessibilitySummary = (
   const unitLabel = formatMeasurementUnit(signal.signal.unit)
   const caveatSentence = ifElse(
     (candidate: ContextualizedSignal) => candidate.caveats.length > 0,
-    candidate => `with ${String(candidate.caveats.length)} caveat(s)`,
+    candidate => `with ${formatWholeDecimal(candidate.caveats.length)} caveat(s)`,
     () => 'with no caveats',
   )(signal)
 
   return [
-    `${signalKind} signal history with ${String(pointCount)} point(s)`,
-    `${String(signal.signal.value)} ${unitLabel}`,
+    `${signalKind} signal history with ${formatWholeDecimal(pointCount)} point(s)`,
+    `${formatDecimal(signal.signal.value)} ${unitLabel}`,
     trendSentence(signal),
     baselineSentence(signal),
     anomalySentence(signal),
@@ -183,7 +184,7 @@ export const unitLabelFromSignal = (signal: ContextualizedSignal): Maybe<string>
   )(signal)
 
 export const signalValueLabel = (signal: ContextualizedSignal): string =>
-  String(signal.signal.value)
+  formatDecimal(signal.signal.value)
 
 export const signalCurrentMarkerLabel = (signal: ContextualizedSignal): string =>
   `Current ${signalValueLabel(signal)}`

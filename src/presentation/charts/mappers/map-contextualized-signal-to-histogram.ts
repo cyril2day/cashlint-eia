@@ -1,5 +1,6 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import { matchMaybe, some, type Maybe } from '@/shared/maybe'
+import { formatDecimal } from '@/shared/decimal'
 import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '../contracts'
 import {
   baselineAverageMarker,
@@ -39,7 +40,7 @@ const baselineReferenceMarkers = (signal: ContextualizedSignal): readonly Histog
     None: () => [],
   })(baselineAverageMarker(signal, average => ({
         value: average,
-        label: `Baseline ${String(average)}`,
+        label: `Baseline ${formatDecimal(average)}`,
       })))
 
 export const mapContextualizedSignalToHistogram = (input: HistogramMapperInput): HistogramViewModel => {

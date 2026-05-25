@@ -1,6 +1,7 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import type { BaselineResult } from '@/contexts/interpretation/model/baseline'
 import type { InterpretationAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
+import { formatDecimal } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
 import { none, type Maybe } from '@/shared/maybe'
 import type { TimeSeriesAnomalyVisualModel, TimeSeriesBaselineVisualModel, TimeSeriesChartPointViewModel, TimeSeriesChartViewModel } from '../contracts'
@@ -91,7 +92,7 @@ const toBaselineVisual = (signal: ContextualizedSignal): TimeSeriesBaselineVisua
       dispersion: candidate.baseline.dispersion,
       lowerBound: candidate.baseline.average - candidate.baseline.dispersion,
       upperBound: candidate.baseline.average + candidate.baseline.dispersion,
-      label: `baseline ${String(candidate.baseline.average)}`,
+      label: `baseline ${formatDecimal(candidate.baseline.average)}`,
     }),
     NotComputed: candidate => ({ kind: 'NotComputed', reason: candidate.reason }),
   })(signal.baseline)
@@ -110,7 +111,7 @@ const toPoint = (
   x: point.reportWeek.date.getTime(),
   y: point.value,
   reportWeekIso: reportWeekIso(point.reportWeek),
-  valueLabel: String(point.value),
+  valueLabel: formatDecimal(point.value),
   isCurrent: reportWeekIso(point.reportWeek) === currentReportWeekIso,
 })
 

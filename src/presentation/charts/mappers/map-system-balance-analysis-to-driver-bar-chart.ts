@@ -1,5 +1,6 @@
 import type { SystemBalanceAnalysis } from '@/contexts/system-balance'
 import { formatMeasurementUnit } from '@/contexts/measurement/model'
+import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
 import type { BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '../contracts'
@@ -53,7 +54,7 @@ const mapBalanceCaveat = (caveat: SystemBalanceAnalysis['caveats'][number]): Cha
 const mapDriver = (driver: SystemBalanceAnalysis['drivers'][number]): BarChartPointInput => ({
   category: balanceDriverLabels[driver.kind],
   value: driver.value,
-  valueLabel: `${String(driver.value)} ${formatMeasurementUnit(driver.unit)}`,
+  valueLabel: `${formatDecimal(driver.value)} ${formatMeasurementUnit(driver.unit)}`,
   caveats: [],
 })
 
@@ -69,7 +70,7 @@ export const mapSystemBalanceAnalysisToDriverBarChart = (
     ordering: 'InputOrder',
     points: input.analysis.drivers.map(mapDriver),
     caveats,
-    accessibilitySummary: `System balance driver chart with ${String(input.analysis.drivers.length)} driver(s), balance state ${input.analysis.balanceState}, and ${String(input.analysis.caveats.length)} caveat(s).`,
+    accessibilitySummary: `System balance driver chart with ${formatWholeDecimal(input.analysis.drivers.length)} driver(s), balance state ${input.analysis.balanceState}, and ${formatWholeDecimal(input.analysis.caveats.length)} caveat(s).`,
   })
 
   return {

@@ -5,6 +5,7 @@ import type { ChartDisplayState } from './chart-display-state'
 export type SparklinePointViewModel = Readonly<{
   readonly x: number
   readonly y: number
+  readonly reportWeekIso: string
   readonly isCurrent: boolean
 }>
 

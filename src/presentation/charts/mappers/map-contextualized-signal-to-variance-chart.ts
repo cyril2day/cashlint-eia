@@ -1,4 +1,5 @@
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
+import { formatDecimal, formatPercentageDecimal } from '@/shared/decimal'
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import type { ChartDisplayState, VarianceChartEntryViewModel, VarianceChartViewModel, VarianceReferenceViewModel } from '../contracts'
@@ -33,7 +34,7 @@ const variancePercentageLabel = (
   ifElse(
     (candidate: number) => candidate === 0,
     () => none(),
-    candidate => some(`${String(((actualValue - candidate) / candidate) * 100)}%`),
+    candidate => some(`${formatPercentageDecimal(((actualValue - candidate) / candidate) * 100)}%`),
   )(referenceValue)
 
 const toReference = (
@@ -42,7 +43,7 @@ const toReference = (
 ): VarianceReferenceViewModel => ({
   label: input.referenceLabel,
   value: referenceValue,
-  valueLabel: String(referenceValue),
+  valueLabel: formatDecimal(referenceValue),
 })
 
 const toVarianceEntry = (
@@ -57,7 +58,7 @@ const toVarianceEntry = (
     actualValueLabel: signalValueLabel(input.signal),
     reference: toReference(input, referenceValue),
     varianceAmount,
-    varianceAmountLabel: String(varianceAmount),
+    varianceAmountLabel: formatDecimal(varianceAmount),
     variancePercentageLabel: variancePercentageLabel(input.signal.signal.value, referenceValue),
     directionLabel: varianceDirectionLabel(varianceAmount),
     caveats: chartCaveatsFromSignal(input.signal),
