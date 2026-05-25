@@ -1,1 +1,1 @@
-export * from './eia'
+export * from '@/infrastructure/eia'

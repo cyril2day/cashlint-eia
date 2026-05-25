@@ -1,7 +1,7 @@
 import type { EiaRequest } from '@/application/ports/eia-client'
 import { ifElse } from '@/shared/fp'
 import { matchMaybe } from '@/shared/maybe'
-import type { EiaRuntimeConfig } from './runtime-config'
+import type { EiaRuntimeConfig } from '@/infrastructure/eia/runtime-config'
 
 const ensureTrailingSlash = (value: string): string =>
   ifElse(

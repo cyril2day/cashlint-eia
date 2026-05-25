@@ -7,8 +7,8 @@ import type { PeriodCandidate, RawEiaEnvelope, RawEiaRow, ValueCandidate } from 
 import { allPass, both, cond, ifElse, isNil } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import { failure, success, type Result } from '@/shared/result'
-import { buildEiaRequestUrl, sanitizeEiaUrl } from './request-url'
-import type { EiaRuntimeConfig } from './runtime-config'
+import { buildEiaRequestUrl, sanitizeEiaUrl } from '@/infrastructure/eia/request-url'
+import type { EiaRuntimeConfig } from '@/infrastructure/eia/runtime-config'
 
 export type EiaFetch = (input: RequestInfo | URL, init: RequestInit) => Promise<Response>
 
