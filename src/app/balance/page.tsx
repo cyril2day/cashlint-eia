@@ -1,19 +1,28 @@
 import type { ReactElement } from 'react'
 
-import { DetailPageContent, PresentationErrorShell } from '@/presentation'
+import { DetailPageContent, PresentationErrorShell, AppShell } from '@/presentation'
 import type { BalanceDetailViewModel } from '@/presentation/contracts'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolveBalancePageModel, type RichUiPageModel } from '../resolve-rich-ui-page-models'
+import { resolveBalancePageModel, type AppPageModel } from '@/app/resolve-app-page-models'
 
-type BalancePageModel = RichUiPageModel<BalanceDetailViewModel>
+type BalancePageModel = AppPageModel<BalanceDetailViewModel>
 
 const renderBalancePage = (
   model: Extract<BalancePageModel, { readonly kind: 'page' }>,
-): ReactElement => <DetailPageContent viewModel={model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('balance')}>
+    <DetailPageContent viewModel={model.viewModel} />
+  </AppShell>
+)
 
 const renderErrorPage = (
   model: Extract<BalancePageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('balance')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isBalancePage = (
   model: BalancePageModel,

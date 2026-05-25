@@ -1,26 +1,28 @@
 import type { ReactElement } from 'react'
 
-import { ChartGallery, PresentationErrorShell } from '@/presentation'
+import { ChartGallery, PresentationErrorShell, AppShell } from '@/presentation'
 import type { ChartsGalleryViewModel } from '@/presentation/contracts'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolveChartsPageModel, type RichUiPageModel } from '../resolve-rich-ui-page-models'
+import { resolveChartsPageModel, type AppPageModel } from '@/app/resolve-app-page-models'
 
-type ChartsPageModel = RichUiPageModel<ChartsGalleryViewModel>
+type ChartsPageModel = AppPageModel<ChartsGalleryViewModel>
 
 const renderChartsPage = (
   model: Extract<ChartsPageModel, { readonly kind: 'page' }>,
 ): ReactElement => (
-  <main className="detail-page">
-    <nav className="detail-page__back" aria-label="Section navigation">
-      <a className="detail-page__back-link" href="/">Home</a>
-    </nav>
+  <AppShell navigation={createAppNavigationViewModel('charts')}>
     <ChartGallery viewModel={model.viewModel} />
-  </main>
+  </AppShell>
 )
 
 const renderErrorPage = (
   model: Extract<ChartsPageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('charts')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isChartsPage = (
   model: ChartsPageModel,

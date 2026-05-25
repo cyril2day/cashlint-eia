@@ -1,16 +1,25 @@
 import type { ReactElement } from 'react'
 
-import { OilLintPresentationShell, PresentationErrorShell } from '@/presentation'
+import { OilLintPresentationShell, PresentationErrorShell, AppShell } from '@/presentation'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolveHomePageModel, type HomePageModel } from './resolve-home-page-model'
+import { resolveHomePageModel, type HomePageModel } from '@/app/resolve-home-page-model'
 
 const renderSummaryHomePage = (
   model: Extract<HomePageModel, { readonly kind: 'home' }>,
-): ReactElement => <OilLintPresentationShell viewModel={model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={model.viewModel.navigation}>
+    <OilLintPresentationShell viewModel={model.viewModel} />
+  </AppShell>
+)
 
 const renderErrorHomePage = (
   model: Extract<HomePageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('home')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isSummaryHomePage = (
   model: HomePageModel,

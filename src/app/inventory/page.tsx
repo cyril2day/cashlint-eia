@@ -1,19 +1,28 @@
 import type { ReactElement } from 'react'
 
-import { DetailPageContent, PresentationErrorShell } from '@/presentation'
+import { DetailPageContent, PresentationErrorShell, AppShell } from '@/presentation'
 import { ifElse } from '@/shared/fp'
-import { resolveInventoryPageModel, type RichUiPageModel } from '../resolve-rich-ui-page-models'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
+import { resolveInventoryPageModel, type AppPageModel } from '@/app/resolve-app-page-models'
 import type { InventoryDetailViewModel } from '@/presentation/contracts'
 
-type InventoryPageModel = RichUiPageModel<InventoryDetailViewModel>
+type InventoryPageModel = AppPageModel<InventoryDetailViewModel>
 
 const renderInventoryPage = (
   model: Extract<InventoryPageModel, { readonly kind: 'page' }>,
-): ReactElement => <DetailPageContent viewModel={model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('inventory')}>
+    <DetailPageContent viewModel={model.viewModel} />
+  </AppShell>
+)
 
 const renderErrorPage = (
   model: Extract<InventoryPageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('inventory')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isInventoryPage = (
   model: InventoryPageModel,

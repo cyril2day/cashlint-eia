@@ -1,10 +1,10 @@
 import type { ApplicationError } from '@/application/errors'
-import { createWalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
-import { buildLiveRichUiViewModel, type LiveRichUiViewModel } from '@/application/workflows/build-live-summary-view-model'
+import { createLiveWeeklyDependencies } from '@/application/dependencies/live-weekly-dependencies'
+import { buildLiveAppViewModel, type LiveAppViewModel } from '@/application/workflows/build-live-summary-view-model'
 import type { EiaClient, UpstreamError } from '@/application/ports/eia-client'
-import type { RichHomeViewModel } from '@/presentation/contracts/rich-home-view-model'
+import type { HomePageViewModel } from '@/presentation/contracts/home-page-view-model'
 import type { PresentationErrorViewModel } from '@/presentation/contracts/presentation-error-view-model'
-import { mapSummaryWithChartsToRichHomeViewModel } from '@/presentation/mappers'
+import { mapSummaryWithChartsToHomePageViewModel } from '@/presentation/mappers'
 import { createRealEiaClient, validateEiaRuntimeConfig, type EiaRuntimeConfig, type EiaRuntimeConfigurationError } from '@/infrastructure/eia'
 import type { EiaRuntimeConfigInput } from '@/infrastructure/eia'
 import { allPass, cond, ifElse, isNil } from '@/shared/fp'
@@ -13,13 +13,13 @@ import type { Result } from '@/shared/result'
 
 export type HomePageModel = Readonly<{
   readonly kind: 'home'
-  readonly viewModel: RichHomeViewModel
+  readonly viewModel: HomePageViewModel
 } | {
   readonly kind: 'error'
   readonly viewModel: PresentationErrorViewModel
 }>
 
-type SummaryResult = Result<LiveRichUiViewModel, ApplicationError>
+type SummaryResult = Result<LiveAppViewModel, ApplicationError>
 
 const defaultReportWeekIso = '2026-01-09'
 
@@ -97,9 +97,9 @@ const configurationErrorViewModel = (
   retryHint: some('Set EIA_BASE_URL and EIA_API_KEY in your local environment, then refresh the page.'),
 })
 
-const createSummaryHomePageModel = (viewModel: LiveRichUiViewModel): HomePageModel => ({
+const createSummaryHomePageModel = (viewModel: LiveAppViewModel): HomePageModel => ({
   kind: 'home',
-  viewModel: mapSummaryWithChartsToRichHomeViewModel(viewModel.summary, viewModel.chartsGallery),
+  viewModel: mapSummaryWithChartsToHomePageViewModel(viewModel.summary, viewModel.chartsGallery),
 })
 
 const createErrorHomePageModel = (viewModel: PresentationErrorViewModel): HomePageModel => ({
@@ -270,9 +270,9 @@ const loadLiveSummary = (
 ): Promise<HomePageModel> => {
   const client: EiaClient = createRealEiaClient(config)
   const command = { reportWeekIso: resolveReportWeekIso() }
-  const dependencies = createWalkingSkeletonDependencies({ eiaClient: client })
+  const dependencies = createLiveWeeklyDependencies({ eiaClient: client })
 
-  return buildLiveRichUiViewModel(dependencies)(command).then(summaryResultToHomePageModel)
+  return buildLiveAppViewModel(dependencies)(command).then(summaryResultToHomePageModel)
 }
 
 export const resolveHomePageModel = (): Promise<HomePageModel> =>

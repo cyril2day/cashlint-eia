@@ -1,19 +1,28 @@
 import type { ReactElement } from 'react'
 
-import { DetailPageContent, PresentationErrorShell } from '@/presentation'
+import { DetailPageContent, PresentationErrorShell, AppShell } from '@/presentation'
 import type { PriceDetailViewModel } from '@/presentation/contracts'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolvePricePageModel, type RichUiPageModel } from '../resolve-rich-ui-page-models'
+import { resolvePricePageModel, type AppPageModel } from '@/app/resolve-app-page-models'
 
-type PricePageModel = RichUiPageModel<PriceDetailViewModel>
+type PricePageModel = AppPageModel<PriceDetailViewModel>
 
 const renderPricePage = (
   model: Extract<PricePageModel, { readonly kind: 'page' }>,
-): ReactElement => <DetailPageContent viewModel={model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('price')}>
+    <DetailPageContent viewModel={model.viewModel} />
+  </AppShell>
+)
 
 const renderErrorPage = (
   model: Extract<PricePageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('price')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isPricePage = (
   model: PricePageModel,

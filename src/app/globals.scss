@@ -2,8 +2,39 @@
 @use '../presentation/styles/presentation-shell';
 @use '../presentation/styles/charts';
 
-:root {
+[data-theme='light'] {
   color-scheme: light;
+  --color-background: var(--color-white);
+  --color-surface: var(--color-white);
+  --color-surface-raised: var(--color-gray6);
+  --color-surface-muted: var(--color-gray5);
+  --color-surface-inset: var(--color-gray4);
+  --color-border: var(--color-gray4);
+  --color-border-strong: var(--color-gray3);
+  --color-text: hsla(0, 0%, 0%, 0.85);
+  --color-text-muted: hsla(0, 0%, 0%, 0.5);
+  --color-text-subtle: hsla(0, 0%, 0%, 0.25);
+  --color-text-disabled: hsla(0, 0%, 0%, 0.1);
+  --color-link: var(--color-blue);
+  --color-link-hover: var(--color-indigo);
+  --color-focus-ring: hsla(208, 100%, 50%, 0.35);
+  --shadow-color: hsla(240, 10%, 12%, 0.08);
+  --shadow-color-strong: hsla(240, 10%, 12%, 0.14);
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px var(--shadow-color);
+  --shadow-md: 0 4px 10px var(--shadow-color);
+  --shadow-lg: 0 12px 24px var(--shadow-color-strong);
+  --shadow-focus: 0 0 0 3px var(--color-focus-ring);
+  --background-color: var(--color-background);
+  --surface-color-primary: var(--color-surface);
+  --surface-color-secondary: var(--color-surface-raised);
+  --surface-color-tertiary: var(--color-surface-muted);
+  --surface-color-quaternary: var(--color-surface-inset);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --text-tertiary: var(--color-text-subtle);
+  --text-quaternary: var(--color-text-disabled);
+  --text-quinary: hsla(0, 0%, 0%, 0.05);
 }
 
 * {

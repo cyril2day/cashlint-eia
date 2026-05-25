@@ -1,19 +1,28 @@
 import type { ReactElement } from 'react'
 
-import { DetailPageContent, PresentationErrorShell } from '@/presentation'
+import { DetailPageContent, PresentationErrorShell, AppShell } from '@/presentation'
 import type { AnalysisDetailViewModel } from '@/presentation/contracts'
+import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolveAnalysisPageModel, type RichUiPageModel } from '../resolve-rich-ui-page-models'
+import { resolveAnalysisPageModel, type AppPageModel } from '@/app/resolve-app-page-models'
 
-type AnalysisPageModel = RichUiPageModel<AnalysisDetailViewModel>
+type AnalysisPageModel = AppPageModel<AnalysisDetailViewModel>
 
 const renderAnalysisPage = (
   model: Extract<AnalysisPageModel, { readonly kind: 'page' }>,
-): ReactElement => <DetailPageContent viewModel={model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('analysis')}>
+    <DetailPageContent viewModel={model.viewModel} />
+  </AppShell>
+)
 
 const renderErrorPage = (
   model: Extract<AnalysisPageModel, { readonly kind: 'error' }>,
-): ReactElement => <PresentationErrorShell {...model.viewModel} />
+): ReactElement => (
+  <AppShell navigation={createAppNavigationViewModel('analysis')}>
+    <PresentationErrorShell {...model.viewModel} />
+  </AppShell>
+)
 
 const isAnalysisPage = (
   model: AnalysisPageModel,
