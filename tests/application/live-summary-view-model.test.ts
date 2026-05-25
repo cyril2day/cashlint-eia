@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildLiveRichUiViewModel, buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
+import { buildLiveAppViewModel, buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
 import { createFakeEiaClient } from '@/application/ports/fake-eia-client'
-import { createWalkingSkeletonDependencies } from '@/application/dependencies/walking-skeleton-dependencies'
+import { createLiveWeeklyDependencies } from '@/application/dependencies/live-weekly-dependencies'
 import { cond } from '@/shared/fp'
 import { ifElse } from '@/shared/fp'
 import { isFailure, isSuccess, type Result, success } from '@/shared/result'
@@ -145,7 +145,7 @@ describe('live summary view model', () => {
     )
 
     const runner = buildLiveSummaryViewModel(
-      createWalkingSkeletonDependencies({ eiaClient: fakeClient }),
+      createLiveWeeklyDependencies({ eiaClient: fakeClient }),
     )
 
     const result = await runner({ reportWeekIso: '2026-01-09' })
@@ -166,7 +166,7 @@ describe('live summary view model', () => {
     expect(summary.headline).toContain('Tightening')
     expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('missing-previous-observation')
     expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('full-system-balance-not-computed')
-    expect(summary.summary).not.toContain('walking skeleton')
+    expect(summary.summary).not.toContain('live weekly')
   })
 
   it('returns a typed upstream failure when the underlying client fails', async () => {
@@ -178,7 +178,7 @@ describe('live summary view model', () => {
     const fakeClient = createFakeEiaClient(() => Promise.resolve({ ok: false, error: fakeError }))
 
     const runner = buildLiveSummaryViewModel(
-      createWalkingSkeletonDependencies({ eiaClient: fakeClient }),
+      createLiveWeeklyDependencies({ eiaClient: fakeClient }),
     )
 
     const result = await runner({ reportWeekIso: '2026-01-09' })
@@ -194,8 +194,8 @@ describe('live summary view model', () => {
       Promise.resolve(success(requestForEnvelope(request))),
     )
 
-    const runner = buildLiveRichUiViewModel(
-      createWalkingSkeletonDependencies({ eiaClient: fakeClient }),
+    const runner = buildLiveAppViewModel(
+      createLiveWeeklyDependencies({ eiaClient: fakeClient }),
     )
 
     const result = await runner({ reportWeekIso: '2026-01-09' })

@@ -34,7 +34,7 @@ import {
   createInventorySignalIdentity,
   createPriceSignal,
   createPriceSignalIdentity,
-  createWalkingSkeletonInterpretationPolicies,
+  createCoreWeeklyInterpretationPolicies,
 } from '@/contexts/interpretation'
 import { parseDecimal } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
@@ -143,8 +143,8 @@ const priceHistory = (values: readonly number[]) =>
   ])
 
 const contextualizedSignals = (inventoryValues: readonly number[], priceValues: readonly number[]) => ({
-  inventory: unwrapSuccess(contextualizeFullSignal(inventorySignal(95), inventoryHistory(inventoryValues), createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1))),
-  price: unwrapSuccess(contextualizeFullSignal(priceSignal(72), priceHistory(priceValues), createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1))),
+  inventory: unwrapSuccess(contextualizeFullSignal(inventorySignal(95), inventoryHistory(inventoryValues), createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1))),
+  price: unwrapSuccess(contextualizeFullSignal(priceSignal(72), priceHistory(priceValues), createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1))),
 })
 
 describe('Full WeeklyAnalysis synthesis', () => {

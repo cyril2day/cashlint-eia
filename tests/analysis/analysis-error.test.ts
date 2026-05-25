@@ -17,7 +17,7 @@ import {
   makeUnableToComposeHeadlineError,
   makeUnableToComposeSummaryError,
   makeUnableToDetermineFullAnalysisConditionError,
-  makeUnableToDetermineWalkingSkeletonConditionError,
+  makeUnableToDetermineCoreWeeklyConditionError,
   makeUnableToSelectKeyDriversError,
   makeUnexpectedSignalIdentityError,
   makeUnsupportedBalanceStateError,
@@ -30,11 +30,11 @@ const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, 
 
 
 describe('Analysis error helpers', () => {
-  it('creates the expected walking-skeleton error shapes', () => {
+  it('creates the expected core-weekly error shapes', () => {
     const requiredSignal = makeMissingRequiredAnalysisSignalError('inventory')
     const contextualizedSignal = makeMissingContextualizedSignalError('price')
     const policy = makeInvalidAnalysisPolicyError('bad policy')
-    const condition = makeUnableToDetermineWalkingSkeletonConditionError('unable to classify')
+    const condition = makeUnableToDetermineCoreWeeklyConditionError('unable to classify')
     const headline = makeUnableToComposeHeadlineError('headline failed')
     const summary = makeUnableToComposeSummaryError('summary failed')
     const explanation = makeUnableToComposeExplanationError('explanation failed')
@@ -50,7 +50,7 @@ describe('Analysis error helpers', () => {
     expect(requiredSignal).toEqual({ kind: 'MissingRequiredAnalysisSignal', missing: 'inventory' })
     expect(contextualizedSignal).toEqual({ kind: 'MissingContextualizedSignal', missing: 'price' })
     expect(policy).toEqual({ kind: 'InvalidAnalysisPolicy', reason: 'bad policy' })
-    expect(condition).toEqual({ kind: 'UnableToDetermineWalkingSkeletonCondition', reason: 'unable to classify' })
+    expect(condition).toEqual({ kind: 'UnableToDetermineCoreWeeklyCondition', reason: 'unable to classify' })
     expect(headline).toEqual({ kind: 'UnableToComposeHeadline', reason: 'headline failed' })
     expect(summary).toEqual({ kind: 'UnableToComposeSummary', reason: 'summary failed' })
     expect(explanation).toEqual({ kind: 'UnableToComposeExplanation', reason: 'explanation failed' })

@@ -107,12 +107,12 @@ describe('EIA ingestion ACL boundary errors', () => {
   it('supports explicit boundary error construction', () => {
     expect(
       makeBoundaryError('FrequencyMismatch', 'frequency does not match', {
-        endpointFamily: 'walking-skeleton',
+        endpointFamily: 'core-weekly',
       }),
     ).toEqual({
       kind: 'FrequencyMismatch',
       endpoint: none(),
-      endpointFamily: some('walking-skeleton'),
+      endpointFamily: some('core-weekly'),
       seriesId: none(),
       fieldName: none(),
       rawValue: none(),

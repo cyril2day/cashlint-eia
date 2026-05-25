@@ -107,7 +107,7 @@ describe('WeeklyPetroleumFacts full first-release assembly', () => {
     expect(assembled).toMatchObject({ ok: false, error: { kind: 'MissingRequiredMeasurement', missing: 'refinery' } })
   })
 
-  it('keeps walking-skeleton assembly compatible without refinery and supply', () => {
+  it('keeps core-weekly assembly compatible without refinery and supply', () => {
     const assembled = assembleWeeklyPetroleumFacts([buildInventory()], [buildPrice()])
 
     expect(assembled.ok).toBe(true)

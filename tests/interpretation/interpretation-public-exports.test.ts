@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { contextualizeFullSignalSet, contextualizeWalkingSkeletonSignalSet, createWalkingSkeletonInterpretationPolicies, buildPreviousObservationMap } from '@/contexts/interpretation'
+import { contextualizeFullSignalSet, contextualizeCoreWeeklySignalSet, createCoreWeeklyInterpretationPolicies, buildPreviousObservationMap } from '@/contexts/interpretation'
 import { parseComparisonWindow, parseGeographyScope, parseInventoryProduct, parseMeasurementKind, parseMeasurementUnit, parsePetroleumSlice, parsePriceKind, parseReportWeek } from '@/contexts/measurement/model'
 import { createHistoricalObservation, createHistoricalSeries, createInventorySignal, createInventorySignalIdentity, createPriceSignal, createPriceSignalIdentity } from '@/contexts/interpretation'
 import { ifElse } from '@/shared/fp'
@@ -16,10 +16,10 @@ const assertSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, 
   )(result)
 
 describe('Interpretation public exports', () => {
-  it('exposes the walking-skeleton interpretation surface', () => {
+  it('exposes the core-weekly interpretation surface', () => {
     const comparisonWindow = assertSuccess(parseComparisonWindow('OneWeek'))
-    expect(typeof contextualizeWalkingSkeletonSignalSet).toBe('function')
-    expect(typeof createWalkingSkeletonInterpretationPolicies).toBe('function')
+    expect(typeof contextualizeCoreWeeklySignalSet).toBe('function')
+    expect(typeof createCoreWeeklyInterpretationPolicies).toBe('function')
     expect(typeof buildPreviousObservationMap).toBe('function')
     expect(comparisonWindow).toBeDefined()
 

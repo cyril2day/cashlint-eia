@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseGeographyScope, parseInventoryProduct, parseMeasurementKind, parseMeasurementUnit, parsePetroleumSlice, parsePriceKind, parseReportWeek, parseComparisonWindow, parseTrendDirection } from '@/contexts/measurement/model'
-import { createInventorySignalIdentity, createPriceSignalIdentity, createHistoricalObservation, createInventorySignal, createPriceSignal, createWalkingSkeletonInterpretationPolicies, calculateOneWeekTrend } from '@/contexts/interpretation'
+import { createInventorySignalIdentity, createPriceSignalIdentity, createHistoricalObservation, createInventorySignal, createPriceSignal, createCoreWeeklyInterpretationPolicies, calculateOneWeekTrend } from '@/contexts/interpretation'
 import { ifElse } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 
@@ -40,7 +40,7 @@ describe('One-week trend calculation', () => {
     const priceSignal = createPriceSignal(priceIdentity, reportWeek, geography, 72, priceUnit, priceSlice)
     const pricePrev = createHistoricalObservation(priceIdentity, previousWeek, 75, priceUnit)
 
-    const policies = createWalkingSkeletonInterpretationPolicies(comparisonWindow, 5, 1)
+    const policies = createCoreWeeklyInterpretationPolicies(comparisonWindow, 5, 1)
 
     expect(unwrapSuccess(calculateOneWeekTrend(inventorySignal, inventoryPrev, policies)).direction).toEqual(upDirection)
     expect(unwrapSuccess(calculateOneWeekTrend(priceSignal, pricePrev, policies)).direction).toEqual(downDirection)

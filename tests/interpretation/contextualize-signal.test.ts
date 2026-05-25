@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseGeographyScope, parseInventoryProduct, parseMeasurementKind, parseMeasurementUnit, parsePetroleumSlice, parsePriceKind, parseReportWeek, parseComparisonWindow } from '@/contexts/measurement/model'
-import { createInventorySignalIdentity, createPriceSignalIdentity, createHistoricalObservation, createInventorySignal, createPriceSignal, buildPreviousObservationMap, contextualizeSignal, contextualizeWalkingSkeletonSignalSet, createWalkingSkeletonInterpretationPolicies } from '@/contexts/interpretation'
+import { createInventorySignalIdentity, createPriceSignalIdentity, createHistoricalObservation, createInventorySignal, createPriceSignal, buildPreviousObservationMap, contextualizeSignal, contextualizeCoreWeeklySignalSet, createCoreWeeklyInterpretationPolicies } from '@/contexts/interpretation'
 import { ifElse } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 
@@ -24,7 +24,7 @@ const assertSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, 
   )(result)
 
 describe('Contextualized interpretation', () => {
-  it('contextualizes the walking-skeleton signal set with one-week trend and NotComputed anomaly', () => {
+  it('contextualizes the core-weekly signal set with one-week trend and NotComputed anomaly', () => {
     const geography = unwrapSuccess(parseGeographyScope('USTotal'))
     const inventoryProduct = unwrapSuccess(parseInventoryProduct('CrudeOil'))
     const inventoryKind = unwrapSuccess(parseMeasurementKind('CrudeStocks'))
@@ -49,8 +49,8 @@ describe('Contextualized interpretation', () => {
       createHistoricalObservation(priceIdentity, previousWeek, 75, priceUnit),
     ])
 
-    const policies = createWalkingSkeletonInterpretationPolicies(comparisonWindow, 5, 1)
-    const contextualized = assertSuccess(contextualizeWalkingSkeletonSignalSet({ inventory: inventorySignal, price: priceSignal }, previousObservations, policies))
+    const policies = createCoreWeeklyInterpretationPolicies(comparisonWindow, 5, 1)
+    const contextualized = assertSuccess(contextualizeCoreWeeklySignalSet({ inventory: inventorySignal, price: priceSignal }, previousObservations, policies))
 
     expect(contextualized.inventory.anomaly.kind).toBe('NotComputed')
     expect(contextualized.price.anomaly.kind).toBe('NotComputed')
@@ -75,7 +75,7 @@ describe('Contextualized interpretation', () => {
       contextualizeSignal(
         inventorySignal,
         buildPreviousObservationMap([]),
-        createWalkingSkeletonInterpretationPolicies(comparisonWindow, 5, 1, true),
+        createCoreWeeklyInterpretationPolicies(comparisonWindow, 5, 1, true),
       ),
     )
 

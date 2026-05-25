@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  buildWalkingSkeletonCaveats,
-  buildWalkingSkeletonExplanation,
-  buildWalkingSkeletonSummary,
-  assignWalkingSkeletonConfidence,
-  classifyWalkingSkeletonSignalAlignment,
+  buildCoreWeeklyCaveats,
+  buildCoreWeeklyExplanation,
+  buildCoreWeeklySummary,
+  assignCoreWeeklyConfidence,
+  classifyCoreWeeklySignalAlignment,
   composeWeeklyAnalysis,
-  createWalkingSkeletonAnalysisPolicies,
-  selectWalkingSkeletonSignals,
+  createCoreWeeklyAnalysisPolicies,
+  selectCoreWeeklySignals,
 } from '@/contexts/analysis'
 import { createAnalysisSignalAlignment, createWeeklyAnalysis } from '@/contexts/analysis/model'
 import {
   buildPreviousObservationMap,
-  contextualizeWalkingSkeletonSignalSet,
+  contextualizeCoreWeeklySignalSet,
   createHistoricalObservation,
   createInventorySignal,
   createInventorySignalIdentity,
   createPriceSignal,
   createPriceSignalIdentity,
-  createWalkingSkeletonInterpretationPolicies,
+  createCoreWeeklyInterpretationPolicies,
 } from '@/contexts/interpretation'
 import {
   parseComparisonWindow,
@@ -84,7 +84,7 @@ const withoutTrend = <SignalType extends { readonly trend: Maybe<Trend> }>(signa
   trend: { kind: 'None' },
 })
 
-const buildWalkingSkeletonInputs = () => {
+const buildCoreWeeklyInputs = () => {
   const reportWeek = unwrapSuccess(parseReportWeek('2026-05-19T00:00:00.000Z'))
   const previousWeek = unwrapSuccess(parseReportWeek('2026-05-12T00:00:00.000Z'))
   const geography = unwrapSuccess(parseGeographyScope('USTotal'))
@@ -121,28 +121,28 @@ const buildWalkingSkeletonInputs = () => {
   ])
 
   const contextualized = unwrapSuccess(
-    contextualizeWalkingSkeletonSignalSet(
+    contextualizeCoreWeeklySignalSet(
       { inventory: inventorySignal, price: priceSignal },
       previousObservations,
-      createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1),
+      createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 5, 1),
     ),
   )
 
   return { facts, contextualized }
 }
 
-describe('Walking-skeleton Analysis composition', () => {
-  it('selects the walking-skeleton key signals', () => {
-    const { contextualized } = buildWalkingSkeletonInputs()
-    const selected = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
+describe('Core weekly Analysis composition', () => {
+  it('selects the core-weekly key signals', () => {
+    const { contextualized } = buildCoreWeeklyInputs()
+    const selected = unwrapSuccess(selectCoreWeeklySignals(contextualized))
 
     expect(selected.inventory).toBe(contextualized.inventory)
     expect(selected.price).toBe(contextualized.price)
   })
 
-  it('fails when a required walking-skeleton key signal is missing', () => {
-    const { contextualized } = buildWalkingSkeletonInputs()
-    const missingPrice = selectWalkingSkeletonSignals({ inventory: contextualized.inventory })
+  it('fails when a required core-weekly key signal is missing', () => {
+    const { contextualized } = buildCoreWeeklyInputs()
+    const missingPrice = selectCoreWeeklySignals({ inventory: contextualized.inventory })
     const isFailureResult = (
       candidate: Result<unknown, AnalysisError>,
     ): candidate is Extract<Result<unknown, AnalysisError>, { readonly ok: false }> => candidate.ok === false
@@ -154,8 +154,8 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('builds a cautious analysis from aligned inventory draw and price rise', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createWalkingSkeletonAnalysisPolicies()))
+    const { facts, contextualized } = buildCoreWeeklyInputs()
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis.alignment.alignment).toBe('AlignedTightening')
     expect(analysis.condition.condition).toBe('Unknown')
@@ -172,12 +172,12 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('writes a cautious summary from aligned signals', () => {
-    const { contextualized } = buildWalkingSkeletonInputs()
-    const policies = createWalkingSkeletonAnalysisPolicies()
-    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
-    const alignment = unwrapSuccess(classifyWalkingSkeletonSignalAlignment(keySignals))
-    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
-    const summary = unwrapSuccess(buildWalkingSkeletonSummary(keySignals, alignment, caveats, policies))
+    const { contextualized } = buildCoreWeeklyInputs()
+    const policies = createCoreWeeklyAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectCoreWeeklySignals(contextualized))
+    const alignment = unwrapSuccess(classifyCoreWeeklySignalAlignment(keySignals))
+    const caveats = buildCoreWeeklyCaveats(keySignals, policies)
+    const summary = unwrapSuccess(buildCoreWeeklySummary(keySignals, alignment, caveats, policies))
 
     expect(summary).toContain('Crude inventory drew while WTI rose')
     expect(summary).toContain('full system balance is not computed')
@@ -185,12 +185,12 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('writes a careful explanation from aligned signals', () => {
-    const { contextualized } = buildWalkingSkeletonInputs()
-    const policies = createWalkingSkeletonAnalysisPolicies()
-    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
-    const alignment = unwrapSuccess(classifyWalkingSkeletonSignalAlignment(keySignals))
-    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
-    const explanation = unwrapSuccess(buildWalkingSkeletonExplanation(keySignals, alignment, caveats, policies))
+    const { contextualized } = buildCoreWeeklyInputs()
+    const policies = createCoreWeeklyAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectCoreWeeklySignals(contextualized))
+    const alignment = unwrapSuccess(classifyCoreWeeklySignalAlignment(keySignals))
+    const caveats = buildCoreWeeklyCaveats(keySignals, policies)
+    const explanation = unwrapSuccess(buildCoreWeeklyExplanation(keySignals, alignment, caveats, policies))
 
     expect(explanation).toContain('physical storage signal')
     expect(explanation).toContain('market context')
@@ -200,11 +200,11 @@ describe('Walking-skeleton Analysis composition', () => {
     expect(explanation).not.toMatch(/proves|guarantees|will cause|must mean|certainly/i)
   })
 
-  it('builds the full walking-skeleton caveat set with propagated trend caveats', () => {
-    const { contextualized } = buildWalkingSkeletonInputs()
-    const policies = createWalkingSkeletonAnalysisPolicies()
-    const keySignals = unwrapSuccess(selectWalkingSkeletonSignals(contextualized))
-    const caveats = buildWalkingSkeletonCaveats(keySignals, policies)
+  it('builds the full core-weekly caveat set with propagated trend caveats', () => {
+    const { contextualized } = buildCoreWeeklyInputs()
+    const policies = createCoreWeeklyAnalysisPolicies()
+    const keySignals = unwrapSuccess(selectCoreWeeklySignals(contextualized))
+    const caveats = buildCoreWeeklyCaveats(keySignals, policies)
 
     expect(caveats.some(caveat => caveat.kind === 'FullSystemBalanceNotComputed')).toBe(true)
     expect(caveats.some(caveat => caveat.kind === 'RefineryDataNotIncluded')).toBe(true)
@@ -215,24 +215,24 @@ describe('Walking-skeleton Analysis composition', () => {
       ...keySignals,
       inventory: withoutTrend(keySignals.inventory),
     }
-    const missingTrendCaveats = buildWalkingSkeletonCaveats(missingTrendKeySignals, policies)
+    const missingTrendCaveats = buildCoreWeeklyCaveats(missingTrendKeySignals, policies)
 
     expect(missingTrendCaveats.some(isPropagatedTrendNotComputed)).toBe(true)
     expect(new Set(missingTrendCaveats.map(caveat => caveat.kind)).size).toBeGreaterThanOrEqual(4)
   })
 
-  it('assigns conservative walking-skeleton confidence for each alignment', () => {
-    const policies = createWalkingSkeletonAnalysisPolicies()
+  it('assigns conservative core-weekly confidence for each alignment', () => {
+    const policies = createCoreWeeklyAnalysisPolicies()
 
-    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('AlignedTightening'), policies)).confidence).toBe('Medium')
-    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('AlignedLoosening'), policies)).confidence).toBe('Medium')
-    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Mixed'), policies)).confidence).toBe('Low')
-    expect(unwrapSuccess(assignWalkingSkeletonConfidence(createAnalysisSignalAlignment('Insufficient'), policies)).confidence).toBe('Unknown')
+    expect(unwrapSuccess(assignCoreWeeklyConfidence(createAnalysisSignalAlignment('AlignedTightening'), policies)).confidence).toBe('Medium')
+    expect(unwrapSuccess(assignCoreWeeklyConfidence(createAnalysisSignalAlignment('AlignedLoosening'), policies)).confidence).toBe('Medium')
+    expect(unwrapSuccess(assignCoreWeeklyConfidence(createAnalysisSignalAlignment('Mixed'), policies)).confidence).toBe('Low')
+    expect(unwrapSuccess(assignCoreWeeklyConfidence(createAnalysisSignalAlignment('Insufficient'), policies)).confidence).toBe('Unknown')
   })
 
   it('composes a WeeklyAnalysis from aligned evidence', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createWalkingSkeletonAnalysisPolicies()))
+    const { facts, contextualized } = buildCoreWeeklyInputs()
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, contextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis).toEqual(expect.objectContaining({
       headline: expect.any(String),
@@ -260,14 +260,14 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('writes a looser headline for aligned loosening', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
     const loosenedContextualized: typeof contextualized = {
       ...contextualized,
       inventory: withTrendDirection(contextualized.inventory, 'Up'),
       price: withTrendDirection(contextualized.price, 'Down'),
     }
 
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, loosenedContextualized, createWalkingSkeletonAnalysisPolicies()))
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, loosenedContextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis.alignment.alignment).toBe('AlignedLoosening')
     expect(analysis.headline).toContain('Crude inventory built and WTI fell')
@@ -275,13 +275,13 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('writes a cautious headline when trend context is missing', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
     const missingTrendContextualized: typeof contextualized = {
       ...contextualized,
       inventory: withoutTrend(contextualized.inventory),
     }
 
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createWalkingSkeletonAnalysisPolicies()))
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis.alignment.alignment).toBe('Insufficient')
     expect(analysis.headline).toContain('trend was not clear')
@@ -289,7 +289,7 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('keeps mixed signals conservative', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
     const priceTrend = ifElse(isSome, candidate => candidate.value, () => {
       throw new Error('expected price trend')
     })(contextualized.price.trend)
@@ -305,7 +305,7 @@ describe('Walking-skeleton Analysis composition', () => {
       },
     }
 
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, mixedContextualized, createWalkingSkeletonAnalysisPolicies()))
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, mixedContextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis.alignment.alignment).toBe('Mixed')
     expect(analysis.condition.condition).toBe('Mixed')
@@ -314,13 +314,13 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('retains missing trend caveats without failing', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
     const missingTrendContextualized: typeof contextualized = {
       ...contextualized,
       inventory: { ...contextualized.inventory, trend: { kind: 'None' } },
     }
 
-    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createWalkingSkeletonAnalysisPolicies()))
+    const analysis = unwrapSuccess(composeWeeklyAnalysis(facts, missingTrendContextualized, createCoreWeeklyAnalysisPolicies()))
 
     expect(analysis.alignment.alignment).toBe('Insufficient')
     expect(analysis.confidence.confidence).toBe('Unknown')
@@ -328,16 +328,16 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('fails when a required contextualized signal is missing', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
-    const analysis = composeWeeklyAnalysis(facts, { inventory: contextualized.inventory }, createWalkingSkeletonAnalysisPolicies())
+    const { facts, contextualized } = buildCoreWeeklyInputs()
+    const analysis = composeWeeklyAnalysis(facts, { inventory: contextualized.inventory }, createCoreWeeklyAnalysisPolicies())
 
     expect(analysis.ok).toBe(false)
   })
 
   it('rejects a narrative policy that forbids the generated headline language', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
     const restrictivePolicies = {
-      ...createWalkingSkeletonAnalysisPolicies(),
+      ...createCoreWeeklyAnalysisPolicies(),
       forbiddenNarrativePhrases: ['suggests'],
     }
 
@@ -353,10 +353,10 @@ describe('Walking-skeleton Analysis composition', () => {
   })
 
   it('applies provisional condition labels when enabled in policies', () => {
-    const { facts, contextualized } = buildWalkingSkeletonInputs()
+    const { facts, contextualized } = buildCoreWeeklyInputs()
 
     const provisionalPolicies = {
-      ...createWalkingSkeletonAnalysisPolicies(),
+      ...createCoreWeeklyAnalysisPolicies(),
       allowProvisionalConditionLabels: true,
     }
 

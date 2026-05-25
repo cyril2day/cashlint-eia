@@ -22,7 +22,7 @@ import {
   createInventorySignalIdentity,
   createPriceSignal,
   createPriceSignalIdentity,
-  createWalkingSkeletonInterpretationPolicies,
+  createCoreWeeklyInterpretationPolicies,
   detectAnomaly,
   validateHistoricalSeries,
   type HistoricalSeries,
@@ -98,13 +98,13 @@ const priceSignal = (value: number): Signal =>
   )
 
 const oneWeekPolicy = () =>
-  createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 1, 1)
+  createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('OneWeek')), 1, 1)
 
 const twoWeekPolicy = () =>
-  createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('TwoWeek')), 1, 1)
+  createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('TwoWeek')), 1, 1)
 
 const fourWeekPolicy = () =>
-  createWalkingSkeletonInterpretationPolicies(unwrapSuccess(parseComparisonWindow('FourWeek')), 1, 1)
+  createCoreWeeklyInterpretationPolicies(unwrapSuccess(parseComparisonWindow('FourWeek')), 1, 1)
 
 describe('HistoricalSeries validation', () => {
   it('accepts ordered compatible history and rejects duplicate, identity, unit, ordering, and coverage failures', () => {
