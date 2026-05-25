@@ -1,8 +1,8 @@
 import React from 'react'
 
-import type { CaveatPanelViewModel, PresentationCaveatViewModel } from '../contracts'
+import type { CaveatPanelViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
 import { ifElse } from '@/shared/fp'
-import { renderMaybeText } from '../utils/render-maybe-text'
+import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 
 const caveatItem = (caveat: PresentationCaveatViewModel) => (
   <li key={`${caveat.kind}-${caveat.message}`} className={`caveat-panel__item caveat-panel__item--${caveat.severity}`}>

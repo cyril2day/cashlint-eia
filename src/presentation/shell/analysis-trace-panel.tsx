@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { AnalysisTraceStepViewModel, AnalysisTraceViewModel, PresentationCaveatViewModel } from '../contracts'
+import type { AnalysisTraceStepViewModel, AnalysisTraceViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
 import { matchMaybe } from '@/shared/maybe'
 
 const caveat = (item: PresentationCaveatViewModel) => (

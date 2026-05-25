@@ -1,7 +1,7 @@
 import React from 'react'
 
-import type { AnalysisControlViewModel } from '../contracts'
-import { renderMaybeText } from '../utils/render-maybe-text'
+import type { AnalysisControlViewModel } from '@/presentation/contracts'
+import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 
 export function AnalysisControlPanel({ viewModel }: Readonly<{ readonly viewModel: AnalysisControlViewModel }>) {
   return (

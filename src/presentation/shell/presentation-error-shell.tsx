@@ -1,7 +1,7 @@
 import React from 'react'
 
-import type { PresentationErrorViewModel } from '../contracts/presentation-error-view-model'
-import { renderMaybeText } from '../utils/render-maybe-text'
+import type { PresentationErrorViewModel } from '@/presentation/contracts/presentation-error-view-model'
+import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 
 export function PresentationErrorShell({ title, message, correlationId, retryHint }: PresentationErrorViewModel) {
   return (

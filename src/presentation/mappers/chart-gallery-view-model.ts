@@ -1,4 +1,4 @@
 export {
   mapLiveAnalysisToChartsGalleryViewModel,
   mapSummaryToChartsGalleryViewModel,
-} from './rich-ui-view-models'
+} from '@/presentation/mappers/app-view-models'

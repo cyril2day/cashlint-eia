@@ -1,10 +1,10 @@
 import React from 'react'
 
-import { ChartPanel } from '../charts/components/chart-panel'
-import type { DetailPageViewModel } from '../contracts'
-import { DetailPageShell } from './detail-page-shell'
-import { DetailRowList } from './detail-row-list'
-import { SummaryCardShell } from './summary-card-shell'
+import { ChartPanel } from '@/presentation/charts/components/chart-panel'
+import type { DetailPageViewModel } from '@/presentation/contracts'
+import { DetailPageShell } from '@/presentation/shell/detail-page-shell'
+import { DetailRowList } from '@/presentation/shell/detail-row-list'
+import { SummaryCardShell } from '@/presentation/shell/summary-card-shell'
 
 export function DetailPageContent({ viewModel }: Readonly<{ readonly viewModel: DetailPageViewModel }>) {
   return (

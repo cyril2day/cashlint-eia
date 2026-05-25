@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { SummaryViewModel } from '../contracts'
+import type { SummaryViewModel } from '@/presentation/contracts'
 
 export function HeroAnalysisPanel({ viewModel }: Readonly<{ readonly viewModel: SummaryViewModel }>) {
   return (

@@ -14,9 +14,9 @@ import { both, cond, ifElse } from '@/shared/fp'
 import { getKey } from '@/shared/object'
 import { none, some, type Maybe } from '@/shared/maybe'
 
-import type { PresentationCaveatKind, PresentationCaveatViewModel } from '../contracts/presentation-caveat-view-model'
-import type { SummaryCardKind, SummaryCardViewModel } from '../contracts/summary-card-view-model'
-import type { SummaryDisplayState, SummaryViewModel } from '../contracts/summary-view-model'
+import type { PresentationCaveatKind, PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { SummaryCardKind, SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
+import type { SummaryDisplayState, SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 
 const createCaveat = (
   kind: PresentationCaveatKind,
@@ -217,7 +217,7 @@ export const mapWeeklyAnalysisToSummaryViewModel = (analysis: WeeklyAnalysis): S
     displayState: mapDisplayState(analysis),
     displayStateMessage: ifElse(
       (candidate: WeeklyAnalysis) => candidate.caveats.length > 0,
-      (): Maybe<string> => some('Walking-skeleton output includes caveats.'),
+      (): Maybe<string> => some('Live output includes caveats.'),
       (): Maybe<string> => none(),
     )(analysis),
   }

@@ -1,8 +1,8 @@
 import React from 'react'
 
-import type { DetailRowViewModel, PresentationCaveatViewModel } from '../contracts'
+import type { DetailRowViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
 import { matchMaybe } from '@/shared/maybe'
-import { renderMaybeText } from '../utils/render-maybe-text'
+import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 
 const rowCaveat = (caveat: PresentationCaveatViewModel) => (
   <li key={`${caveat.kind}-${caveat.message}`} className="detail-row-list__caveat">{caveat.message}</li>

@@ -1,7 +1,7 @@
 import React from 'react'
 
-import type { SummaryCardViewModel } from '../contracts/summary-card-view-model'
-import { renderMaybeText } from '../utils/render-maybe-text'
+import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
+import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 
 const summaryCardModifierByKind: Readonly<Record<SummaryCardViewModel['kind'], string>> = {
   inventory: 'oil-lint-shell__card--inventory',
