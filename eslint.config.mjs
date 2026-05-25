@@ -91,7 +91,7 @@ const restrictedSyntaxRules = [
   // Import declarations must be at the top
   // -----------------------------
   {
-    selector: "Program > :not(ImportDeclaration) ~ ImportDeclaration",
+    selector: "Program > :not(ImportDeclaration):not(ExpressionStatement[expression.value='use client']):not(ExpressionStatement[expression.value='use server']) ~ ImportDeclaration",
     message: 'Import declarations must appear before any other statements in the file.',
   },
 
