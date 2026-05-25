@@ -1,0 +1,1 @@
+export type LiveWeeklyCommand = Readonly<{ readonly reportWeekIso: string }>
