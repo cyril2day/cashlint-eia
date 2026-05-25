@@ -1,9 +1,9 @@
 import { bindResult, failure, success, type Result } from '@/shared/result'
 import { ifElse } from '@/shared/fp'
-import type { HistoricalObservation } from '../model/historical-observation'
-import type { Signal } from '../model/signal'
-import { formatSignalIdentity } from '../model/signal-identity'
-import { makeIncompatibleUnitsError, makeMissingPreviousObservationError, makeSignalIdentityMismatchError, type InterpretationError } from '../errors'
+import type { HistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import { formatSignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import { makeIncompatibleUnitsError, makeMissingPreviousObservationError, makeSignalIdentityMismatchError, type InterpretationError } from '@/contexts/interpretation/errors'
 
 const hasDifferentIdentity = (signal: Signal) => (observation: HistoricalObservation): boolean =>
   formatSignalIdentity(observation.identity) !== formatSignalIdentity(signal.identity)

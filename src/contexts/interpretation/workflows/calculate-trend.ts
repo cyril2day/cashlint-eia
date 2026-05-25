@@ -2,19 +2,19 @@ import { parseTrendDirection, type TrendDirection } from '@/contexts/measurement
 import { ifElse, cond } from '@/shared/fp'
 import { failure, success, bindResult, mapError, type Result } from '@/shared/result'
 
-import type { HistoricalObservation } from '../model/historical-observation'
-import type { HistoricalSeries } from '../model/historical-series'
-import type { Signal } from '../model/signal'
-import { createTrend, type Trend } from '../model/trend'
-import type { InterpretationPolicies } from '../policies'
+import type { HistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
+import type { HistoricalSeries } from '@/contexts/interpretation/model/historical-series'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import { createTrend, type Trend } from '@/contexts/interpretation/model/trend'
+import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import {
   makeInvalidComparisonWindowError,
   makeMissingPreviousObservationError,
   makeTrendComputationUndefinedError,
   makeUnsupportedComparisonWindowError,
   type InterpretationError,
-} from '../errors'
-import { matchPreviousObservation } from './match-previous-observation'
+} from '@/contexts/interpretation/errors'
+import { matchPreviousObservation } from '@/contexts/interpretation/workflows/match-previous-observation'
 
 const windowWeeks = (window: InterpretationPolicies['comparisonWindow']): Result<number, InterpretationError> =>
   cond<[InterpretationPolicies['comparisonWindow']], Result<number, InterpretationError>>([

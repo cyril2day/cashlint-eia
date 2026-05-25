@@ -1,13 +1,13 @@
 import { combineResults, type Result } from '@/shared/result'
-import type { ContextualizedSignalSet, CurrentSignalSet } from '../model/current-signal-set'
-import type { HistoricalSignalSet } from '../model/historical-signal-set'
-import { contextualizeSignal } from './contextualize-signal'
-import { contextualizeFullSignal } from './contextualize-full-signal'
-import { type PreviousObservationMap } from '../model/previous-observation-map'
-import { type InterpretationPolicies } from '../policies'
-import { type InterpretationError } from '../errors'
+import type { ContextualizedSignalSet, CurrentSignalSet } from '@/contexts/interpretation/model/current-signal-set'
+import type { HistoricalSignalSet } from '@/contexts/interpretation/model/historical-signal-set'
+import { contextualizeSignal } from '@/contexts/interpretation/workflows/contextualize-signal'
+import { contextualizeFullSignal } from '@/contexts/interpretation/workflows/contextualize-full-signal'
+import { type PreviousObservationMap } from '@/contexts/interpretation/model/previous-observation-map'
+import { type InterpretationPolicies } from '@/contexts/interpretation/policies'
+import { type InterpretationError } from '@/contexts/interpretation/errors'
 
-export const contextualizeWalkingSkeletonSignalSet = (
+export const contextualizeCoreWeeklySignalSet = (
   signals: CurrentSignalSet,
   previousObservations: PreviousObservationMap,
   policies: InterpretationPolicies,

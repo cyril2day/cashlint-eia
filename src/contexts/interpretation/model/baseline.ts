@@ -1,7 +1,7 @@
 import { brand } from '@/shared/domain'
 import type { Decimal } from '@/shared/decimal'
 import type { MeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
-import type { SignalIdentity } from './signal-identity'
+import type { SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
 
 const baselineBrand = Symbol('Baseline')
 

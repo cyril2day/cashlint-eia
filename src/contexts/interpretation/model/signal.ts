@@ -4,7 +4,7 @@ import { formatGeographyScope, type GeographyScope } from '@/contexts/measuremen
 import { formatMeasurementUnit, type MeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
 import { formatPetroleumSlice, type PetroleumSlice } from '@/contexts/measurement/model/petroleum-slice'
 import type { ReportWeek } from '@/contexts/measurement/model/report-week'
-import { formatSignalIdentity, type InventorySignalIdentity, type PriceSignalIdentity, type SignalIdentity } from './signal-identity'
+import { formatSignalIdentity, type InventorySignalIdentity, type PriceSignalIdentity, type SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
 
 const signalBrand = Symbol('Signal')
 

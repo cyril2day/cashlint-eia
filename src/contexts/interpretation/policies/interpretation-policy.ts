@@ -1,6 +1,6 @@
 import type { Decimal } from '@/shared/decimal'
 import type { ComparisonWindow } from '@/contexts/measurement/model/comparison-window'
-import type { SignalIdentity } from '../model/signal-identity'
+import type { SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
 
 export type InterpretationPolicies = Readonly<{
   readonly comparisonWindow: ComparisonWindow
@@ -48,7 +48,7 @@ export type SignalSpecificInterpretationPolicy = Readonly<{
   readonly baselineWindowObservations: number
 }>
 
-export const createWalkingSkeletonInterpretationPolicies = (
+export const createCoreWeeklyInterpretationPolicies = (
   comparisonWindow: ComparisonWindow,
   inventoryFlatThreshold: Decimal,
   priceFlatThreshold: Decimal,

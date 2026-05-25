@@ -5,28 +5,28 @@ import { cond, ifElse } from '@/shared/fp'
 import {
   createContextualizedSignal,
   type ContextualizedSignal,
-} from '../model/contextualized-signal'
+} from '@/contexts/interpretation/model/contextualized-signal'
 import {
   createAnomalyNotComputedCaveat,
   createBaselineNotComputedCaveat,
   createInsufficientBaselineHistoryCaveat,
   createTrendNotComputedCaveat,
   type InterpretationCaveat,
-} from '../model/interpretation-caveat'
-import type { HistoricalSeries } from '../model/historical-series'
+} from '@/contexts/interpretation/model/interpretation-caveat'
+import type { HistoricalSeries } from '@/contexts/interpretation/model/historical-series'
 import {
   createNotComputedAnomalyState,
   type InterpretationAnomalyState,
-} from '../model/anomaly-state'
-import type { Baseline, BaselineResult } from '../model/baseline'
-import type { Signal } from '../model/signal'
-import type { Trend } from '../model/trend'
-import type { InterpretationPolicies } from '../policies'
-import type { InterpretationError } from '../errors'
-import { validateHistoricalSeries } from './validate-historical-series'
-import { calculateTrend } from './calculate-trend'
-import { calculateBaseline } from './calculate-baseline'
-import { detectAnomaly } from './detect-anomaly'
+} from '@/contexts/interpretation/model/anomaly-state'
+import type { Baseline, BaselineResult } from '@/contexts/interpretation/model/baseline'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import type { Trend } from '@/contexts/interpretation/model/trend'
+import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
+import type { InterpretationError } from '@/contexts/interpretation/errors'
+import { validateHistoricalSeries } from '@/contexts/interpretation/workflows/validate-historical-series'
+import { calculateTrend } from '@/contexts/interpretation/workflows/calculate-trend'
+import { calculateBaseline } from '@/contexts/interpretation/workflows/calculate-baseline'
+import { detectAnomaly } from '@/contexts/interpretation/workflows/detect-anomaly'
 
 type ContextParts = Readonly<{
   readonly trend: Result<Trend, InterpretationError>

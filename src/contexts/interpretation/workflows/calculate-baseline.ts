@@ -6,14 +6,14 @@ import {
   createComputedBaselineResult,
   createNotComputedBaselineResult,
   type BaselineResult,
-} from '../model/baseline'
-import type { HistoricalSeries } from '../model/historical-series'
-import type { InterpretationPolicies } from '../policies'
+} from '@/contexts/interpretation/model/baseline'
+import type { HistoricalSeries } from '@/contexts/interpretation/model/historical-series'
+import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import {
   makeBaselineWindowTooShortError,
   makeInsufficientHistoryError,
   type InterpretationError,
-} from '../errors'
+} from '@/contexts/interpretation/errors'
 
 const average = (values: readonly number[]): number =>
   values.reduce((sum, value) => sum + value, 0) / values.length

@@ -1,5 +1,5 @@
-import type { Signal } from './signal'
-import type { ContextualizedSignal } from './contextualized-signal'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 
 export type CurrentSignalSet = Readonly<{
   readonly inventory: Signal

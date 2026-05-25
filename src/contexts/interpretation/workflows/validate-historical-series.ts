@@ -3,9 +3,9 @@ import { compareReportWeeks, formatReportWeekIso } from '@/contexts/measurement/
 import { cond, ifElse } from '@/shared/fp'
 import { failure, success, type Result } from '@/shared/result'
 
-import type { HistoricalSeries } from '../model/historical-series'
-import { formatSignalIdentity } from '../model/signal-identity'
-import type { InterpretationPolicies } from '../policies'
+import type { HistoricalSeries } from '@/contexts/interpretation/model/historical-series'
+import { formatSignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import {
   makeDuplicateObservationError,
   makeHistoricalSeriesInvalidError,
@@ -13,7 +13,7 @@ import {
   makeInsufficientHistoryError,
   makeSignalIdentityMismatchError,
   type InterpretationError,
-} from '../errors'
+} from '@/contexts/interpretation/errors'
 
 const identityMismatchExists = (series: HistoricalSeries): boolean =>
   series.observations.some(

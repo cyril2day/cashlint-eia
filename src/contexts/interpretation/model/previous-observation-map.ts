@@ -1,7 +1,7 @@
 import { none, some, type Maybe } from '@/shared/maybe'
 import { ifElse } from '@/shared/fp'
-import { formatSignalIdentity, type SignalIdentity } from './signal-identity'
-import type { HistoricalObservation } from './historical-observation'
+import { formatSignalIdentity, type SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import type { HistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
 
 export type PreviousObservationMap = Readonly<Record<string, HistoricalObservation>>
 

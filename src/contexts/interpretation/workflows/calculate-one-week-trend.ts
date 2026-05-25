@@ -2,11 +2,11 @@ import { bindResult, failure, mapError, success, type Result } from '@/shared/re
 import { cond, ifElse } from '@/shared/fp'
 import type { TrendDirection, TrendDirectionLabel } from '@/contexts/measurement/model/trend-direction'
 import { parseTrendDirection } from '@/contexts/measurement/model/trend-direction'
-import type { HistoricalObservation } from '../model/historical-observation'
-import { createTrend, type Trend } from '../model/trend'
-import type { Signal } from '../model/signal'
-import { type InterpretationPolicies } from '../policies'
-import { makeInvalidComparisonWindowError, makeTrendComputationUndefinedError, type InterpretationError } from '../errors'
+import type { HistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
+import { createTrend, type Trend } from '@/contexts/interpretation/model/trend'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import { type InterpretationPolicies } from '@/contexts/interpretation/policies'
+import { makeInvalidComparisonWindowError, makeTrendComputationUndefinedError, type InterpretationError } from '@/contexts/interpretation/errors'
 
 const isOneWeekWindow = (policies: InterpretationPolicies): boolean => policies.comparisonWindow.window === 'OneWeek'
 const isFiniteNumber = (candidate: number): boolean => Number.isFinite(candidate)

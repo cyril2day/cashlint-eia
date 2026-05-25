@@ -1,10 +1,10 @@
 import { brand } from '@/shared/domain'
 import { type Maybe, none, some } from '@/shared/maybe'
-import { formatSignal, type Signal } from './signal'
-import { type Trend } from './trend'
-import { type InterpretationAnomalyState } from './anomaly-state'
-import { type InterpretationCaveat } from './interpretation-caveat'
-import { type BaselineResult } from './baseline'
+import { formatSignal, type Signal } from '@/contexts/interpretation/model/signal'
+import { type Trend } from '@/contexts/interpretation/model/trend'
+import { type InterpretationAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
+import { type InterpretationCaveat } from '@/contexts/interpretation/model/interpretation-caveat'
+import { type BaselineResult } from '@/contexts/interpretation/model/baseline'
 
 const contextualizedSignalBrand = Symbol('ContextualizedSignal')
 

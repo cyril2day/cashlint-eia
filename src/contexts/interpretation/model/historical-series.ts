@@ -1,7 +1,7 @@
 import { brand } from '@/shared/domain'
 import { formatMeasurementUnit, type MeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
-import { formatSignalIdentity, type SignalIdentity } from './signal-identity'
-import type { HistoricalObservation } from './historical-observation'
+import { formatSignalIdentity, type SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import type { HistoricalObservation } from '@/contexts/interpretation/model/historical-observation'
 
 const historicalSeriesBrand = Symbol('HistoricalSeries')
 

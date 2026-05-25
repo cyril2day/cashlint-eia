@@ -1,5 +1,5 @@
 import { brand } from '@/shared/domain'
-import type { SignalIdentity } from './signal-identity'
+import type { SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
 
 const interpretationCaveatBrand = Symbol('InterpretationCaveat')
 

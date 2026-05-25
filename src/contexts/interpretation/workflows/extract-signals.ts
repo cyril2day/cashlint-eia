@@ -1,10 +1,10 @@
 import { combineResults, failure, success, type Result } from '@/shared/result'
 import { ifElse } from '@/shared/fp'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
-import { createInventorySignalIdentity, createPriceSignalIdentity } from '../model/signal-identity'
-import { createInventorySignal, createPriceSignal, type Signal } from '../model/signal'
-import { type CurrentSignalSet } from '../model/current-signal-set'
-import { makeMissingRequiredSignalError, type InterpretationError } from '../errors'
+import { createInventorySignalIdentity, createPriceSignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import { createInventorySignal, createPriceSignal, type Signal } from '@/contexts/interpretation/model/signal'
+import { type CurrentSignalSet } from '@/contexts/interpretation/model/current-signal-set'
+import { makeMissingRequiredSignalError, type InterpretationError } from '@/contexts/interpretation/errors'
 
 const createInventorySignalFromFacts = (inventory: WeeklyPetroleumFacts['inventories'][number]): Signal =>
   createInventorySignal(

@@ -2,7 +2,7 @@ import { brand } from '@/shared/domain'
 import type { Decimal } from '@/shared/decimal'
 import { formatMeasurementUnit, type MeasurementUnit } from '@/contexts/measurement/model/measurement-unit'
 import type { ReportWeek } from '@/contexts/measurement/model/report-week'
-import { formatSignalIdentity, type SignalIdentity } from './signal-identity'
+import { formatSignalIdentity, type SignalIdentity } from '@/contexts/interpretation/model/signal-identity'
 
 const historicalObservationBrand = Symbol('HistoricalObservation')
 

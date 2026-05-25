@@ -7,11 +7,11 @@ import {
   createNormalAnomalyState,
   createNotComputedAnomalyState,
   type InterpretationAnomalyState,
-} from '../model/anomaly-state'
-import type { Baseline } from '../model/baseline'
-import type { Signal } from '../model/signal'
-import { formatSignalIdentity } from '../model/signal-identity'
-import type { InterpretationPolicies } from '../policies'
+} from '@/contexts/interpretation/model/anomaly-state'
+import type { Baseline } from '@/contexts/interpretation/model/baseline'
+import type { Signal } from '@/contexts/interpretation/model/signal'
+import { formatSignalIdentity } from '@/contexts/interpretation/model/signal-identity'
+import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import {
   makeAnomalyThresholdInvalidError,
   makeBaselineDispersionUnavailableError,
@@ -19,7 +19,7 @@ import {
   makeInsufficientHistoryError,
   makeSignalIdentityMismatchError,
   type InterpretationError,
-} from '../errors'
+} from '@/contexts/interpretation/errors'
 
 const identityMatches = (signal: Signal, baseline: Baseline): boolean =>
   formatSignalIdentity(signal.identity) === formatSignalIdentity(baseline.identity)

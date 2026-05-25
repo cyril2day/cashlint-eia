@@ -1,1 +1,1 @@
-export * from './interpretation-policy'
+export * from '@/contexts/interpretation/policies/interpretation-policy'
