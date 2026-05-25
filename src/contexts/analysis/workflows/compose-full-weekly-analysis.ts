@@ -3,9 +3,9 @@ import { bindResult, bindResultStep, combineResults, failure, mapResult, success
 import { some, unwrap } from '@/shared/maybe'
 import type { ContextualizedSignal, ContextualizedSignalSet } from '@/contexts/interpretation/model'
 import type { Trend } from '@/contexts/interpretation/model/trend'
-import { type AnalysisCondition, createAnalysisCondition } from '../model/analysis-condition'
-import { createAnalysisConfidence, type AnalysisConfidence } from '../model/analysis-confidence'
-import { type AnalysisSignalAlignment } from '../model/analysis-signal-alignment'
+import { type AnalysisCondition, createAnalysisCondition } from '@/contexts/analysis/model/analysis-condition'
+import { createAnalysisConfidence, type AnalysisConfidence } from '@/contexts/analysis/model/analysis-confidence'
+import { type AnalysisSignalAlignment } from '@/contexts/analysis/model/analysis-signal-alignment'
 import {
   createLowConfidenceCaveat,
   createMixedEvidenceCaveat,
@@ -14,21 +14,21 @@ import {
   createPropagatedInterpretationCaveat,
   createPropagatedSystemBalanceCaveat,
   type AnalysisCaveat,
-} from '../model/analysis-caveat'
-import type { AnalysisKeySignals, AnalysisTrace, WeeklyAnalysis } from '../model/weekly-analysis'
-import type { FullAnalysisPolicies } from '../policies'
+} from '@/contexts/analysis/model/analysis-caveat'
+import type { AnalysisKeySignals, AnalysisTrace, WeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
+import type { FullAnalysisPolicies } from '@/contexts/analysis/policies'
 import {
   makeInvalidAnalysisPolicyError,
   makeUnableToComposeFullAnalysisError,
   makeUnableToSelectKeyDriversError,
   makeUnsupportedBalanceStateError,
   type AnalysisError,
-} from '../errors'
+} from '@/contexts/analysis/errors'
 import {
-  classifyWalkingSkeletonSignalAlignment,
-  selectWalkingSkeletonSignals,
-} from './compose-weekly-analysis'
-import { createFullWeeklyAnalysis } from '../model/weekly-analysis'
+  classifyCoreWeeklySignalAlignment,
+  selectCoreWeeklySignals,
+} from '@/contexts/analysis/workflows/compose-weekly-analysis'
+import { createFullWeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
 import type { SystemBalanceAnalysis, SystemBalanceState, BalanceDriver } from '@/contexts/system-balance/model'
 
 type FullAnalysisCompositionStart = Readonly<{
@@ -86,7 +86,7 @@ const validateFullAnalysisPolicies = (policies: FullAnalysisPolicies): Result<Fu
 }
 
 export const selectFullAnalysisSignals = (signals: Partial<ContextualizedSignalSet>): Result<AnalysisKeySignals, AnalysisError> =>
-  selectWalkingSkeletonSignals(signals)
+  selectCoreWeeklySignals(signals)
 
 const trendDirection = (signal: ContextualizedSignal): Trend['direction']['direction'] | undefined =>
   ifElse(
@@ -505,7 +505,7 @@ export const composeFullWeeklyAnalysis = (
     mapResult(selectFullAnalysisSignals(signals), keySignals => ({ systemBalanceAnalysis, keySignals, validatedPolicies }))
 
   const addAlignment = (context: FullAnalysisCompositionStart): Result<FullAnalysisCompositionStart, AnalysisError> =>
-    mapResult(classifyWalkingSkeletonSignalAlignment(context.keySignals), alignment => ({ ...context, alignment }))
+    mapResult(classifyCoreWeeklySignalAlignment(context.keySignals), alignment => ({ ...context, alignment }))
 
   const addCondition = (context: FullAnalysisCompositionStart): Result<FullAnalysisCompositionWithCondition, AnalysisError> =>
     buildConditionContext(context.systemBalanceAnalysis, context.keySignals, context.alignment, context.validatedPolicies)

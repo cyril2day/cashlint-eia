@@ -1,6 +1,6 @@
 import type { SystemBalanceState, BalanceDriverKind } from '@/contexts/system-balance/model'
-import type { AnalysisConfidenceLabel } from '../model/analysis-confidence'
-import type { AnalysisConditionLabel } from '../model/analysis-condition'
+import type { AnalysisConfidenceLabel } from '@/contexts/analysis/model/analysis-confidence'
+import type { AnalysisConditionLabel } from '@/contexts/analysis/model/analysis-condition'
 
 export type AnalysisPolicies = Readonly<{
   readonly allowProvisionalConditionLabels: boolean
@@ -40,7 +40,7 @@ export type FullAnalysisPolicies = AnalysisPolicies & Readonly<{
   }>
 }>
 
-export const createWalkingSkeletonAnalysisPolicies = (): AnalysisPolicies => ({
+export const createCoreWeeklyAnalysisPolicies = (): AnalysisPolicies => ({
   allowProvisionalConditionLabels: false,
   provisionalTighteningConditionLabel: 'Tightening',
   provisionalLooseningConditionLabel: 'Loosening',
@@ -57,7 +57,7 @@ export const createWalkingSkeletonAnalysisPolicies = (): AnalysisPolicies => ({
 })
 
 export const createFullAnalysisPolicies = (): FullAnalysisPolicies => ({
-  ...createWalkingSkeletonAnalysisPolicies(),
+  ...createCoreWeeklyAnalysisPolicies(),
   condition: {
     preferredBalanceStates: ['Tightening', 'Loosening', 'Balanced', 'Mixed', 'Unknown'],
     mixedEvidenceStates: ['Mixed', 'Unknown'],

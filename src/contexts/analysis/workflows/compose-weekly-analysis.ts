@@ -7,7 +7,7 @@ import { type Trend } from '@/contexts/interpretation/model/trend'
 import type { TrendDirectionLabel } from '@/contexts/measurement/model/trend-direction'
 import { getKey, hasKey } from '@/shared/object'
 
-import type { AnalysisPolicies } from '../policies'
+import type { AnalysisPolicies } from '@/contexts/analysis/policies'
 import {
   makeInvalidAnalysisPolicyError,
   makeInsufficientEvidenceForNarrativeError,
@@ -15,26 +15,26 @@ import {
   makeUnableToComposeExplanationError,
   makeUnableToComposeHeadlineError,
   makeUnableToComposeSummaryError,
-  makeUnableToDetermineWalkingSkeletonConditionError,
+  makeUnableToDetermineCoreWeeklyConditionError,
   type AnalysisError,
-} from '../errors'
-import { createAnalysisCondition, type AnalysisCondition } from '../model/analysis-condition'
-import { type AnalysisConditionLabel } from '../model/analysis-condition'
-import { createAnalysisConfidence, type AnalysisConfidence } from '../model/analysis-confidence'
-import { type AnalysisConfidenceLabel } from '../model/analysis-confidence'
+} from '@/contexts/analysis/errors'
+import { createAnalysisCondition, type AnalysisCondition } from '@/contexts/analysis/model/analysis-condition'
+import { type AnalysisConditionLabel } from '@/contexts/analysis/model/analysis-condition'
+import { createAnalysisConfidence, type AnalysisConfidence } from '@/contexts/analysis/model/analysis-confidence'
+import { type AnalysisConfidenceLabel } from '@/contexts/analysis/model/analysis-confidence'
 import {
   createAnalysisSignalAlignment,
   type AnalysisSignalAlignment,
-} from '../model/analysis-signal-alignment'
+} from '@/contexts/analysis/model/analysis-signal-alignment'
 import {
   createFullSystemBalanceNotComputedCaveat,
   createPropagatedInterpretationCaveat,
   createRefineryDataNotIncludedCaveat,
   createSupplyDataNotIncludedCaveat,
   type AnalysisCaveat,
-} from '../model/analysis-caveat'
+} from '@/contexts/analysis/model/analysis-caveat'
 import { createTrendNotComputedCaveat } from '@/contexts/interpretation/model/interpretation-caveat'
-import { createWeeklyAnalysis, type AnalysisKeySignals, type WeeklyAnalysis } from '../model/weekly-analysis'
+import { createWeeklyAnalysis, type AnalysisKeySignals, type WeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
 
 export type AnalysisSignalInput = Partial<ContextualizedSignalSet>
 
@@ -114,7 +114,7 @@ const ensureNonEmptyNarrative = (
     () => failure(makeEmptyNarrativeError(`${field} was empty`)),
   )()
 
-const validateWalkingSkeletonNarrative = (
+const validateCoreWeeklyNarrative = (
   text: string,
   policies: AnalysisPolicies,
   field: 'headline' | 'summary' | 'explanation',
@@ -156,11 +156,11 @@ const validatePolicies = (policies: AnalysisPolicies): Result<AnalysisPolicies, 
   return ifElse(
     isValidPolicies,
     () => success(policies),
-    () => failure(makeInvalidAnalysisPolicyError('walking-skeleton analysis policy is incomplete')),
+    () => failure(makeInvalidAnalysisPolicyError('core-weekly analysis policy is incomplete')),
   )(policies)
 }
 
-export const selectWalkingSkeletonSignals = (signals: AnalysisSignalInput): Result<AnalysisKeySignals, AnalysisError> => {
+export const selectCoreWeeklySignals = (signals: AnalysisSignalInput): Result<AnalysisKeySignals, AnalysisError> => {
   const inventoryResult = selectRequestedSignal(signals, 'inventory')
   const priceResult = selectRequestedSignal(signals, 'price')
 
@@ -180,7 +180,7 @@ const buildPropagatedSignalCaveats = (signal: ContextualizedSignal): readonly An
   )(signal.trend)
 }
 
-export const classifyWalkingSkeletonSignalAlignment = (
+export const classifyCoreWeeklySignalAlignment = (
   signals: AnalysisKeySignals,
 ): Result<AnalysisSignalAlignment, AnalysisError> => {
   const inventoryDirection = getTrendDirection(signals.inventory)
@@ -213,12 +213,12 @@ export const classifyWalkingSkeletonSignalAlignment = (
     ],
     [
       () => true,
-      () => failure(makeUnableToDetermineWalkingSkeletonConditionError('unable to classify inventory and price alignment')),
+      () => failure(makeUnableToDetermineCoreWeeklyConditionError('unable to classify inventory and price alignment')),
     ],
   ])()
 }
 
-export const assignWalkingSkeletonCondition = (
+export const assignCoreWeeklyCondition = (
   alignment: AnalysisSignalAlignment,
   policies: AnalysisPolicies,
 ): Result<AnalysisCondition, AnalysisError> =>
@@ -253,11 +253,11 @@ export const assignWalkingSkeletonCondition = (
     [() => alignment.alignment === 'Insufficient', () => success(createAnalysisCondition(policies.insufficientConditionLabel))],
     [
       () => true,
-      () => failure(makeUnableToDetermineWalkingSkeletonConditionError(`unsupported alignment: ${alignment.alignment}`)),
+      () => failure(makeUnableToDetermineCoreWeeklyConditionError(`unsupported alignment: ${alignment.alignment}`)),
     ],
   ])()
 
-export const assignWalkingSkeletonConfidence = (
+export const assignCoreWeeklyConfidence = (
   alignment: AnalysisSignalAlignment,
   policies: AnalysisPolicies,
 ): Result<AnalysisConfidence, AnalysisError> => {
@@ -361,7 +361,7 @@ const formatNonPropagatedCaveatReasons = (caveats: readonly AnalysisCaveat[]): s
     )
     .join(' ')
 
-export const buildWalkingSkeletonCaveats = (
+export const buildCoreWeeklyCaveats = (
   signals: AnalysisKeySignals,
   policies: AnalysisPolicies,
 ): readonly AnalysisCaveat[] => {
@@ -374,17 +374,17 @@ export const buildWalkingSkeletonCaveats = (
   ])
 }
 
-export const buildWalkingSkeletonHeadline = (
+export const buildCoreWeeklyHeadline = (
   signals: AnalysisKeySignals,
   alignment: AnalysisSignalAlignment,
   policies: AnalysisPolicies,
 ): Result<string, AnalysisError> => {
   const headline = headlineForSignals(signals, alignment)
 
-  return validateWalkingSkeletonNarrative(headline, policies, 'headline', makeUnableToComposeHeadlineError)
+  return validateCoreWeeklyNarrative(headline, policies, 'headline', makeUnableToComposeHeadlineError)
 }
 
-export const buildWalkingSkeletonSummary = (
+export const buildCoreWeeklySummary = (
   signals: AnalysisKeySignals,
   alignment: AnalysisSignalAlignment,
   caveats: readonly AnalysisCaveat[],
@@ -405,7 +405,7 @@ export const buildWalkingSkeletonSummary = (
     formatNonPropagatedCaveatReasons(caveats),
   )
 
-  return validateWalkingSkeletonNarrative(summary, policies, 'summary', makeUnableToComposeSummaryError)
+  return validateCoreWeeklyNarrative(summary, policies, 'summary', makeUnableToComposeSummaryError)
 }
 
 const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
@@ -416,7 +416,7 @@ const isPropagatedTrendNotComputed = (caveat: AnalysisCaveat): boolean =>
     () => false,
   )(caveat)
 
-export const buildWalkingSkeletonExplanation = (
+export const buildCoreWeeklyExplanation = (
   signals: AnalysisKeySignals,
   alignment: AnalysisSignalAlignment,
   caveats: readonly AnalysisCaveat[],
@@ -437,7 +437,7 @@ export const buildWalkingSkeletonExplanation = (
     trendNote,
   )
 
-  return validateWalkingSkeletonNarrative(explanation, policies, 'explanation', makeUnableToComposeExplanationError)
+  return validateCoreWeeklyNarrative(explanation, policies, 'explanation', makeUnableToComposeExplanationError)
 }
 
 const assembleWeeklyAnalysisResult = (
@@ -481,7 +481,7 @@ const addAlignment = (
   context: AnalysisCompositionStart,
 ): Result<AnalysisCompositionWithAlignment, AnalysisError> =>
   mapResult(
-    classifyWalkingSkeletonSignalAlignment(context.keySignals),
+    classifyCoreWeeklySignalAlignment(context.keySignals),
     alignment => ({ ...context, alignment }),
   )
 
@@ -489,7 +489,7 @@ const addCondition = (
   context: AnalysisCompositionWithAlignment,
 ): Result<AnalysisCompositionWithCondition, AnalysisError> =>
   mapResult(
-    assignWalkingSkeletonCondition(context.alignment, context.validatedPolicies),
+    assignCoreWeeklyCondition(context.alignment, context.validatedPolicies),
     condition => ({ ...context, condition }),
   )
 
@@ -497,7 +497,7 @@ const addConfidence = (
   context: AnalysisCompositionWithCondition,
 ): Result<AnalysisCompositionWithConfidence, AnalysisError> =>
   mapResult(
-    assignWalkingSkeletonConfidence(context.alignment, context.validatedPolicies),
+    assignCoreWeeklyConfidence(context.alignment, context.validatedPolicies),
     confidence => ({ ...context, confidence }),
   )
 
@@ -506,14 +506,14 @@ const addCaveats = (
 ): Result<AnalysisCompositionWithCaveats, AnalysisError> =>
   success({
     ...context,
-    caveats: buildWalkingSkeletonCaveats(context.keySignals, context.validatedPolicies),
+    caveats: buildCoreWeeklyCaveats(context.keySignals, context.validatedPolicies),
   })
 
 const addHeadline = (
   context: AnalysisCompositionWithCaveats,
 ): Result<AnalysisCompositionWithHeadline, AnalysisError> =>
   mapResult(
-    buildWalkingSkeletonHeadline(context.keySignals, context.alignment, context.validatedPolicies),
+    buildCoreWeeklyHeadline(context.keySignals, context.alignment, context.validatedPolicies),
     headline => ({ ...context, headline }),
   )
 
@@ -521,7 +521,7 @@ const addSummary = (
   context: AnalysisCompositionWithHeadline,
 ): Result<AnalysisCompositionWithSummary, AnalysisError> =>
   mapResult(
-    buildWalkingSkeletonSummary(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
+    buildCoreWeeklySummary(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
     summary => ({ ...context, summary }),
   )
 
@@ -529,7 +529,7 @@ const addExplanation = (
   context: AnalysisCompositionWithSummary,
 ): Result<AnalysisCompositionWithExplanation, AnalysisError> =>
   mapResult(
-    buildWalkingSkeletonExplanation(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
+    buildCoreWeeklyExplanation(context.keySignals, context.alignment, context.caveats, context.validatedPolicies),
     explanation => ({ ...context, explanation }),
   )
 
@@ -562,7 +562,7 @@ const composeFromKeySignals = (
 const addSelectedSignals =
   (signals: AnalysisSignalInput) =>
   (validatedPolicies: AnalysisPolicies): Result<AnalysisCompositionReady, AnalysisError> =>
-    mapResult(selectWalkingSkeletonSignals(signals), keySignals => ({ validatedPolicies, keySignals }))
+    mapResult(selectCoreWeeklySignals(signals), keySignals => ({ validatedPolicies, keySignals }))
 
 const composeValidatedAnalysis =
   (facts: WeeklyPetroleumFacts) =>

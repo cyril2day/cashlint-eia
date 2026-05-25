@@ -1,1 +1,1 @@
-export * from './analysis-policies'
+export * from '@/contexts/analysis/policies/analysis-policies'

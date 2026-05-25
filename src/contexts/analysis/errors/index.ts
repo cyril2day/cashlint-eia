@@ -1,1 +1,1 @@
-export * from './analysis-error'
+export * from '@/contexts/analysis/errors/analysis-error'

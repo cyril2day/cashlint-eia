@@ -5,7 +5,7 @@ export type AnalysisError =
   | Readonly<{ readonly kind: 'MissingContextualizedSignal'; readonly missing: 'inventory' | 'price' }>
   | Readonly<{ readonly kind: 'MissingSystemBalanceAnalysis'; readonly reason: string }>
   | Readonly<{ readonly kind: 'InvalidAnalysisPolicy'; readonly reason: string }>
-  | Readonly<{ readonly kind: 'UnableToDetermineWalkingSkeletonCondition'; readonly reason: string }>
+  | Readonly<{ readonly kind: 'UnableToDetermineCoreWeeklyCondition'; readonly reason: string }>
   | Readonly<{ readonly kind: 'UnableToComposeHeadline'; readonly reason: string }>
   | Readonly<{ readonly kind: 'UnableToComposeSummary'; readonly reason: string }>
   | Readonly<{ readonly kind: 'UnableToComposeExplanation'; readonly reason: string }>
@@ -38,8 +38,8 @@ export const makeInvalidAnalysisPolicyError = (reason: string): AnalysisError =>
   reason,
 })
 
-export const makeUnableToDetermineWalkingSkeletonConditionError = (reason: string): AnalysisError => ({
-  kind: 'UnableToDetermineWalkingSkeletonCondition',
+export const makeUnableToDetermineCoreWeeklyConditionError = (reason: string): AnalysisError => ({
+  kind: 'UnableToDetermineCoreWeeklyCondition',
   reason,
 })
 
