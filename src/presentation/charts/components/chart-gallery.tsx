@@ -1,7 +1,7 @@
 import React from 'react'
 
 import type { ChartGalleryStateSummaryItemViewModel, ChartsGalleryViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
-import { ChartPanel } from './chart-panel'
+import { ChartPanel } from '@/presentation/charts/components/chart-panel'
 
 const caveatItem = (caveat: PresentationCaveatViewModel) => (
   <li key={`${caveat.kind}-${caveat.message}`} className="chart-gallery__caveat">{caveat.message}</li>

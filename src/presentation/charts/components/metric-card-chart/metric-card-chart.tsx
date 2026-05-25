@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { MetricCardComparisonViewModel, MetricCardViewModel } from '../../contracts'
+import type { MetricCardComparisonViewModel, MetricCardViewModel } from '@/presentation/charts/contracts'
 import { matchMaybe } from '@/shared/maybe'
 
 const maybeItem = (label: string, value: MetricCardViewModel['trendLabel']) =>

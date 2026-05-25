@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '../../contracts'
+import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '@/presentation/charts/contracts'
 import { ifElse } from '@/shared/fp'
 import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
 import { matchMaybe } from '@/shared/maybe'

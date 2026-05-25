@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '../../contracts'
+import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '@/presentation/charts/contracts'
 import { ifElse } from '@/shared/fp'
 import { matchMaybe } from '@/shared/maybe'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'

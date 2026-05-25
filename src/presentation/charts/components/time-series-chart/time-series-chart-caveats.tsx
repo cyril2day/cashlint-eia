@@ -1,5 +1,5 @@
 import React from 'react'
-import type { ChartCaveatViewModel } from '../../contracts'
+import type { ChartCaveatViewModel } from '@/presentation/charts/contracts'
 
 type CaveatsProps = Readonly<{
   readonly caveats: readonly ChartCaveatViewModel[]

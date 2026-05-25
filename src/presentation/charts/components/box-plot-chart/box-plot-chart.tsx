@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { BoxPlotMarkerViewModel, BoxPlotViewModel, FiveNumberSummaryViewModel } from '../../contracts'
+import type { BoxPlotMarkerViewModel, BoxPlotViewModel, FiveNumberSummaryViewModel } from '@/presentation/charts/contracts'
 import { matchMaybe } from '@/shared/maybe'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import {

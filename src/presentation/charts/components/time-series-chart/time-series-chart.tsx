@@ -1,13 +1,13 @@
 import React from 'react'
 
-import type { TimeSeriesChartViewModel } from '../../contracts'
-import type { TimeSeriesChartAxisTick, TimeSeriesChartGeometry } from '../../computation'
+import type { TimeSeriesChartViewModel } from '@/presentation/charts/contracts'
+import type { TimeSeriesChartAxisTick, TimeSeriesChartGeometry } from '@/presentation/charts/computation'
 import { formatDecimalCoordinate } from '@/shared/decimal'
 import { chartValueAxisLabel } from '@/shared/chart-svg'
-import { TimeSeriesChartBaselineBand } from './time-series-chart-baseline-band'
-import { TimeSeriesChartLinePath } from './time-series-chart-line-path'
-import { TimeSeriesChartCurrentMarker } from './time-series-chart-current-marker'
-import { TimeSeriesChartCaveats } from './time-series-chart-caveats'
+import { TimeSeriesChartBaselineBand } from '@/presentation/charts/components/time-series-chart/time-series-chart-baseline-band'
+import { TimeSeriesChartLinePath } from '@/presentation/charts/components/time-series-chart/time-series-chart-line-path'
+import { TimeSeriesChartCurrentMarker } from '@/presentation/charts/components/time-series-chart/time-series-chart-current-marker'
+import { TimeSeriesChartCaveats } from '@/presentation/charts/components/time-series-chart/time-series-chart-caveats'
 
 type TimeSeriesChartProps = Readonly<{
   readonly viewModel: TimeSeriesChartViewModel

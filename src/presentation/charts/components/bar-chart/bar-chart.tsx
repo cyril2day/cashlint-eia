@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { BarChartPointViewModel, BarChartViewModel } from '../../contracts'
+import type { BarChartPointViewModel, BarChartViewModel } from '@/presentation/charts/contracts'
 import { formatDecimalCssPercent } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
 

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { VarianceChartEntryViewModel, VarianceChartViewModel } from '../../contracts'
+import type { VarianceChartEntryViewModel, VarianceChartViewModel } from '@/presentation/charts/contracts'
 import { ifElse } from '@/shared/fp'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import { renderMaybeText } from '@/presentation/utils/render-maybe-text'

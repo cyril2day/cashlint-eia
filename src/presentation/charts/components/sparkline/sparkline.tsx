@@ -1,12 +1,12 @@
 import React from 'react'
 
-import type { SparklinePointViewModel, SparklineViewModel } from '../../contracts'
-import type { SparklineGeometry } from '../../computation'
+import type { SparklinePointViewModel, SparklineViewModel } from '@/presentation/charts/contracts'
+import type { SparklineGeometry } from '@/presentation/charts/computation'
 import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
-import { SparklineLinePath } from './sparkline-line-path'
-import { SparklineCurrentMarker } from './sparkline-current-marker'
+import { SparklineLinePath } from '@/presentation/charts/components/sparkline/sparkline-line-path'
+import { SparklineCurrentMarker } from '@/presentation/charts/components/sparkline/sparkline-current-marker'
 
 type SparklineProps = Readonly<{
   readonly viewModel: SparklineViewModel
