@@ -1,9 +1,9 @@
 import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
 
-import type { PresentationCaveatViewModel } from '../contracts/presentation-caveat-view-model'
-import type { SummaryCardViewModel } from '../contracts/summary-card-view-model'
-import type { SummaryViewModel } from '../contracts/summary-view-model'
+import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
+import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
+import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 
 const reportWeekText = '2026-05-19'
 const geographyText = 'USTotal'
@@ -14,7 +14,7 @@ const summaryDisplayStateMessageByKind = cond<
   string
 >([
   [candidate => candidate === 'empty', () => 'No supported summary data is available for this scope.'],
-  [candidate => candidate === 'partial', () => 'Walking-skeleton output includes caveats.'],
+  [candidate => candidate === 'partial', () => 'Live output includes caveats.'],
   [candidate => candidate === 'error', () => 'Safe error content is available when needed.'],
   [() => true, () => 'Summary output is complete.'],
 ])
@@ -67,8 +67,8 @@ const presentationCaveats: readonly PresentationCaveatViewModel[] = [
 export const createOilLintPresentationViewModel = (displayState: SummaryViewModel['displayState']): SummaryViewModel => ({
   reportWeekText,
   geographyText,
-  headline: 'Walking-skeleton summary ready for presentation',
-  summary: 'Inventory and price output are rendered from the presentation contract, with caveats kept visible.',
+  headline: 'Weekly petroleum summary ready',
+  summary: 'Inventory and price readings are presented with caveats kept visible for review.',
   conditionLabel: 'Unknown',
   confidenceLabel: 'Medium',
   cards: [inventoryCard, priceCard],

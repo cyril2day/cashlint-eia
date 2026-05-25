@@ -121,7 +121,7 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
       drilldownTarget: { kind: 'None' },
     }))
 
-    expect(viewModel.displayStateMessage).toEqual({ kind: 'Some', value: 'Walking-skeleton output includes caveats.' })
+    expect(viewModel.displayStateMessage).toEqual({ kind: 'Some', value: 'Live output includes caveats.' })
 
     expect(viewModel.caveats.map(caveat => caveat.kind)).toEqual([
       'full-system-balance-not-computed',
