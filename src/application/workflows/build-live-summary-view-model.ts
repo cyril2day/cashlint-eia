@@ -13,21 +13,34 @@ import type { PreviousObservationMap } from '@/contexts/interpretation/model/pre
 import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import { parseComparisonWindow } from '@/contexts/measurement/model'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
-import { composeSystemBalanceAnalysis, defaultSystemBalancePolicy } from '@/contexts/system-balance'
+import { composeSystemBalanceAnalysis, defaultSystemBalancePolicy, type SystemBalanceAnalysis } from '@/contexts/system-balance'
+import type { ChartsGalleryViewModel } from '@/presentation/contracts/charts-gallery-view-model'
 import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
-import { mapWeeklyAnalysisToSummaryViewModel } from '@/presentation/mappers'
+import { mapLiveAnalysisToChartsGalleryViewModel, mapWeeklyAnalysisToSummaryViewModel } from '@/presentation/mappers'
+import type { HistoricalSignalPointInput } from '@/presentation/charts/mappers'
 import { ifElse } from '@/shared/fp'
 import { bindAsyncResult } from '@/shared/async-result'
-import { bindResult, failure, mapError, mapResult, success, type Result } from '@/shared/result'
+import { bindResult, combineResults, failure, mapError, mapResult, sequenceResults, success, type Result } from '@/shared/result'
 import { none, some, type Maybe } from '@/shared/maybe'
 
 const liveInventoryFlatThreshold = 1
 const livePriceFlatThreshold = 1
 
 type LiveSummaryInput = Readonly<{
+  readonly factSeries: readonly WeeklyPetroleumFacts[]
   readonly currentFacts: WeeklyPetroleumFacts
   readonly previousFacts: Maybe<WeeklyPetroleumFacts>
   readonly previousObservations: PreviousObservationMap
+}>
+
+export type LiveRichUiViewModel = Readonly<{
+  readonly summary: SummaryViewModel
+  readonly chartsGallery: ChartsGalleryViewModel
+}>
+
+type LiveChartHistory = Readonly<{
+  readonly inventory: readonly HistoricalSignalPointInput[]
+  readonly price: readonly HistoricalSignalPointInput[]
 }>
 
 const createLiveInterpretationPolicies = (): Result<InterpretationPolicies, ApplicationError> =>
@@ -120,7 +133,7 @@ const buildLiveSummaryInput = (
     currentFacts =>
       mapResult(
         buildPreviousObservationMapFromSeries(factSeries),
-        previousObservations => ({ currentFacts, previousFacts, previousObservations }),
+        previousObservations => ({ factSeries, currentFacts, previousFacts, previousObservations }),
       ),
   )
 }
@@ -175,6 +188,100 @@ const buildLiveSummaryResult = (
   )
 }
 
+const toInventoryHistoricalPoint = (signals: CurrentSignalSet): HistoricalSignalPointInput => ({
+  reportWeek: signals.inventory.reportWeek,
+  value: signals.inventory.value,
+})
+
+const toPriceHistoricalPoint = (signals: CurrentSignalSet): HistoricalSignalPointInput => ({
+  reportWeek: signals.price.reportWeek,
+  value: signals.price.value,
+})
+
+const extractCurrentSignalSetFromFacts = (
+  facts: WeeklyPetroleumFacts,
+): Result<CurrentSignalSet, ApplicationError> =>
+  mapError(extractCurrentSignalSet(facts), toMeasurementAppError)
+
+const buildLiveChartHistory = (
+  factSeries: readonly WeeklyPetroleumFacts[],
+): Result<LiveChartHistory, ApplicationError> =>
+  mapResult(
+    sequenceResults(factSeries.map(extractCurrentSignalSetFromFacts)),
+    signals => ({
+      inventory: signals.map(toInventoryHistoricalPoint),
+      price: signals.map(toPriceHistoricalPoint),
+    }),
+  )
+
+const hasPreviousFacts = (input: LiveSummaryInput): boolean => input.previousFacts.kind === 'Some'
+
+const buildSystemBalanceMaybe = (
+  input: LiveSummaryInput,
+): Result<Maybe<SystemBalanceAnalysis>, ApplicationError> =>
+  ifElse(
+    hasPreviousFacts,
+    candidate =>
+      mapResult(
+        mapError(
+          composeSystemBalanceAnalysis(some(candidate.currentFacts), candidate.previousFacts, defaultSystemBalancePolicy),
+          toMeasurementAppError,
+        ),
+        some,
+      ),
+    () => success(none()),
+  )(input)
+
+const buildRichChartsForSignals = (
+  summary: SummaryViewModel,
+  contextualizedSignals: ContextualizedSignalSet,
+): ((systemBalance: Maybe<SystemBalanceAnalysis>, history: LiveChartHistory) => LiveRichUiViewModel) =>
+  (systemBalance, history) => ({
+    summary,
+    chartsGallery: mapLiveAnalysisToChartsGalleryViewModel({
+      summary,
+      signals: contextualizedSignals,
+      systemBalance,
+      inventoryHistory: history.inventory,
+      priceHistory: history.price,
+    }),
+  })
+
+const combineRichUiParts = (
+  input: LiveSummaryInput,
+  contextualizedSignals: ContextualizedSignalSet,
+) =>
+  (summary: SummaryViewModel): Result<LiveRichUiViewModel, ApplicationError> =>
+    combineResults(
+      buildSystemBalanceMaybe(input),
+      buildLiveChartHistory(input.factSeries),
+      buildRichChartsForSignals(summary, contextualizedSignals),
+    )
+
+const buildLiveRichUiForSignals = (
+  input: LiveSummaryInput,
+) =>
+  (contextualizedSignals: ContextualizedSignalSet): Result<LiveRichUiViewModel, ApplicationError> => {
+    const summaryResult = buildLiveSummaryResult(input)
+
+    return bindResult(summaryResult, combineRichUiParts(input, contextualizedSignals))
+  }
+
+const buildLiveRichUiResult = (
+  input: LiveSummaryInput,
+): Result<LiveRichUiViewModel, ApplicationError> => {
+  const interpretationPoliciesResult = createLiveInterpretationPolicies()
+  const contextualizedSignalsResult = bindResult(
+    interpretationPoliciesResult,
+    interpretationPolicies => buildContextualizedSignals(input.currentFacts, input.previousObservations)(interpretationPolicies),
+  )
+
+  return bindResult(
+    contextualizedSignalsResult,
+    buildLiveRichUiForSignals(input),
+  )
+}
+
 export const buildLiveSummaryViewModel = (
   dependencies: WalkingSkeletonDependencies,
 ) =>
@@ -182,4 +289,13 @@ export const buildLiveSummaryViewModel = (
     bindAsyncResult(
       buildWalkingSkeletonFactSeries(dependencies)(command),
       factSeries => Promise.resolve(bindResult(buildLiveSummaryInput(factSeries), buildLiveSummaryResult)),
+    )
+
+export const buildLiveRichUiViewModel = (
+  dependencies: WalkingSkeletonDependencies,
+) =>
+  (command: WalkingSkeletonCommand) =>
+    bindAsyncResult(
+      buildWalkingSkeletonFactSeries(dependencies)(command),
+      factSeries => Promise.resolve(bindResult(buildLiveSummaryInput(factSeries), buildLiveRichUiResult)),
     )
