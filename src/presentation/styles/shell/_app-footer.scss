@@ -1,0 +1,32 @@
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block-start: var(--space-4);
+  border-block-start: var(--oil-lint-panel-border);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.app-footer__copy,
+.app-footer__product {
+  margin: 0;
+}
+
+.app-footer__product {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.app-footer__link {
+  color: var(--color-link);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.app-footer__link:hover,
+.app-footer__link:focus-visible {
+  color: var(--color-link-hover);
+}
