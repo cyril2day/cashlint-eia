@@ -395,8 +395,8 @@ export const buildWalkingSkeletonSummary = (
       anyPass([() => alignment.alignment === 'AlignedTightening', () => alignment.alignment === 'AlignedLoosening']),
       () => 'This is consistent with a tighter or looser signal, but full system balance is not computed.',
     ],
-    [() => alignment.alignment === 'Mixed', () => 'The signals are mixed, so the walking skeleton stays cautious.'],
-    [() => true, () => 'The trend context is incomplete, so the walking skeleton stays cautious.'],
+    [() => alignment.alignment === 'Mixed', () => 'The signals are mixed, so this read stays cautious.'],
+    [() => true, () => 'The trend context is incomplete, so this read stays cautious.'],
   ])()
 
   const summary = composeNarrative(

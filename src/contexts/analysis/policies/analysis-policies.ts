@@ -49,9 +49,9 @@ export const createWalkingSkeletonAnalysisPolicies = (): AnalysisPolicies => ({
   alignedConfidenceLabel: 'Medium',
   mixedConfidenceLabel: 'Low',
   insufficientConfidenceLabel: 'Unknown',
-  fullSystemBalanceNotComputedReason: 'Full system balance is not computed in this walking skeleton.',
-  refineryDataNotIncludedReason: 'Refinery data is not included in this walking skeleton.',
-  supplyDataNotIncludedReason: 'Supply data is not included in this walking skeleton.',
+  fullSystemBalanceNotComputedReason: 'Full system balance is not part of this weekly run yet.',
+  refineryDataNotIncludedReason: 'Refinery data is not part of this weekly run yet.',
+  supplyDataNotIncludedReason: 'Supply data is not part of this weekly run yet.',
   preferredNarrativePhrases: ['suggests', 'indicates', 'supports', 'is consistent with', 'appears to'],
   forbiddenNarrativePhrases: ['proves', 'guarantees', 'will cause', 'must mean', 'certainly'],
 })
