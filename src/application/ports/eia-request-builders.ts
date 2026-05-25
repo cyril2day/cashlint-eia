@@ -3,21 +3,22 @@ import { some } from '@/shared/maybe'
 
 const refinerySeriesIds: readonly string[] = ['WCRRIUS2', 'WGIRIUS2', 'WOCLEUS2', 'WPULEUS3']
 const supplySeriesIds: readonly string[] = ['WCRFPUS2', 'WCRIMUS2', 'WCREXUS2']
+const weeklyHistoryRowCount = '12'
 
-const latestWeeklyRowParams = {
+const weeklyHistoryRowParams = {
   frequency: 'weekly',
   'data[]': 'value',
   'sort[0][column]': 'period',
   'sort[0][direction]': 'desc',
   offset: '0',
-  length: '2',
+  length: weeklyHistoryRowCount,
 }
 
 export const buildInventoryRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/stoc/wstk/data/',
   params: some({
-    ...latestWeeklyRowParams,
-    start: reportWeekIso,
+    ...weeklyHistoryRowParams,
+    end: reportWeekIso,
     'facets[series][]': 'WCRSTUS1',
     'facets[duoarea][]': 'NUS',
   }),
@@ -26,8 +27,8 @@ export const buildInventoryRequest = (reportWeekIso: string): EiaRequest => ({
 export const buildPriceRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/pri/spt/data/',
   params: some({
-    ...latestWeeklyRowParams,
-    start: reportWeekIso,
+    ...weeklyHistoryRowParams,
+    end: reportWeekIso,
     'facets[series][]': 'RWTC',
   }),
 })
@@ -39,8 +40,8 @@ const buildSeriesRequest = (
 ): EiaRequest => ({
   endpoint,
   params: some({
-    ...latestWeeklyRowParams,
-    start: reportWeekIso,
+    ...weeklyHistoryRowParams,
+    end: reportWeekIso,
     'facets[series][]': seriesId,
   }),
 })
