@@ -12,9 +12,9 @@ import type {
   VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
 import { composeSparklineGeometry, composeTimeSeriesChartGeometry, createChartDimensions } from '@/presentation/charts'
-import type { ChartPanelViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
+import type { ChartPanelKind, ChartPanelViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
 import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
-import { ifElse } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 import type { Result, SuccessResult } from '@/shared/result'
 import { ChartStateMessage } from './chart-state-message'
 import { TimeSeriesChart } from './time-series-chart/time-series-chart'
@@ -158,17 +158,28 @@ const renderAfterTimeSeries = (panel: ChartPanelViewModel): ReactNode =>
 const renderChartPayload = (panel: ChartPanelViewModel): ReactNode =>
   ifElse(isTimeSeriesPanel, renderTimeSeriesPanel, renderAfterTimeSeries)(panel)
 
+const chartKindLabel = (chartKind: ChartPanelKind): string =>
+  cond<[ChartPanelKind], string>([
+    [candidate => candidate === 'TimeSeries', () => 'Time series'],
+    [candidate => candidate === 'MetricCard', () => 'Metric card'],
+    [candidate => candidate === 'BarChart', () => 'Driver bars'],
+    [candidate => candidate === 'BoxPlot', () => 'Box plot'],
+    [candidate => candidate === 'AreaChart', () => 'Area chart'],
+    [candidate => candidate === 'VarianceChart', () => 'Baseline comparison'],
+    [() => true, candidate => candidate],
+  ])(chartKind)
+
 export function ChartPanel({ viewModel }: Readonly<{ readonly viewModel: ChartPanelViewModel }>) {
   return (
     <section className={`chart-panel chart-panel--${viewModel.chartKind}`} aria-label={viewModel.accessibilitySummary}>
       <header className="chart-panel__header">
         <div className="chart-panel__heading">
-          <p className="chart-panel__kind">{viewModel.chartKind}</p>
+          <p className="chart-panel__kind">{chartKindLabel(viewModel.chartKind)}</p>
           <h3 className="chart-panel__title">{viewModel.title}</h3>
         </div>
         <span className="chart-panel__state">{viewModel.state}</span>
       </header>
-      <p className="chart-panel__description">{renderMaybeText('Chart state available.')(viewModel.description)}</p>
+      <p className="chart-panel__description">{renderMaybeText('This panel has a display state, but no extra note.')(viewModel.description)}</p>
       <div className="chart-panel__visual" role="img" aria-label={viewModel.chartViewModel.accessibilitySummary}>
         {renderChartPayload(viewModel)}
       </div>

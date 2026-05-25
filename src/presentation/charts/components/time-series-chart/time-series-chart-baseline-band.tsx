@@ -7,15 +7,21 @@ type BaselineBandProps = Readonly<{
   readonly width: number
 }>
 
+const bandY = (value: Readonly<{ readonly yTop: number; readonly yBottom: number }>): number =>
+  Math.min(value.yTop, value.yBottom)
+
+const bandHeight = (value: Readonly<{ readonly yTop: number; readonly yBottom: number }>): number =>
+  Math.abs(value.yBottom - value.yTop)
+
 export function TimeSeriesChartBaselineBand({ baselineBand, xStart, width }: BaselineBandProps) {
   return matchMaybe<Readonly<{ readonly yTop: number; readonly yBottom: number }>, React.ReactNode>({
     Some: value => (
       <rect
         className="oil-lint-time-series-chart__baseline-band"
         x={xStart}
-        y={value.yTop}
+        y={bandY(value)}
         width={width}
-        height={value.yBottom - value.yTop}
+        height={bandHeight(value)}
       />
     ),
     None: () => null,

@@ -1,10 +1,18 @@
 import React from 'react'
 
-import type { ChartsGalleryViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
+import type { ChartGalleryStateSummaryItemViewModel, ChartsGalleryViewModel, PresentationCaveatViewModel } from '@/presentation/contracts'
 import { ChartPanel } from './chart-panel'
 
 const caveatItem = (caveat: PresentationCaveatViewModel) => (
   <li key={`${caveat.kind}-${caveat.message}`} className="chart-gallery__caveat">{caveat.message}</li>
+)
+
+const stateSummaryItem = (item: ChartGalleryStateSummaryItemViewModel) => (
+  <li key={item.state} className={`chart-gallery__summary-item chart-gallery__summary-item--${item.state}`}>
+    <span className="chart-gallery__summary-value">{item.valueLabel}</span>
+    <span className="chart-gallery__summary-label">{item.label}</span>
+    <span className="chart-gallery__summary-description">{item.description}</span>
+  </li>
 )
 
 export function ChartGallery({ viewModel }: Readonly<{ readonly viewModel: ChartsGalleryViewModel }>) {
@@ -17,6 +25,9 @@ export function ChartGallery({ viewModel }: Readonly<{ readonly viewModel: Chart
         </div>
         <p className="chart-gallery__description">{viewModel.description}</p>
       </header>
+      <ul className="chart-gallery__summary" aria-label="Chart readiness summary">
+        {viewModel.stateSummary.map(stateSummaryItem)}
+      </ul>
       <div className="chart-gallery__grid">
         {viewModel.panels.map(panel => <ChartPanel key={panel.id} viewModel={panel} />)}
       </div>

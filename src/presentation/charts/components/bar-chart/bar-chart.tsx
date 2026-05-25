@@ -1,6 +1,7 @@
 import React from 'react'
 
 import type { BarChartPointViewModel, BarChartViewModel } from '../../contracts'
+import { formatDecimalCssPercent } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
 
 const absoluteValue = (value: number): number => Math.abs(value)
@@ -9,7 +10,7 @@ const largestMagnitude = (points: readonly BarChartPointViewModel[]): number =>
   Math.max(1, ...points.map(point => absoluteValue(point.value)))
 
 const barWidth = (largest: number) => (point: BarChartPointViewModel): string =>
-  `${String((absoluteValue(point.value) / largest) * 100)}%`
+  formatDecimalCssPercent((absoluteValue(point.value) / largest) * 100)
 
 const barItem = (largest: number) => (point: BarChartPointViewModel) => (
   <li key={point.category} className={`bar-chart__item bar-chart__item--${point.direction}`}>
@@ -27,7 +28,7 @@ const barList = (viewModel: BarChartViewModel) =>
   ifElse(
     (candidate: BarChartViewModel) => candidate.points.length > 0,
     candidate => <ul className="bar-chart__list">{candidate.points.map(barItem(largestMagnitude(candidate.points)))}</ul>,
-    () => <p className="bar-chart__empty">No bar values available.</p>,
+    () => <p className="bar-chart__empty">No driver bars to show for this run.</p>,
   )(viewModel)
 
 export function BarChart({ viewModel }: Readonly<{ readonly viewModel: BarChartViewModel }>) {
