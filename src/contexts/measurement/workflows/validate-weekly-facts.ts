@@ -5,7 +5,7 @@ import { parseGeographyScope, formatGeographyScope, type GeographyScope } from '
 import { parseInventoryMeasurement, type InventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
 import { parsePriceMeasurement, type PriceMeasurement } from '@/contexts/measurement/model/price-measurement'
 import { assembleWeeklyPetroleumFactsWithPolicy, type WeeklyPetroleumFacts, type WeeklyPetroleumFactsError, isWeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
-import { walkingSkeletonRequiredMeasurementPolicy, type RequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
+import { coreWeeklyRequiredMeasurementPolicy, type RequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
 
 export type WeeklyFactsValidationError =
   | WeeklyPetroleumFactsError
@@ -140,7 +140,7 @@ const validateBrandedWeeklyFacts = (
 
 export const validateWeeklyFacts = (
   input: unknown,
-  policy: RequiredMeasurementPolicy = walkingSkeletonRequiredMeasurementPolicy,
+  policy: RequiredMeasurementPolicy = coreWeeklyRequiredMeasurementPolicy,
 ): Result<WeeklyPetroleumFacts, WeeklyFactsValidationError> =>
   ifElse(
     isWeeklyPetroleumFacts,

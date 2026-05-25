@@ -3,18 +3,18 @@ import { bindResultStep, mapError, mapResult, sequenceResults, success } from '@
 import { allPass, ifElse, isNil, pipeWith } from '@/shared/fp'
 import type { Result } from '@/shared/result'
 import { normalizeWeeklyFacts, type NormalizedWeeklyInput } from '@/contexts/measurement/normalizers/normalizeWeeklyFacts'
-import { buildInventoryMeasurements, buildPriceMeasurement, buildRefineryMeasurements, buildSupplyMeasurements, type MeasurementBuilderError } from './build-measurements'
+import { buildInventoryMeasurements, buildPriceMeasurement, buildRefineryMeasurements, buildSupplyMeasurements, type MeasurementBuilderError } from '@/contexts/measurement/workflows/build-measurements'
 import { assembleWeeklyPetroleumFactsWithPolicy, type WeeklyPetroleumFactsError, type WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import type { InventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
 import type { PriceMeasurement } from '@/contexts/measurement/model/price-measurement'
 import type { RefineryMeasurement } from '@/contexts/measurement/model/refinery-measurement'
 import type { SupplyMeasurement } from '@/contexts/measurement/model/supply-measurement'
-import { validateWeeklyFacts, type WeeklyFactsValidationError } from './validate-weekly-facts'
+import { validateWeeklyFacts, type WeeklyFactsValidationError } from '@/contexts/measurement/workflows/validate-weekly-facts'
 import { assembleRefinerySet, type RefinerySet, type RefinerySetError } from '@/contexts/measurement/model/refinery-set'
 import { assembleSupplySet, type SupplySet, type SupplySetError } from '@/contexts/measurement/model/supply-set'
 import { type Maybe, none, some } from '@/shared/maybe'
 import type { RequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
-import { walkingSkeletonRequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
+import { coreWeeklyRequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
 
 export type MeasurementInputWorkflowError =
   | Readonly<{ readonly kind: 'NormalizeError'; readonly input: unknown }>
@@ -212,7 +212,7 @@ const validateWeeklyFactsForPolicy =
 
 export const processTrustedBoundaryMeasurements = (
   input: TrustedBoundaryInput,
-  policy: RequiredMeasurementPolicy = walkingSkeletonRequiredMeasurementPolicy,
+  policy: RequiredMeasurementPolicy = coreWeeklyRequiredMeasurementPolicy,
 ): Result<readonly WeeklyPetroleumFacts[], MeasurementInputWorkflowError> =>
   pipeWith(
     bindResultStep,

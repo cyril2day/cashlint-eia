@@ -3,11 +3,11 @@ import type { Result } from '@/shared/result'
 import { complement, cond, ifElse } from '@/shared/fp'
 import { none, some, type Maybe } from '@/shared/maybe'
 
-import type { GeographyScope } from './geography-scope'
-import { formatGeographyScope } from './geography-scope'
-import type { ReportWeek } from './report-week'
-import { formatReportWeekIso } from './report-week'
-import type { RefineryMeasurement } from './refinery-measurement'
+import type { GeographyScope } from '@/contexts/measurement/model/geography-scope'
+import { formatGeographyScope } from '@/contexts/measurement/model/geography-scope'
+import type { ReportWeek } from '@/contexts/measurement/model/report-week'
+import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
+import type { RefineryMeasurement } from '@/contexts/measurement/model/refinery-measurement'
 
 export type RefinerySet = Readonly<{
   readonly reportWeek: ReportWeek

@@ -3,9 +3,9 @@ import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 import { getKey } from '@/shared/object'
-import type { PriceKind } from './price-kind'
-import type { WeeklyFact } from './weekly-fact'
-import { isPriceKind } from './price-kind'
+import type { PriceKind } from '@/contexts/measurement/model/price-kind'
+import type { WeeklyFact } from '@/contexts/measurement/model/weekly-fact'
+import { isPriceKind } from '@/contexts/measurement/model/price-kind'
 
 const priceMeasurementBrand = Symbol('PriceMeasurement')
 

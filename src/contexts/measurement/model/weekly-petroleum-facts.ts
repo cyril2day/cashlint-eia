@@ -4,17 +4,17 @@ import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 import { getKey } from '@/shared/object'
 import { binder } from '@/contexts/acl/eia-ingestion-acl/helpers/translatorPipeline'
-import type { ReportWeek } from './report-week'
-import { formatReportWeekIso } from './report-week'
-import type { GeographyScope } from './geography-scope'
-import { formatGeographyScope } from './geography-scope'
-import type { InventoryMeasurement } from './inventory-measurement'
-import type { PriceMeasurement } from './price-measurement'
-import type { RefinerySet } from './refinery-set'
-import type { SupplySet } from './supply-set'
+import type { ReportWeek } from '@/contexts/measurement/model/report-week'
+import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
+import type { GeographyScope } from '@/contexts/measurement/model/geography-scope'
+import { formatGeographyScope } from '@/contexts/measurement/model/geography-scope'
+import type { InventoryMeasurement } from '@/contexts/measurement/model/inventory-measurement'
+import type { PriceMeasurement } from '@/contexts/measurement/model/price-measurement'
+import type { RefinerySet } from '@/contexts/measurement/model/refinery-set'
+import type { SupplySet } from '@/contexts/measurement/model/supply-set'
 import { type Maybe, none, isSome } from '@/shared/maybe'
-import type { RequiredMeasurementPolicy } from './required-measurement-policy'
-import { walkingSkeletonRequiredMeasurementPolicy } from './required-measurement-policy'
+import type { RequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
+import { coreWeeklyRequiredMeasurementPolicy } from '@/contexts/measurement/model/required-measurement-policy'
 
 const weeklyPetroleumFactsBrand = Symbol('WeeklyPetroleumFacts')
 
@@ -77,7 +77,7 @@ export const assembleWeeklyPetroleumFacts = (
   prices: readonly PriceMeasurement[],
 ): Result<WeeklyPetroleumFacts, WeeklyPetroleumFactsError> =>
   assembleWeeklyPetroleumFactsWithPolicy({
-    policy: walkingSkeletonRequiredMeasurementPolicy,
+    policy: coreWeeklyRequiredMeasurementPolicy,
     inventories,
     refinery: none(),
     supply: none(),

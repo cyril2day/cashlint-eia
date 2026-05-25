@@ -1,7 +1,7 @@
 import { includes, ifElse } from '@/shared/fp'
 import { isStringInput } from '@/shared/domain'
 
-import type { MeasurementKindLabel } from './measurement-kind'
+import type { MeasurementKindLabel } from '@/contexts/measurement/model/measurement-kind'
 
 export type RefineryMeasurementKindLabel = Extract<
   MeasurementKindLabel,

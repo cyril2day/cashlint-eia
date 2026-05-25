@@ -4,12 +4,12 @@ import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 import { getKey } from '@/shared/object'
 
-import type { MeasurementKind } from './measurement-kind'
-import { isMeasurementKind } from './measurement-kind'
-import type { WeeklyFact } from './weekly-fact'
-import { isWeeklyFact } from './weekly-fact'
-import { isSupplyMeasurementKindLabel } from './measurement-kind-groups'
-import { isMeasurementUnitCompatibleWithKind } from './measurement-unit-compatibility'
+import type { MeasurementKind } from '@/contexts/measurement/model/measurement-kind'
+import { isMeasurementKind } from '@/contexts/measurement/model/measurement-kind'
+import type { WeeklyFact } from '@/contexts/measurement/model/weekly-fact'
+import { isWeeklyFact } from '@/contexts/measurement/model/weekly-fact'
+import { isSupplyMeasurementKindLabel } from '@/contexts/measurement/model/measurement-kind-groups'
+import { isMeasurementUnitCompatibleWithKind } from '@/contexts/measurement/model/measurement-unit-compatibility'
 
 const supplyMeasurementBrand = Symbol('SupplyMeasurement')
 

@@ -2,11 +2,11 @@ import { bindResult, failure, sequenceResults, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { complement, cond, ifElse } from '@/shared/fp'
 
-import type { GeographyScope } from './geography-scope'
-import { formatGeographyScope } from './geography-scope'
-import type { ReportWeek } from './report-week'
-import { formatReportWeekIso } from './report-week'
-import type { SupplyMeasurement } from './supply-measurement'
+import type { GeographyScope } from '@/contexts/measurement/model/geography-scope'
+import { formatGeographyScope } from '@/contexts/measurement/model/geography-scope'
+import type { ReportWeek } from '@/contexts/measurement/model/report-week'
+import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
+import type { SupplyMeasurement } from '@/contexts/measurement/model/supply-measurement'
 
 export type SupplySet = Readonly<{
   readonly reportWeek: ReportWeek

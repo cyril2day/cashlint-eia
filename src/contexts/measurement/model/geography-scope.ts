@@ -9,7 +9,7 @@ import {
   isPADDistrictCode,
   parsePADDistrictCode,
   type PADDistrictCode,
-} from './pad-district-code'
+} from '@/contexts/measurement/model/pad-district-code'
 
 const geographyScopeBrand = Symbol('GeographyScope')
 

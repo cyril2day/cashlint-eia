@@ -1,6 +1,6 @@
-import type { MeasurementKind } from './measurement-kind'
-import type { MeasurementUnit, MeasurementUnitCategory } from './measurement-unit'
-import { measurementUnitCategory } from './measurement-unit'
+import type { MeasurementKind } from '@/contexts/measurement/model/measurement-kind'
+import type { MeasurementUnit, MeasurementUnitCategory } from '@/contexts/measurement/model/measurement-unit'
+import { measurementUnitCategory } from '@/contexts/measurement/model/measurement-unit'
 
 const expectedUnitCategoryByKind: Record<MeasurementKind['kind'], MeasurementUnitCategory> = {
   CrudeStocks: 'stock',

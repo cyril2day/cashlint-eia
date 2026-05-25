@@ -3,9 +3,9 @@ import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
 import { isObjectInput, hasBrand, brand } from '@/shared/domain'
 import { getKey } from '@/shared/object'
-import type { InventoryProduct } from './inventory-product'
-import type { WeeklyFact } from './weekly-fact'
-import { isInventoryProduct } from './inventory-product'
+import type { InventoryProduct } from '@/contexts/measurement/model/inventory-product'
+import type { WeeklyFact } from '@/contexts/measurement/model/weekly-fact'
+import { isInventoryProduct } from '@/contexts/measurement/model/inventory-product'
 
 const inventoryMeasurementBrand = Symbol('InventoryMeasurement')
 

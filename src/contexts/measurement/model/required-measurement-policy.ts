@@ -1,4 +1,4 @@
-export type RequiredMeasurementPolicyName = 'WalkingSkeleton' | 'FullFirstRelease'
+export type RequiredMeasurementPolicyName = 'CoreWeekly' | 'FullFirstRelease'
 
 export type RequiredMeasurementPolicy = Readonly<{
   readonly name: RequiredMeasurementPolicyName
@@ -8,8 +8,8 @@ export type RequiredMeasurementPolicy = Readonly<{
   readonly requireSupply: boolean
 }>
 
-export const walkingSkeletonRequiredMeasurementPolicy: RequiredMeasurementPolicy = {
-  name: 'WalkingSkeleton',
+export const coreWeeklyRequiredMeasurementPolicy: RequiredMeasurementPolicy = {
+  name: 'CoreWeekly',
   requireInventory: true,
   requirePrice: true,
   requireRefinery: false,
