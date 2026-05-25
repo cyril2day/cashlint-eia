@@ -39,6 +39,25 @@ const coerceDecimal = (input: number | string): Decimal =>
     (candidate: string) => Number(candidate),
   )(input)
 
+const wholeDecimalFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 0,
+})
+
+const readableDecimalFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 2,
+})
+
+const fixedMoneyDecimalFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const percentageDecimalFormatter = new Intl.NumberFormat('en-US', {
+  maximumFractionDigits: 1,
+})
+
+const coordinatePrecision = 3
+
 export const isDecimal = (input: unknown): input is Decimal =>
   ifElse(
     isNumberInput,
@@ -56,3 +75,21 @@ export const parseDecimal = (input: unknown): Result<Decimal, DecimalParseError>
         input: describeDecimalInput(candidate),
       }),
   )(input)
+
+export const formatWholeDecimal = (value: Decimal): string =>
+  wholeDecimalFormatter.format(value)
+
+export const formatDecimal = (value: Decimal): string =>
+  readableDecimalFormatter.format(value)
+
+export const formatFixedMoneyDecimal = (value: Decimal): string =>
+  fixedMoneyDecimalFormatter.format(value)
+
+export const formatPercentageDecimal = (value: Decimal): string =>
+  percentageDecimalFormatter.format(value)
+
+export const formatDecimalCoordinate = (value: Decimal): string =>
+  String(Number(value.toFixed(coordinatePrecision)))
+
+export const formatDecimalCssPercent = (value: Decimal): string =>
+  `${formatDecimalCoordinate(value)}%`
