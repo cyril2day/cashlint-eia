@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Oil LInt app icon">
+  <rect width="512" height="512" rx="96" fill="#0b1220"/>
+  <path d="M136 354c42 28 101 42 177 42 29 0 55-2 79-7" fill="none" stroke="#38bdf8" stroke-width="28" stroke-linecap="round"/>
+  <path d="M153 321c32 20 72 31 120 31 42 0 80-8 112-24" fill="none" stroke="#22c55e" stroke-width="20" stroke-linecap="round"/>
+  <path d="M256 88c-55 68-92 121-92 177 0 60 40 103 92 103s92-43 92-103c0-56-37-109-92-177Z" fill="#f97316"/>
+  <path d="M256 141c-38 51-62 88-62 126 0 39 26 67 62 67s62-28 62-67c0-38-24-75-62-126Z" fill="#facc15" opacity=".48"/>
+  <path d="M222 231c10-27 27-51 48-78" fill="none" stroke="#fff7ed" stroke-width="18" stroke-linecap="round" opacity=".7"/>
+</svg>
