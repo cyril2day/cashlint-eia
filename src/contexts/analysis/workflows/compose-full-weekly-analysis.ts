@@ -307,21 +307,55 @@ export const assignFullAnalysisConfidence = (
 
 const conditionLabel = (condition: AnalysisCondition): string => condition.condition
 
-const driverPhrase = (driver: BalanceDriver): string => driver.kind
+const driverKindPhrase = (driver: BalanceDriver): string =>
+  cond<[BalanceDriver], string>([
+    [candidate => candidate.kind === 'InventoryDraw', () => 'an inventory draw'],
+    [candidate => candidate.kind === 'InventoryBuild', () => 'an inventory build'],
+    [candidate => candidate.kind === 'StrongerRefineryDemand', () => 'stronger refinery runs'],
+    [candidate => candidate.kind === 'WeakerRefineryDemand', () => 'weaker refinery runs'],
+    [candidate => candidate.kind === 'IncreasedProduction', () => 'higher domestic production'],
+    [candidate => candidate.kind === 'DecreasedProduction', () => 'lower domestic production'],
+    [candidate => candidate.kind === 'IncreasedImports', () => 'higher crude imports'],
+    [candidate => candidate.kind === 'DecreasedImports', () => 'lower crude imports'],
+    [candidate => candidate.kind === 'IncreasedExports', () => 'higher crude exports'],
+    [candidate => candidate.kind === 'DecreasedExports', () => 'lower crude exports'],
+    [() => true, () => 'a supply pressure movement'],
+  ])(driver)
 
 const describeDrivers = (drivers: readonly BalanceDriver[]): string =>
   ifElse(
     (candidate: readonly BalanceDriver[]) => candidate.length > 0,
-    candidate => candidate.map(driverPhrase).join(', '),
+    candidate => candidate.map(driverKindPhrase).join(', '),
     () => 'limited clear drivers',
   )(drivers)
+
+const signalPhrase = (signal: ContextualizedSignal): string =>
+  cond<[ContextualizedSignal], string>([
+    [candidate => candidate.signal.identity.kind === 'Inventory', () => 'commercial crude inventories'],
+    [candidate => candidate.signal.identity.kind === 'Price', () => 'WTI spot price'],
+    [() => true, () => 'selected market signal'],
+  ])(signal)
 
 const describeSignals = (signals: readonly ContextualizedSignal[]): string =>
   ifElse(
     (candidate: readonly ContextualizedSignal[]) => candidate.length > 0,
-    candidate => candidate.map(signal => signal.signal.identity.kind).join(', '),
+    candidate => candidate.map(signalPhrase).join(', '),
     () => 'no selected signals',
   )(signals)
+
+const contradictionPhrase = (signals: readonly ContextualizedSignal[]): string =>
+  ifElse(
+    (candidate: readonly ContextualizedSignal[]) => candidate.length > 0,
+    candidate => `contradicted by ${describeSignals(candidate)}`,
+    () => 'with no selected contradiction from inventory or WTI',
+  )(signals)
+
+const caveatPhrase = (caveats: readonly AnalysisCaveat[]): string =>
+  ifElse(
+    (candidate: readonly AnalysisCaveat[]) => candidate.length > 0,
+    candidate => `${String(candidate.length)} caveat(s) kept the read conservative`,
+    () => 'no caveats attached to the weekly read',
+  )(caveats)
 
 const validateNarrative = (
   text: string,
@@ -361,7 +395,7 @@ export const buildFullAnalysisSummary = (
   policies: FullAnalysisPolicies,
 ): Result<string, AnalysisError> =>
   validateNarrative(
-    `${conditionLabel(condition)} weekly read from ${describeSignals(supportingSignals)} with ${String(contradictorySignals.length)} contradictory signal(s) and ${String(caveats.length)} caveat(s).`,
+    `${conditionLabel(condition)} weekly read supported by ${describeSignals(supportingSignals)}, ${contradictionPhrase(contradictorySignals)}, and ${caveatPhrase(caveats)}.`,
     policies,
     'summary',
   )
@@ -377,7 +411,7 @@ export const buildFullAnalysisExplanation = (
   policies: FullAnalysisPolicies,
 ): Result<string, AnalysisError> =>
   validateNarrative(
-    `System balance is ${systemBalanceAnalysis.balanceState.toLowerCase()} and the weekly condition is ${conditionLabel(condition)}. Key signals are ${describeSignals([signals.inventory, signals.price])}. Historical qualifications are ${describeSignals(qualifications)}. Supporting signals: ${describeSignals(supportingSignals)}. Contradictory signals: ${describeSignals(contradictorySignals)}. Caveats: ${String(caveats.length)}.`,
+    `System balance is ${systemBalanceAnalysis.balanceState.toLowerCase()} and the weekly condition is ${conditionLabel(condition)}. Key evidence includes ${describeSignals([signals.inventory, signals.price])}. The statistical context uses ${describeSignals(qualifications)} as historical qualifications. Supporting evidence: ${describeSignals(supportingSignals)}. Contradictory evidence: ${describeSignals(contradictorySignals)}. Caveats: ${caveatPhrase(caveats)}.`,
     policies,
     'explanation',
   )
