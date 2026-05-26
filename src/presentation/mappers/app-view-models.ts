@@ -56,7 +56,7 @@ import { isNonEmptyArray, firstArrayItem } from '@/shared/collection'
 import { formatDateReadable, parseDate, type DateParseError, type DateValue } from '@/shared/date'
 import { isSuccess, type Result } from '@/shared/result'
 
-const shortHistoryMessage = 'This view uses the weekly window returned by the current run. When the window is thin, the chart stays cautious instead of smoothing over the gaps.'
+const shortHistoryMessage = 'The statistical sample window is limited to the weekly rows returned by the current run. When that window is thin, trend, baseline, variance, and anomaly calls stay cautious.'
 
 const activeRoute = (routeId: AppRouteId) => (candidate: AppRouteId): boolean => candidate === routeId
 
@@ -124,12 +124,12 @@ const chartPanelCaveats = (
 
 const routeDescription = (routeId: AppRouteId): Maybe<string> =>
   cond<[AppRouteId], Maybe<string>>([
-    [candidate => candidate === 'home', () => some('The weekly read, controls, and the first pass of the story.')],
-    [candidate => candidate === 'inventory', () => some('Storage levels, movement, and the caveats behind the read.')],
-    [candidate => candidate === 'price', () => some('WTI context beside the physical market signals.')],
-    [candidate => candidate === 'balance', () => some('What is pulling the weekly balance tighter or looser.')],
-    [candidate => candidate === 'analysis', () => some('How the app arrived at the headline.')],
-    [() => true, () => some('The chart workbench, with every visual type in one place.')],
+    [candidate => candidate === 'home', () => some('The analyst briefing, evidence cards, and first statistical read.')],
+    [candidate => candidate === 'inventory', () => some('Commercial crude stock levels, movement, and caveats.')],
+    [candidate => candidate === 'price', () => some('WTI spot price context beside the physical market signals.')],
+    [candidate => candidate === 'balance', () => some('Physical contributors pulling the weekly balance tighter or looser.')],
+    [candidate => candidate === 'analysis', () => some('How the evidence became the headline, confidence, and caveats.')],
+    [() => true, () => some('The chart workbench for trend, distribution, variance, and baseline views.')],
   ])(routeId)
 
 const routeHref = (routeId: AppRouteId): string =>
@@ -174,20 +174,20 @@ export const createAppNavigationViewModel = (
 export const createAnalysisControlViewModel = (summary: SummaryViewModel): AnalysisControlViewModel => ({
   reportWeekLabel: summary.reportWeekText,
   geographyLabel: summary.geographyText,
-  comparisonWindowLabel: 'Latest weekly window',
+  comparisonWindowLabel: 'Latest weekly comparison window',
   submitLabel: 'Refresh live data',
-  helperText: some('Refreshes the configured weekly run and keeps the view grounded in the live feed.'),
+  helperText: some('Refreshes the configured EIA run and rebuilds the briefing from the live sample window.'),
   fieldsDisabled: true,
 })
 
 export const createCaveatPanelViewModel = (summary: SummaryViewModel): CaveatPanelViewModel => ({
-  title: 'Caveats and limitations',
+  title: 'What to keep in mind',
   caveats: summary.caveats,
   state: caveatPanelState(summary),
   summary: ifElse(
     (candidate: SummaryViewModel) => candidate.caveats.length > 0,
-    candidate => some(`${String(candidate.caveats.length)} note(s) came through with the analysis. They are shown here instead of being hidden in the fine print.`),
-    () => some('No caveats came through for this view. That is a good quiet signal, not a guarantee.'),
+    candidate => some(`${String(candidate.caveats.length)} thing(s) qualify this week's read.`),
+    () => some('No extra notes came through for this view. That supports a cleaner read, not a guarantee.'),
   )(summary),
 })
 
@@ -203,13 +203,13 @@ const traceStep = (
 })
 
 const traceSteps = (state: PresentationDisplayState): readonly AnalysisTraceStepViewModel[] => [
-  traceStep('EIA data loaded', 'The app asked EIA for the configured weekly window.', state),
-  traceStep('Rows cleaned at the boundary', 'Raw API rows were translated before they reached the UI.', state),
-  traceStep('Weekly facts built', 'Inventory, price, refinery, and supply readings were shaped into petroleum facts.', state),
-  traceStep('Balance read prepared', 'The physical balance was summarized before presentation touched it.', state),
-  traceStep('Signals put in context', 'Trend, baseline, anomaly, and caveats were handled upstream.', state),
-  traceStep('Weekly story composed', 'The headline, summary, confidence, and condition came from the analysis workflow.', state),
-  traceStep('Display model prepared', 'The page received display-safe data: labels, states, chart payloads, and caveats.', 'Complete'),
+  traceStep('EIA rows loaded', 'The app requested the configured weekly petroleum sample window.', state),
+  traceStep('Boundary rows translated', 'Raw API rows were validated before entering the domain model.', state),
+  traceStep('Weekly facts assembled', 'Inventory, WTI price, refinery, and supply readings became comparable petroleum facts.', state),
+  traceStep('Physical balance prepared', 'Supply, refinery demand, imports, exports, production, and stock movement were summarized.', state),
+  traceStep('Signals contextualized', 'Trend, baseline, variance, anomaly, and caveats were computed before presentation.', state),
+  traceStep('Analyst read composed', 'The headline, summary, confidence, and condition came from the analysis workflow.', state),
+  traceStep('Display model prepared', 'The page received presentation-safe labels, states, chart payloads, and caveats.', 'Complete'),
 ]
 
 export const createAnalysisTraceViewModel = (summary: SummaryViewModel): AnalysisTraceViewModel => ({
@@ -325,15 +325,15 @@ const chartPanelDescription = (
   chartKind: ChartPanelKind,
 ): Maybe<string> =>
   cond<[ChartPanelKind], Maybe<string>>([
-    [candidate => candidate === 'TimeSeries', () => some('Weekly WTI observations as an ordered line chart.')],
-    [candidate => candidate === 'Sparkline', () => some('A compact WTI read for quick scanning.')],
-    [candidate => candidate === 'MetricCard', () => some('The current WTI value as a compact KPI.')],
-    [candidate => candidate === 'BarChart', () => some('System balance drivers as categorical bars.')],
-    [candidate => candidate === 'Histogram', () => some('A light distribution view of the weekly WTI values that came back.')],
-    [candidate => candidate === 'BoxPlot', () => some('The loaded WTI values summarized by quartiles and whiskers.')],
-    [candidate => candidate === 'AreaChart', () => some('Inventory magnitude over the loaded weekly window.')],
-    [candidate => candidate === 'VarianceChart', () => some('Current WTI value compared with its computed baseline.')],
-    [() => true, () => some('Chart widget input for the current visualization workbench.')],
+    [candidate => candidate === 'TimeSeries', () => some('WTI trend over the loaded weekly sample window.')],
+    [candidate => candidate === 'Sparkline', () => some('A compact WTI trend read for quick scanning.')],
+    [candidate => candidate === 'MetricCard', () => some('The current WTI spot value with trend and anomaly context.')],
+    [candidate => candidate === 'BarChart', () => some('Physical balance contributors as categorical bars.')],
+    [candidate => candidate === 'Histogram', () => some('WTI distribution across the loaded weekly sample window.')],
+    [candidate => candidate === 'BoxPlot', () => some('WTI spread summarized by quartiles and whiskers.')],
+    [candidate => candidate === 'AreaChart', () => some('Commercial crude stock level over the loaded weekly window.')],
+    [candidate => candidate === 'VarianceChart', () => some('Current WTI spot value compared with its computed baseline.')],
+    [() => true, () => some('Chart input for the statistical evidence workbench.')],
   ])(chartKind)
 
 const chartPanel = (
@@ -499,42 +499,42 @@ const boxPlotOutliersFromHistory = (_historicalPoints: readonly HistoricalSignal
 export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGalleryInput): ChartsGalleryViewModel => {
   const priceTimeSeries = mapContextualizedSignalToTimeSeriesChart({
     id: 'price-line-chart',
-    title: 'WTI weekly price line chart',
-    subtitle: some('Weekly WTI observations from the current run'),
+    title: 'WTI trend window',
+    subtitle: some('Weekly WTI observations in the loaded sample window'),
     signal: input.signals.price,
     historicalPoints: input.priceHistory,
   })
   const priceSparkline = mapContextualizedSignalToSparkline({
     id: 'price-sparkline',
-    label: 'WTI price sparkline',
+    label: 'WTI trend sparkline',
     signal: input.signals.price,
     historicalPoints: input.priceHistory,
   })
   const priceMetricCard = mapContextualizedSignalToStandaloneMetricCard({
     id: 'price-kpi-card',
-    title: 'WTI spot price KPI',
+    title: 'WTI spot price',
     signal: input.signals.price,
   })
   const balanceBarChart = matchMaybe<SystemBalanceAnalysis, BarChartViewModel>({
     Some: analysis => mapSystemBalanceAnalysisToDriverBarChart({
       id: 'balance-driver-bar-chart',
-      title: 'System balance driver bars',
+      title: 'Physical balance contributors',
       analysis,
     }),
-    None: () => unavailableBarChart('balance-driver-bar-chart', 'System balance driver bars'),
+    None: () => unavailableBarChart('balance-driver-bar-chart', 'Physical balance contributors'),
   })(input.systemBalance)
   const priceHistogram = mapContextualizedSignalToHistogram({
     id: 'price-histogram',
-    title: 'WTI distribution histogram',
-    subtitle: some('Weekly WTI observations from the current run'),
+    title: 'WTI sample distribution',
+    subtitle: some('Weekly WTI observations in the loaded sample window'),
     signal: input.signals.price,
     historicalPoints: input.priceHistory,
     binStrategy: { kind: 'Automatic', requestedBinCount: 6 },
   })
   const priceBoxPlot = mapContextualizedSignalToBoxPlot({
     id: 'price-box-plot',
-    title: 'WTI distribution box plot',
-    subtitle: some('Weekly WTI observations from the current run'),
+    title: 'WTI spread and quartiles',
+    subtitle: some('Weekly WTI distribution across the loaded sample window'),
     signal: input.signals.price,
     historicalPoints: input.priceHistory,
     summary: boxPlotSummaryFromHistory(input.priceHistory),
@@ -542,28 +542,28 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   })
   const inventoryAreaChart = mapContextualizedSignalToAreaChart({
     id: 'inventory-area-chart',
-    title: 'Inventory area chart',
-    subtitle: some('Weekly inventory observations from the current run'),
+    title: 'Commercial crude stock level',
+    subtitle: some('Weekly inventory observations in the loaded sample window'),
     signal: input.signals.inventory,
     historicalPoints: input.inventoryHistory,
     baseline: none(),
   })
   const priceVarianceChart = mapContextualizedSignalToVarianceChart({
     id: 'price-variance-chart',
-    title: 'WTI spot price variance',
-    subtitle: some('Current WTI spot price compared with computed baseline'),
+    title: 'WTI baseline variance',
+    subtitle: some('Current WTI spot price versus the computed baseline'),
     signal: input.signals.price,
     referenceLabel: 'Baseline',
     referenceSemantics: 'Current value compared with computed baseline average',
   })
   const panels = [
-    chartPanel('price-line-panel', 'WTI weekly price line chart', 'TimeSeries', priceTimeSeries),
-    chartPanel('price-sparkline-panel', 'WTI weekly price trend', 'Sparkline', priceSparkline),
-    chartPanel('price-kpi-panel', 'WTI spot price KPI', 'MetricCard', priceMetricCard),
-    chartPanel('balance-driver-panel', 'System balance drivers', 'BarChart', balanceBarChart),
-    chartPanel('price-histogram-panel', 'WTI weekly price distribution', 'Histogram', priceHistogram),
-    chartPanel('price-box-plot-panel', 'WTI weekly price box plot', 'BoxPlot', priceBoxPlot),
-    chartPanel('inventory-area-panel', 'Weekly commercial crude inventory', 'AreaChart', inventoryAreaChart),
+    chartPanel('price-line-panel', 'WTI trend window', 'TimeSeries', priceTimeSeries),
+    chartPanel('price-sparkline-panel', 'WTI trend sparkline', 'Sparkline', priceSparkline),
+    chartPanel('price-kpi-panel', 'WTI spot price', 'MetricCard', priceMetricCard),
+    chartPanel('balance-driver-panel', 'Physical balance contributors', 'BarChart', balanceBarChart),
+    chartPanel('price-histogram-panel', 'WTI sample distribution', 'Histogram', priceHistogram),
+    chartPanel('price-box-plot-panel', 'WTI spread and quartiles', 'BoxPlot', priceBoxPlot),
+    chartPanel('inventory-area-panel', 'Commercial crude stock level', 'AreaChart', inventoryAreaChart),
     chartPanel('price-variance-panel', 'WTI baseline variance', 'VarianceChart', priceVarianceChart),
   ]
 
@@ -580,13 +580,13 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
 
 export const mapSummaryToChartsGalleryViewModel = (summary: SummaryViewModel): ChartsGalleryViewModel => {
   const panels = [
-    chartPanel('price-line-panel', 'WTI weekly price line chart', 'TimeSeries', unavailableTimeSeries('price-line-chart', 'WTI weekly price line chart')),
-    chartPanel('price-sparkline-panel', 'WTI weekly price trend', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
-    chartPanel('price-kpi-panel', 'WTI spot price KPI', 'MetricCard', unavailableMetricCard('price-kpi-card', 'WTI spot price KPI')),
-    chartPanel('balance-driver-panel', 'System balance drivers', 'BarChart', unavailableBarChart('balance-driver-bar-chart', 'System balance driver bars')),
-    chartPanel('price-histogram-panel', 'WTI weekly price distribution', 'Histogram', unavailableHistogram('price-histogram', 'WTI distribution histogram')),
-    chartPanel('price-box-plot-panel', 'WTI weekly price box plot', 'BoxPlot', unavailableBoxPlot('price-box-plot', 'WTI distribution box plot')),
-    chartPanel('inventory-area-panel', 'Weekly commercial crude inventory', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Inventory area chart')),
+    chartPanel('price-line-panel', 'WTI trend window', 'TimeSeries', unavailableTimeSeries('price-line-chart', 'WTI trend window')),
+    chartPanel('price-sparkline-panel', 'WTI trend sparkline', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI trend sparkline')),
+    chartPanel('price-kpi-panel', 'WTI spot price', 'MetricCard', unavailableMetricCard('price-kpi-card', 'WTI spot price')),
+    chartPanel('balance-driver-panel', 'Physical balance contributors', 'BarChart', unavailableBarChart('balance-driver-bar-chart', 'Physical balance contributors')),
+    chartPanel('price-histogram-panel', 'WTI sample distribution', 'Histogram', unavailableHistogram('price-histogram', 'WTI sample distribution')),
+    chartPanel('price-box-plot-panel', 'WTI spread and quartiles', 'BoxPlot', unavailableBoxPlot('price-box-plot', 'WTI spread and quartiles')),
+    chartPanel('inventory-area-panel', 'Commercial crude stock level', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Commercial crude stock level')),
     chartPanel('price-variance-panel', 'WTI baseline variance', 'VarianceChart', unavailableVarianceChart('price-variance-chart', 'WTI baseline variance')),
   ]
 

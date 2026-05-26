@@ -258,12 +258,6 @@ export function ChartPanel({ viewModel, controls }: Readonly<{
 }>) {
   return (
     <section className={`chart-panel chart-panel--${viewModel.chartKind}`} aria-label={viewModel.accessibilitySummary}>
-      <header className="chart-panel__header">
-        <div className="chart-panel__heading">
-          <p className="chart-panel__kind">{chartKindLabel(viewModel.chartKind)}</p>
-          <h3 className="chart-panel__title">{viewModel.title}</h3>
-        </div>
-      </header>
       <div className="chart-panel__visual" role="img" aria-label={viewModel.chartViewModel.accessibilitySummary}>
         {renderChartPayload(controls)(viewModel)}
       </div>
