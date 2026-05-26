@@ -5,13 +5,14 @@ import type { DetailPageViewModel } from '@/presentation/contracts'
 import { DetailPageShell } from '@/presentation/shell/detail-page-shell'
 import { DetailRowList } from '@/presentation/shell/detail-row-list'
 import { SummaryCardShell } from '@/presentation/shell/summary-card-shell'
+import { none } from '@/shared/maybe'
 
 export function DetailPageContent({ viewModel }: Readonly<{ readonly viewModel: DetailPageViewModel }>) {
   return (
     <DetailPageShell viewModel={viewModel}>
       <section className="detail-page__section" aria-label="Detail cards">
         <ul className="oil-lint-shell__card-grid">
-          {viewModel.cards.map(card => <SummaryCardShell key={card.kind} {...card} />)}
+          {viewModel.cards.map(card => <SummaryCardShell key={card.kind} {...card} chart={none()} />)}
         </ul>
       </section>
       <section className="detail-page__section" aria-label="Detail facts">

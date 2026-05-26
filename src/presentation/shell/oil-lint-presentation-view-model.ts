@@ -5,8 +5,8 @@ import type { PresentationCaveatViewModel } from '@/presentation/contracts/prese
 import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
 import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 
-const reportWeekText = '2026-05-19'
-const geographyText = 'USTotal'
+const reportWeekText = 'May 19, 2026'
+const geographyText = 'United States'
 const summarySubtitleText = `${reportWeekText} · ${geographyText}`
 
 const summaryDisplayStateMessageByKind = cond<
@@ -21,26 +21,26 @@ const summaryDisplayStateMessageByKind = cond<
 
 const inventoryCard: SummaryCardViewModel = {
   kind: 'inventory',
-  title: 'Inventory',
+  title: 'Crude oil in storage',
   valueText: '80 ThousandBarrels',
   statusLabel: 'Unknown',
   subtitleText: some(summarySubtitleText),
   trendLabel: none(),
   anomalyLabel: some('Inventory anomaly is not computed yet.'),
   caveatLabel: none(),
-  drilldownTarget: none(),
+  drilldownTarget: some('/inventory'),
 }
 
 const priceCard: SummaryCardViewModel = {
   kind: 'price',
-  title: 'WTI price',
+  title: 'WTI spot price',
   valueText: '72 USDPerBarrel',
   statusLabel: 'Unknown',
   subtitleText: some(summarySubtitleText),
   trendLabel: some('Up'),
   anomalyLabel: some('Price anomaly is not computed yet.'),
   caveatLabel: none(),
-  drilldownTarget: none(),
+  drilldownTarget: some('/price'),
 }
 
 const presentationCaveats: readonly PresentationCaveatViewModel[] = [
@@ -68,7 +68,7 @@ export const createOilLintPresentationViewModel = (displayState: SummaryViewMode
   reportWeekText,
   geographyText,
   headline: 'Weekly petroleum summary ready',
-  summary: 'Inventory and price readings are presented with caveats kept visible for review.',
+  summary: 'Inventory and WTI readings are presented with trend, anomaly, confidence, and caveats kept visible for review.',
   conditionLabel: 'Unknown',
   confidenceLabel: 'Medium',
   cards: [inventoryCard, priceCard],

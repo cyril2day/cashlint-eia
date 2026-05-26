@@ -286,6 +286,16 @@
   line-height: var(--line-height-normal);
 }
 
+.oil-lint-shell__card-chart {
+  min-width: 0;
+  margin-top: var(--space-2);
+}
+
+.oil-lint-shell__card-chart .chart-panel {
+  padding-top: var(--space-3);
+  border-top: var(--oil-lint-panel-border);
+}
+
 .oil-lint-shell__caveat-list,
 .oil-lint-shell__error-meta {
   display: grid;

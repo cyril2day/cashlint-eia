@@ -5,7 +5,7 @@ import type { SummaryViewModel } from '@/presentation/contracts'
 export function HeroAnalysisPanel({ viewModel }: Readonly<{ readonly viewModel: SummaryViewModel }>) {
   return (
     <section className="hero-analysis" aria-labelledby="hero-analysis-title">
-      <p className="hero-analysis__eyebrow">Live weekly analysis</p>
+      <p className="hero-analysis__eyebrow">This week's read</p>
       <h2 className="hero-analysis__title" id="hero-analysis-title">{viewModel.headline}</h2>
       <p className="hero-analysis__summary">{viewModel.summary}</p>
       <dl className="hero-analysis__metrics" aria-label="Analysis state">

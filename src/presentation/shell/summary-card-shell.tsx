@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { type ReactNode } from 'react'
 
 import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
 import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
+import { matchMaybe, type Maybe } from '@/shared/maybe'
 
 const summaryCardModifierByKind: Readonly<Record<SummaryCardViewModel['kind'], string>> = {
   inventory: 'oil-lint-shell__card--inventory',
@@ -15,14 +16,20 @@ type CardMetaEntry = Readonly<{
 }>
 
 const createCardMetaEntries = (card: SummaryCardViewModel): readonly CardMetaEntry[] => [
-  { label: 'Subtitle', value: renderMaybeText('Not in this run')(card.subtitleText) },
-  { label: 'Trend', value: renderMaybeText('Not in this run')(card.trendLabel) },
-  { label: 'Anomaly', value: renderMaybeText('No anomaly call yet')(card.anomalyLabel) },
-  { label: 'Caveat', value: renderMaybeText('No caveat attached')(card.caveatLabel) },
-  { label: 'Drilldown', value: renderMaybeText('No drilldown yet')(card.drilldownTarget) },
+  { label: 'Trend', value: renderMaybeText('Not enough history')(card.trendLabel) },
+  { label: 'Anomaly', value: renderMaybeText('No anomaly detected')(card.anomalyLabel) },
 ]
 
-export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitleText, trendLabel, anomalyLabel, caveatLabel, drilldownTarget }: SummaryCardViewModel) {
+type SummaryCardShellProps = SummaryCardViewModel & Readonly<{
+  readonly chart: Maybe<ReactNode>
+}>
+
+const renderCardChart = matchMaybe<ReactNode, ReactNode>({
+  Some: chart => <div className="oil-lint-shell__card-chart">{chart}</div>,
+  None: () => null,
+})
+
+export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitleText, trendLabel, anomalyLabel, caveatLabel, drilldownTarget, chart }: SummaryCardShellProps) {
   const cardMetaEntries = createCardMetaEntries({
     kind,
     title,
@@ -52,6 +59,8 @@ export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitle
           </div>
         ))}
       </dl>
+
+      {renderCardChart(chart)}
     </li>
   )
 }
