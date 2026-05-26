@@ -3,8 +3,8 @@
   gap: var(--space-3);
   min-width: 0;
   padding: var(--space-4);
-  border: var(--oil-lint-chart-border);
-  border-radius: var(--oil-lint-chart-radius);
+  border: var(--border-width-1) var(--border-style-solid) var(--color-border);
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
 }
 
@@ -26,34 +26,18 @@
   line-height: var(--line-height-tight);
 }
 
-.chart-panel__state {
-  display: inline-flex;
-  width: fit-content;
-  padding: var(--space-1) var(--space-3);
-  border: var(--oil-lint-chart-border);
-  border-radius: var(--oil-lint-chart-radius);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-}
-
 .chart-panel__visual {
   min-height: 8rem;
   display: grid;
   place-items: center;
   min-width: 0;
-  border: var(--oil-lint-chart-border);
-  border-radius: var(--oil-lint-chart-radius);
-  background:
-    linear-gradient(90deg, color-mix(in srgb, var(--oil-lint-chart-line) 12%, transparent), transparent),
-    repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-quinary) 70%, transparent) 0 var(--border-width-1), transparent var(--border-width-1) var(--space-8)),
-    var(--surface-color-primary);
+  background: var(--surface-color-primary);
 }
 
 .chart-panel__visual-label {
   padding: var(--space-2) var(--space-3);
-  border: var(--oil-lint-chart-border);
-  border-radius: var(--oil-lint-chart-radius);
+  border: var(--border-width-1) var(--border-style-solid) var(--color-border);
+  border-radius: var(--radius-md);
   background: var(--surface-color-secondary);
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);

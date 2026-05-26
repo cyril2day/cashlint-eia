@@ -1,5 +1,7 @@
-@use './charts/time-series-and-sparkline';
 @use './charts/gallery';
 @use './charts/panel';
-@use './charts/visualizations';
+@use './charts/sparkline';
+@use './charts/histogram';
+@use './charts/area-chart';
+@use './charts/chart-error';
 @use './charts/responsive';

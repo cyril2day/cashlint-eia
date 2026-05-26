@@ -1,9 +1,12 @@
 import React from 'react'
 
 import type { TimeSeriesChartViewModel } from '@/presentation/charts/contracts'
-import type { TimeSeriesChartAxisTick, TimeSeriesChartGeometry } from '@/presentation/charts/computation'
+import type {
+  TimeSeriesChartAxisTick,
+  TimeSeriesChartGeometry,
+} from '@/presentation/charts/computation/time-series-chart-geometry'
 import { formatDecimalCoordinate } from '@/shared/decimal'
-import { chartValueAxisLabel } from '@/shared/chart-svg'
+import { cond } from '@/shared/fp'
 import { TimeSeriesChartBaselineBand } from '@/presentation/charts/components/time-series-chart/time-series-chart-baseline-band'
 import { TimeSeriesChartLinePath } from '@/presentation/charts/components/time-series-chart/time-series-chart-line-path'
 import { TimeSeriesChartCurrentMarker } from '@/presentation/charts/components/time-series-chart/time-series-chart-current-marker'
@@ -14,6 +17,8 @@ type TimeSeriesChartProps = Readonly<{
   readonly geometry: TimeSeriesChartGeometry
 }>
 
+type AxisTextAnchor = 'start' | 'middle' | 'end'
+
 const clipPathId = (viewModel: TimeSeriesChartViewModel): string =>
   `${viewModel.id}-plot-clip`
 
@@ -22,6 +27,34 @@ const xAxisY = (geometry: TimeSeriesChartGeometry): number =>
 
 const yAxisX = (geometry: TimeSeriesChartGeometry): number =>
   geometry.dimensions.margin.left
+
+const isLeftXTick =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick): boolean =>
+    tick.coordinate <= geometry.dimensions.margin.left
+
+const isRightXTick =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick): boolean =>
+    tick.coordinate >= geometry.dimensions.margin.left + geometry.dimensions.innerWidth
+
+const xTickTextAnchor =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick): AxisTextAnchor =>
+    cond<[TimeSeriesChartAxisTick], AxisTextAnchor>([
+      [isLeftXTick(geometry), () => 'start'],
+      [isRightXTick(geometry), () => 'end'],
+      [() => true, () => 'middle'],
+    ])(tick)
+
+const xTickTextOffset =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick): number =>
+    cond<[TimeSeriesChartAxisTick], number>([
+      [isLeftXTick(geometry), () => 4],
+      [isRightXTick(geometry), () => -4],
+      [() => true, () => 0],
+    ])(tick)
 
 const xTick =
   (geometry: TimeSeriesChartGeometry) =>
@@ -38,7 +71,8 @@ const xTick =
         className="oil-lint-time-series-chart__axis-tick-label"
         x={formatDecimalCoordinate(tick.coordinate)}
         y={formatDecimalCoordinate(xAxisY(geometry) + 16)}
-        textAnchor="middle"
+        dx={formatDecimalCoordinate(xTickTextOffset(geometry)(tick))}
+        textAnchor={xTickTextAnchor(geometry)(tick)}
       >
         {tick.label}
       </text>
@@ -110,21 +144,6 @@ export function TimeSeriesChart({ viewModel, geometry }: TimeSeriesChartProps) {
             y1={formatDecimalCoordinate(xAxisY(geometry))}
             y2={formatDecimalCoordinate(xAxisY(geometry))}
           />
-          <text
-            className="oil-lint-time-series-chart__axis-label"
-            x={formatDecimalCoordinate(geometry.dimensions.margin.left + (geometry.dimensions.innerWidth / 2))}
-            y={formatDecimalCoordinate(geometry.dimensions.outerHeight - 4)}
-            textAnchor="middle"
-          >
-            Week
-          </text>
-          <text
-            className="oil-lint-time-series-chart__axis-label"
-            transform={`translate(10 ${formatDecimalCoordinate(geometry.dimensions.margin.top + (geometry.dimensions.innerHeight / 2))}) rotate(-90)`}
-            textAnchor="middle"
-          >
-            {chartValueAxisLabel(viewModel.unitLabel)}
-          </text>
         </g>
         <g clipPath={`url(#${plotClipPathId})`}>
           <TimeSeriesChartBaselineBand

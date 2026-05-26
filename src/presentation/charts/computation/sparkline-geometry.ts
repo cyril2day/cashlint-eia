@@ -1,7 +1,8 @@
 import { line, scaleLinear } from 'd3'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import { chartDomainBounds, numericDomain, toSvgPathMaybe } from '@/shared/chart-svg'
-import type { ChartDimensions, SparklineViewModel } from '@/presentation/charts/contracts'
+import type { ChartDimensions } from '@/presentation/charts/contracts'
+import type { SparklineWidgetInput } from '@/presentation/charts/widgets/sparkline/sparkline-widget'
 
 type GeometryPoint = Readonly<{ readonly x: number; readonly y: number }>
 
@@ -12,25 +13,25 @@ export type SparklineGeometry = Readonly<{
 }>
 
 const currentMarker = (
-  viewModel: SparklineViewModel,
+  input: SparklineWidgetInput,
   xScale: (value: number) => number,
   yScale: (value: number) => number,
 ): Maybe<Readonly<{ readonly x: number; readonly y: number }>> =>
-  matchMaybe<SparklineViewModel['points'][number], Maybe<Readonly<{ readonly x: number; readonly y: number }>>>({
+  matchMaybe<SparklineWidgetInput['points'][number], Maybe<Readonly<{ readonly x: number; readonly y: number }>>>({
     Some: candidate =>
       some({
         x: xScale(candidate.x),
         y: yScale(candidate.y),
       }),
     None: () => none(),
-  })(viewModel.currentPoint)
+  })(input.currentPoint)
 
 export const composeSparklineGeometry = (
-  viewModel: SparklineViewModel,
+  input: SparklineWidgetInput,
   dimensions: ChartDimensions,
 ): SparklineGeometry => {
-  const xDomain = numericDomain(viewModel.points.map(point => point.x))
-  const yDomain = numericDomain(viewModel.points.map(point => point.y))
+  const xDomain = numericDomain(input.points.map(point => point.x))
+  const yDomain = numericDomain(input.points.map(point => point.y))
 
   const xScale = scaleLinear()
     .domain(chartDomainBounds(xDomain))
@@ -45,8 +46,8 @@ export const composeSparklineGeometry = (
     .y((point: GeometryPoint) => yScale(point.y))
 
   return {
-    linePath: toSvgPathMaybe(pathBuilder(viewModel.points)),
-    currentMarker: currentMarker(viewModel, xScale, yScale),
+    linePath: toSvgPathMaybe(pathBuilder(input.points)),
+    currentMarker: currentMarker(input, xScale, yScale),
     dimensions,
   }
 }
