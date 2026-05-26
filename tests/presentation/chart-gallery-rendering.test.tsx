@@ -33,18 +33,16 @@ const summary: SummaryViewModel = {
 }
 
 describe('chart gallery rendering', () => {
-  it('renders all chart panels and the readiness summary', () => {
+  it('renders all active chart panels', () => {
     const markup = renderToStaticMarkup(<ChartGallery viewModel={mapSummaryToChartsGalleryViewModel(summary)} />)
 
-    expect(markup).toContain('Chart readiness summary')
-    expect(markup).toContain('Inventory time series')
-    expect(markup).toContain('WTI sparkline')
-    expect(markup).toContain('Inventory metric card')
-    expect(markup).toContain('Balance driver bars')
+    expect(markup).toContain('WTI weekly price line chart')
+    expect(markup).toContain('WTI weekly price trend')
+    expect(markup).toContain('WTI spot price KPI')
+    expect(markup).toContain('System balance drivers')
     expect(markup).toContain('WTI distribution histogram')
-    expect(markup).toContain('Inventory box plot')
+    expect(markup).toContain('WTI distribution box plot')
     expect(markup).toContain('Inventory area chart')
-    expect(markup).toContain('Balance variance chart')
-    expect(markup).toContain('current run did not return')
+    expect(markup).toContain('WTI baseline variance')
   })
 })

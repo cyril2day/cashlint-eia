@@ -34,23 +34,28 @@ describe('chart gallery view model', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
     expect(gallery.panels.map(panel => panel.chartKind)).toEqual([
+      'TimeSeries',
       'Sparkline',
+      'MetricCard',
+      'BarChart',
       'Histogram',
+      'BoxPlot',
       'AreaChart',
+      'VarianceChart',
     ])
-    expect(gallery.panels).toHaveLength(3)
+    expect(gallery.panels).toHaveLength(8)
     expect(gallery.panels.map(panel => panel.chartViewModel.accessibilitySummary)).not.toContain('')
   })
 
   it('keeps insufficient runtime history unavailable instead of substituting zeros', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
-    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(3)
+    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(8)
     expect(gallery.panels.map(panel => panel.chartViewModel.accessibilitySummary)).not.toContain('0')
     expect(gallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
       'Ready:0',
       'Cautious:0',
-      'Waiting:3',
+      'Waiting:8',
       'Needs history:0',
     ])
   })

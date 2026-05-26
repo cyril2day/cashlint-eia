@@ -73,7 +73,7 @@ describe('app view models', () => {
 
     expect(viewModel.navigation.items.map(item => item.href)).toEqual(['/', '/inventory', '/price', '/balance', '/analysis', '/charts'])
     expect(viewModel.controls.submitLabel).toBe('Refresh live data')
-    expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['Sparkline', 'Histogram', 'AreaChart'])
+    expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['MetricCard', 'Sparkline', 'TimeSeries'])
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
     expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Weekly story composed')
   })
@@ -82,16 +82,21 @@ describe('app view models', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
     expect(gallery.panels.map(panel => panel.chartKind)).toEqual([
+      'TimeSeries',
       'Sparkline',
+      'MetricCard',
+      'BarChart',
       'Histogram',
+      'BoxPlot',
       'AreaChart',
+      'VarianceChart',
     ])
-    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(3)
+    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(8)
     expect(gallery.panels.filter(panel => panel.state === 'Complete')).toHaveLength(0)
     expect(gallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
       'Ready:0',
       'Cautious:0',
-      'Waiting:3',
+      'Waiting:8',
       'Needs history:0',
     ])
   })
@@ -104,7 +109,7 @@ describe('app view models', () => {
 
     expect(inventory.rows.map(row => row.value)).toEqual(['440 million barrels'])
     expect(price.rows[0].caveats.kind).toBe('Some')
-    expect(balance.charts.map(panel => panel.chartKind)).toEqual([])
+    expect(balance.charts.map(panel => panel.chartKind)).toEqual(['BarChart', 'VarianceChart'])
     expect(analysis.rows.map(row => row.value)).not.toContain('0')
   })
 })
