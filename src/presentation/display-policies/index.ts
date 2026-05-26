@@ -1,6 +1,7 @@
 import type { AnalysisCondition } from '@/contexts/analysis/model/analysis-condition'
 import type { AnalysisConfidence } from '@/contexts/analysis/model/analysis-confidence'
 import type { InterpretationAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
+import type { BalanceCaveatKind, BalanceDriverKind, SystemBalanceState } from '@/contexts/system-balance/model'
 import { cond } from '@/shared/fp'
 import { map } from '@/shared/maybe'
 import type { Trend } from '@/contexts/interpretation/model/trend'
@@ -35,3 +36,47 @@ export const formatSummaryAnomalyLabel = (anomaly: InterpretationAnomalyState): 
     [value => value.kind === 'Anomalous', value => String(Reflect.get(value, 'direction'))],
     [() => true, () => 'Normal'],
   ])(anomaly)
+
+export const formatBalanceDriverLabel = (kind: BalanceDriverKind): string =>
+  cond<[BalanceDriverKind], string>([
+    [value => value === 'InventoryDraw', () => 'Inventory draw'],
+    [value => value === 'InventoryBuild', () => 'Inventory build'],
+    [value => value === 'StrongerRefineryDemand', () => 'Stronger refinery runs'],
+    [value => value === 'WeakerRefineryDemand', () => 'Weaker refinery runs'],
+    [value => value === 'IncreasedProduction', () => 'Higher domestic production'],
+    [value => value === 'DecreasedProduction', () => 'Lower domestic production'],
+    [value => value === 'IncreasedImports', () => 'Higher crude imports'],
+    [value => value === 'DecreasedImports', () => 'Lower crude imports'],
+    [value => value === 'IncreasedExports', () => 'Higher crude exports'],
+    [value => value === 'DecreasedExports', () => 'Lower crude exports'],
+    [() => true, () => 'Supply pressure movement'],
+  ])(kind)
+
+export const formatBalanceCaveatTitle = (kind: BalanceCaveatKind): string =>
+  cond<[BalanceCaveatKind], string>([
+    [value => value === 'SimplifiedCrudeBalance', () => 'Simplified crude balance'],
+    [value => value === 'RateToStockComparisonLimitation', () => 'Rate-to-stock comparison limit'],
+    [value => value === 'MissingOptionalComponent', () => 'Missing optional component'],
+    [value => value === 'MixedSignalDirection', () => 'Mixed signal direction'],
+    [value => value === 'PartialGeographyCoverage', () => 'Partial geography coverage'],
+    [() => true, () => 'Missing evidence limits the read'],
+  ])(kind)
+
+export const formatBalanceCaveatMessage = (kind: BalanceCaveatKind): string =>
+  cond<[BalanceCaveatKind], string>([
+    [value => value === 'SimplifiedCrudeBalance', () => 'The physical balance uses a simplified weekly crude balance rather than a full refinery accounting model.'],
+    [value => value === 'RateToStockComparisonLimitation', () => 'Flow rates and stock changes are compared cautiously because they are measured on different bases.'],
+    [value => value === 'MissingOptionalComponent', () => 'One optional balance component was unavailable, so the read keeps that limitation visible.'],
+    [value => value === 'MixedSignalDirection', () => 'The balance drivers do not all point in the same direction.'],
+    [value => value === 'PartialGeographyCoverage', () => 'The source coverage is partial for the selected geography.'],
+    [() => true, () => 'The balance state is conservative because required evidence is incomplete.'],
+  ])(kind)
+
+export const formatSystemBalanceStateLabel = (state: SystemBalanceState): string =>
+  cond<[SystemBalanceState], string>([
+    [value => value === 'Tightening', () => 'Tightening physical balance'],
+    [value => value === 'Loosening', () => 'Loosening physical balance'],
+    [value => value === 'Balanced', () => 'Balanced physical market'],
+    [value => value === 'Mixed', () => 'Mixed physical signal'],
+    [() => true, () => 'Evidence incomplete'],
+  ])(state)
