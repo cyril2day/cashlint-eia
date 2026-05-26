@@ -1,0 +1,88 @@
+.area-chart {
+  --area-chart-line: var(--color-cyan);
+  --area-chart-marker: var(--color-orange);
+  --area-chart-baseline: var(--color-green);
+
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+}
+
+.area-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 42rem;
+  min-height: 10rem;
+  overflow: visible;
+}
+
+.area-chart__axis {
+  stroke: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.area-chart__grid-line {
+  stroke: color-mix(in srgb, var(--text-quinary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.area-chart__axis-label,
+.area-chart__baseline-label {
+  fill: var(--text-secondary);
+  font-size: 0.58rem;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.area-chart__baseline {
+  stroke: color-mix(in srgb, var(--area-chart-baseline) 64%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+
+.area-chart__area {
+  fill: color-mix(in srgb, var(--area-chart-line) 14%, transparent);
+}
+
+.area-chart__line {
+  fill: none;
+  stroke: var(--area-chart-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.area-chart__reference-marker {
+  fill: var(--area-chart-line);
+}
+
+.area-chart__current-marker {
+  fill: var(--area-chart-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.area-chart__empty,
+.area-chart__point {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.area-chart__point {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.area-chart__point-week {
+  color: var(--text-secondary);
+  fill: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.area-chart__point-value {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}

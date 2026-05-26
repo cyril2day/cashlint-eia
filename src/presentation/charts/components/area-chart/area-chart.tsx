@@ -1,15 +1,16 @@
 import React from 'react'
 
-import type { AreaChartBaselineViewModel, AreaChartMarkerViewModel, AreaChartPointViewModel, AreaChartViewModel } from '@/presentation/charts/contracts'
-import { ifElse } from '@/shared/fp'
-import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
+import type { AreaChartWidgetBaseline, AreaChartWidgetError, AreaChartWidgetInput, AreaChartWidgetMarker, AreaChartWidgetOutput, AreaChartWidgetPoint } from '@/presentation/charts/widgets/area-chart/area-chart-widget'
+import { computeAreaChartOutput } from '@/presentation/charts/widgets/area-chart/area-chart-widget'
+import { ChartErrorMessage, type ChartErrorMessageViewModel } from '@/presentation/charts/components/chart-error-message'
+import { cond, ifElse } from '@/shared/fp'
+import { firstArrayItem, lastArrayItem } from '@/shared/collection'
 import { matchMaybe } from '@/shared/maybe'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
-import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
+import { isSuccess, type Result } from '@/shared/result'
 import {
   type ChartDomain,
   type ChartSvgPoint,
-  chartValueAxisLabel,
   defaultChartSvgFrame,
   firstChartPoint,
   lastChartPoint,
@@ -19,60 +20,44 @@ import {
   svgPointList,
 } from '@/shared/chart-svg'
 
-type AreaChartRenderablePoint = AreaChartPointViewModel & Readonly<{
-  readonly yValue: number
-}>
-
-const areaPoint = (point: AreaChartPointViewModel) => (
-  <li key={point.reportWeekIso} className="area-chart__point">
-    <span className="area-chart__point-week">{point.reportWeekIso}</span>
-    <span className="area-chart__point-value">{renderMaybeText('No value in this run')(point.valueLabel)}</span>
-  </li>
-)
-
-const renderablePoint = (point: AreaChartPointViewModel): readonly AreaChartRenderablePoint[] =>
-  matchMaybe<number, readonly AreaChartRenderablePoint[]>({
-    Some: value => [{
-      ...point,
-      yValue: value,
-    }],
-    None: () => [],
-  })(point.y)
-
-const renderablePoints = (viewModel: AreaChartViewModel): readonly AreaChartRenderablePoint[] =>
-  viewModel.points.flatMap(renderablePoint)
-
-const baselineValue = (
-  viewModel: AreaChartViewModel,
-  values: readonly number[],
-): number =>
-  matchMaybe<AreaChartBaselineViewModel, number>({
-    Some: baseline => baseline.value,
-    None: () => Math.min(...values),
-  })(viewModel.baseline)
+type AreaChartRenderablePoints = AreaChartWidgetOutput['points']
 
 const domainValues = (
-  viewModel: AreaChartViewModel,
-  points: readonly AreaChartRenderablePoint[],
+  input: AreaChartWidgetInput,
+  points: readonly AreaChartWidgetPoint[],
 ): readonly number[] => [
-  ...points.map(point => point.yValue),
-  ...matchMaybe<AreaChartMarkerViewModel, readonly number[]>({
+  ...points.map(point => point.y),
+  ...matchMaybe<AreaChartWidgetMarker, readonly number[]>({
     Some: marker => [marker.y],
     None: () => [],
-  })(viewModel.currentMarker),
-  ...viewModel.referenceMarkers.map(marker => marker.y),
+  })(input.currentMarker),
+  ...input.referenceMarkers.map(marker => marker.y),
 ]
+
+const yDomainMaximum = (
+  input: AreaChartWidgetInput,
+  points: AreaChartRenderablePoints,
+): number =>
+  Math.max(1, ...domainValues(input, points))
+
+const areaYDomain = (
+  input: AreaChartWidgetInput,
+  points: AreaChartRenderablePoints,
+): ChartDomain => ({
+  minimum: 0,
+  maximum: yDomainMaximum(input, points) * 1.08,
+})
 
 const scaledPoint =
   (xScale: (value: number) => number, yScale: (value: number) => number) =>
-  (point: AreaChartRenderablePoint): ChartSvgPoint => ({
+  (point: AreaChartWidgetPoint): ChartSvgPoint => ({
     x: xScale(point.x),
-    y: yScale(point.yValue),
+    y: yScale(point.y),
   })
 
 const scaledPoints =
   (xScale: (value: number) => number, yScale: (value: number) => number) =>
-  (points: readonly [AreaChartRenderablePoint, ...AreaChartRenderablePoint[]]): readonly [ChartSvgPoint, ...ChartSvgPoint[]] => [
+  (points: AreaChartRenderablePoints): readonly [ChartSvgPoint, ...ChartSvgPoint[]] => [
     scaledPoint(xScale, yScale)(firstArrayItem(points)),
     ...points.slice(1).map(scaledPoint(xScale, yScale)),
   ]
@@ -92,33 +77,68 @@ const areaPolygonPoints = (
   },
 ]
 
+const middlePointIndex = (points: AreaChartRenderablePoints): number =>
+  Math.floor((points.length - 1) / 2)
+
+const middlePoint = (points: AreaChartRenderablePoints): AreaChartWidgetPoint =>
+  points[middlePointIndex(points)]
+
+const xTickPoints = (points: AreaChartRenderablePoints): readonly AreaChartWidgetPoint[] => [
+  firstArrayItem(points),
+  middlePoint(points),
+  lastArrayItem(points),
+]
+
+const yTickValues = (domain: ChartDomain): readonly number[] => [
+  domain.minimum,
+  domain.maximum / 2,
+  domain.maximum,
+]
+
+const yTick =
+  (yScale: (value: number) => number) =>
+  (value: number) => (
+    <g key={value} className="area-chart__y-tick">
+      <line
+        className="area-chart__grid-line"
+        x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
+        x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX + defaultChartSvgFrame.plotWidth)}
+        y1={formatDecimalCoordinate(yScale(value))}
+        y2={formatDecimalCoordinate(yScale(value))}
+      />
+      <text
+        className="area-chart__axis-label"
+        x={formatDecimalCoordinate(defaultChartSvgFrame.plotX - 6)}
+        y={formatDecimalCoordinate(yScale(value) + 4)}
+        textAnchor="end"
+      >
+        {formatDecimal(value)}
+      </text>
+    </g>
+  )
+
+const xTick =
+  (xScale: (value: number) => number) =>
+  (point: AreaChartWidgetPoint) => (
+    <text
+      key={`${point.xLabel}-${formatDecimalCoordinate(point.x)}`}
+      className="area-chart__axis-label"
+      x={formatDecimalCoordinate(xScale(point.x))}
+      y={formatDecimalCoordinate(defaultChartSvgFrame.height - 4)}
+      textAnchor="middle"
+    >
+      {point.xLabel}
+    </text>
+  )
+
 const areaAxis = (
-  viewModel: AreaChartViewModel,
-  points: readonly [AreaChartRenderablePoint, ...AreaChartRenderablePoint[]],
+  points: AreaChartRenderablePoints,
   yDomain: ChartDomain,
   xScale: (value: number) => number,
   yScale: (value: number) => number,
 ) => (
   <g className="area-chart__axes">
-    {[yDomain.minimum, yDomain.maximum].map(value => (
-      <g key={value} className="area-chart__y-tick">
-        <line
-          className="area-chart__grid-line"
-          x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
-          x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX + defaultChartSvgFrame.plotWidth)}
-          y1={formatDecimalCoordinate(yScale(value))}
-          y2={formatDecimalCoordinate(yScale(value))}
-        />
-        <text
-          className="area-chart__axis-label"
-          x={formatDecimalCoordinate(defaultChartSvgFrame.plotX - 6)}
-          y={formatDecimalCoordinate(yScale(value) + 4)}
-          textAnchor="end"
-        >
-          {formatDecimal(value)}
-        </text>
-      </g>
-    ))}
+    {yTickValues(yDomain).map(yTick(yScale))}
     <line
       className="area-chart__axis"
       x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
@@ -133,37 +153,15 @@ const areaAxis = (
       y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
       y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
     />
-    <text
-      className="area-chart__axis-label"
-      x={formatDecimalCoordinate(xScale(firstArrayItem(points).x))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.height - 4)}
-      textAnchor="start"
-    >
-      {firstArrayItem(points).reportWeekIso}
-    </text>
-    <text
-      className="area-chart__axis-label"
-      x={formatDecimalCoordinate(xScale(lastArrayItem(points).x))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.height - 4)}
-      textAnchor="end"
-    >
-      {lastArrayItem(points).reportWeekIso}
-    </text>
-    <text
-      className="area-chart__axis-label"
-    transform={`translate(10 ${formatDecimalCoordinate(defaultChartSvgFrame.plotY + (defaultChartSvgFrame.plotHeight / 2))}) rotate(-90)`}
-    textAnchor="middle"
-  >
-      {chartValueAxisLabel(viewModel.unitLabel)}
-    </text>
+    {xTickPoints(points).map(xTick(xScale))}
   </g>
 )
 
 const baselineLabel = (
-  viewModel: AreaChartViewModel,
+  input: AreaChartWidgetInput,
   baselineY: number,
 ) =>
-  matchMaybe<AreaChartBaselineViewModel, React.ReactNode>({
+  matchMaybe<AreaChartWidgetBaseline, React.ReactNode>({
     Some: baseline => (
       <text
         className="area-chart__baseline-label"
@@ -175,11 +173,11 @@ const baselineLabel = (
       </text>
     ),
     None: () => null,
-  })(viewModel.baseline)
+  })(input.baseline)
 
 const referenceMarker =
   (xScale: (value: number) => number, yScale: (value: number) => number) =>
-  (marker: AreaChartMarkerViewModel) => (
+  (marker: AreaChartWidgetMarker) => (
     <circle
       key={marker.label}
       className="area-chart__reference-marker"
@@ -190,11 +188,11 @@ const referenceMarker =
   )
 
 const currentMarker = (
-  viewModel: AreaChartViewModel,
+  input: AreaChartWidgetInput,
   xScale: (value: number) => number,
   yScale: (value: number) => number,
 ) =>
-  matchMaybe<AreaChartMarkerViewModel, React.ReactNode>({
+  matchMaybe<AreaChartWidgetMarker, React.ReactNode>({
     Some: marker => (
       <circle
         className="area-chart__current-marker"
@@ -204,16 +202,16 @@ const currentMarker = (
       />
     ),
     None: () => null,
-  })(viewModel.currentMarker)
+  })(input.currentMarker)
 
 const areaSvgFromPoints = (
-  viewModel: AreaChartViewModel,
-  points: readonly [AreaChartRenderablePoint, ...AreaChartRenderablePoint[]],
+  input: AreaChartWidgetInput,
+  output: AreaChartWidgetOutput,
 ) => {
-  const yValues = domainValues(viewModel, points)
-  const baseline = baselineValue(viewModel, yValues)
+  const points = output.points
+  const baseline = output.baseline
   const xScale = scaleXInFrame(paddedNumericDomain(points.map(point => point.x)), defaultChartSvgFrame)
-  const yDomain = paddedNumericDomain([...yValues, baseline])
+  const yDomain = areaYDomain(input, points)
   const yScale = scaleYInFrame(yDomain, defaultChartSvgFrame)
   const chartPoints = scaledPoints(xScale, yScale)(points)
   const baselineY = yScale(baseline)
@@ -223,9 +221,9 @@ const areaSvgFromPoints = (
       className="area-chart__svg"
       viewBox={`0 0 ${defaultChartSvgFrame.width} ${defaultChartSvgFrame.height}`}
       role="img"
-      aria-label={viewModel.accessibilitySummary}
+      aria-label={input.accessibilitySummary}
     >
-      {areaAxis(viewModel, points, yDomain, xScale, yScale)}
+      {areaAxis(points, yDomain, xScale, yScale)}
       <line
         className="area-chart__baseline"
         x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
@@ -241,32 +239,86 @@ const areaSvgFromPoints = (
         className="area-chart__line"
         points={svgPointList(chartPoints)}
       />
-      {baselineLabel(viewModel, baselineY)}
-      {viewModel.referenceMarkers.map(referenceMarker(xScale, yScale))}
-      {currentMarker(viewModel, xScale, yScale)}
+      {baselineLabel(input, baselineY)}
+      {input.referenceMarkers.map(referenceMarker(xScale, yScale))}
+      {currentMarker(input, xScale, yScale)}
     </svg>
   )
 }
 
-const areaSvg = (viewModel: AreaChartViewModel) =>
-  ifElse(
-    isNonEmptyArray<AreaChartRenderablePoint>,
-    points => areaSvgFromPoints(viewModel, points),
-    () => <p className="area-chart__empty">No weekly points landed in this area view yet.</p>,
-  )(renderablePoints(viewModel))
+const areaChartErrorMessage = (error: AreaChartWidgetError): ChartErrorMessageViewModel =>
+  cond<[AreaChartWidgetError], ChartErrorMessageViewModel>([
+    [
+      candidate => candidate.kind === 'InsufficientPoints',
+      () => ({
+        title: 'Area chart needs at least two points',
+        message: 'A filled area requires a line segment before there is a shape to render.',
+      }),
+    ],
+    [
+      candidate => candidate.kind === 'InvalidXValue',
+      () => ({
+        title: 'Area chart x values are invalid',
+        message: 'Every x value must be a finite number.',
+      }),
+    ],
+    [
+      candidate => candidate.kind === 'InvalidYValue',
+      () => ({
+        title: 'Area chart y values are invalid',
+        message: 'Every y value must be a finite number.',
+      }),
+    ],
+    [
+      candidate => candidate.kind === 'DuplicateXValue',
+      () => ({
+        title: 'Area chart x values must be unique',
+        message: 'Duplicate x values would make the filled shape ambiguous.',
+      }),
+    ],
+    [
+      candidate => candidate.kind === 'InvalidBaseline',
+      () => ({
+        title: 'Area chart baseline is not renderable',
+        message: 'This simple area chart renders from a zero baseline only.',
+      }),
+    ],
+    [
+      candidate => candidate.kind === 'NegativeYValue',
+      () => ({
+        title: 'Area chart cannot render negative values',
+        message: 'This simple area chart starts at zero, so negative values need a different chart treatment.',
+      }),
+    ],
+    [
+      () => true,
+      () => ({
+        title: 'Area chart input could not be rendered',
+        message: 'The chart input failed validation before rendering.',
+      }),
+    ],
+  ])(error)
 
-const points = (viewModel: AreaChartViewModel) =>
-  ifElse(
-    (candidate: AreaChartViewModel) => candidate.points.length > 0,
-    candidate => <ul className="area-chart__points">{candidate.points.map(areaPoint)}</ul>,
-    () => <p className="area-chart__empty">No weekly points landed in this area view yet.</p>,
-  )(viewModel)
+const areaSvgFromResult =
+  (input: AreaChartWidgetInput) =>
+  (result: Result<AreaChartWidgetOutput, AreaChartWidgetError>) =>
+    ifElse(
+      isSuccess<AreaChartWidgetOutput, AreaChartWidgetError>,
+      value => areaSvgFromPoints(input, value.value),
+      value => <ChartErrorMessage error={areaChartErrorMessage(value.error)} />,
+    )(result)
 
-export function AreaChart({ viewModel }: Readonly<{ readonly viewModel: AreaChartViewModel }>) {
+const areaSvg = (input: AreaChartWidgetInput) =>
+  ifElse(
+    (candidate: AreaChartWidgetInput) => candidate.points.length > 0,
+    candidate => areaSvgFromResult(candidate)(computeAreaChartOutput(candidate)),
+    () => <ChartErrorMessage error={areaChartErrorMessage({ kind: 'InsufficientPoints' })} />,
+  )(input)
+
+export function AreaChart({ input }: Readonly<{ readonly input: AreaChartWidgetInput }>) {
   return (
-    <figure className="area-chart" aria-label={viewModel.accessibilitySummary}>
-      {areaSvg(viewModel)}
-      {points(viewModel)}
+    <figure className="area-chart" aria-label={input.accessibilitySummary}>
+      {areaSvg(input)}
     </figure>
   )
 }
