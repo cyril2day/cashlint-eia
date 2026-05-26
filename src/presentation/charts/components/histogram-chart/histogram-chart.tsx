@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { HistogramWidgetBin, HistogramWidgetError, HistogramWidgetInput, HistogramWidgetMarker } from '@/presentation/charts/widgets/histogram/histogram-widget'
+import type { HistogramWidgetBin, HistogramWidgetError, HistogramWidgetInput } from '@/presentation/charts/widgets/histogram/histogram-widget'
 import { computeHistogramBins } from '@/presentation/charts/widgets/histogram/histogram-widget'
 import { cond, ifElse } from '@/shared/fp'
 import { isSuccess, type Result } from '@/shared/result'
@@ -180,23 +180,6 @@ const bar =
     </g>
   )
 
-const markerLine =
-  (domain: ReturnType<typeof numericDomain>) =>
-  (marker: HistogramWidgetMarker) => {
-    const x = scaleXInFrame(domain, defaultChartSvgFrame)(marker.value)
-
-    return (
-      <line
-        key={marker.label}
-        className="histogram-chart__marker"
-        x1={formatDecimalCoordinate(x)}
-        x2={formatDecimalCoordinate(x)}
-        y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY)}
-        y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
-      />
-    )
-  }
-
 const domainValues = (
   input: HistogramWidgetInput,
   bins: readonly HistogramWidgetBin[],
@@ -219,13 +202,12 @@ const histogramSvg = (
   return (
     <svg
       className="histogram-chart__svg"
-      viewBox={`0 0 ${defaultChartSvgFrame.width} ${defaultChartSvgFrame.height}`}
+      viewBox={`0 0 ${defaultChartSvgFrame.width} ${defaultChartSvgFrame.height + 28}`}
       role="img"
       aria-label={input.accessibilitySummary}
     >
       {histogramAxes(bins, domain, largest)}
       {bins.map(bar(domain, largest))}
-      {input.markers.map(markerLine(domain))}
     </svg>
   )
 }
