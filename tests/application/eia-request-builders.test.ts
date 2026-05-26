@@ -10,11 +10,11 @@ const seriesParam = (request: EiaRequest): EiaRequestParamValue =>
     () => '',
   )(request.params)
 
-const isWeeklyHistoryRequest = (request: EiaRequest): boolean =>
+const lengthParam = (request: EiaRequest): string =>
   ifElse(
     (params: EiaRequest['params']) => params.kind === 'Some',
-    params => params.value.length === '12',
-    () => false,
+    params => String(params.value.length),
+    () => '',
   )(request.params)
 
 describe('EIA request builders', () => {
@@ -77,6 +77,7 @@ describe('EIA request builders', () => {
     expect(supply.map(seriesParam)).toEqual([
       ['WCRFPUS2', 'WCRIMUS2', 'WCREXUS2'],
     ])
-    expect(refinery.concat(supply).every(isWeeklyHistoryRequest)).toBe(true)
+    expect(refinery.map(lengthParam)).toEqual(['48'])
+    expect(supply.map(lengthParam)).toEqual(['36'])
   })
 })

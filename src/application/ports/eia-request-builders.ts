@@ -14,6 +14,9 @@ const weeklyHistoryRowParams = {
   length: weeklyHistoryRowCount,
 }
 
+const groupedWeeklyHistoryRowCount = (seriesIds: readonly string[]): string =>
+  String(Number(weeklyHistoryRowCount) * seriesIds.length)
+
 export const buildInventoryRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/stoc/wstk/data/',
   params: some({
@@ -55,6 +58,7 @@ const buildSeriesGroupRequest = (
   params: some({
     ...weeklyHistoryRowParams,
     end: reportWeekIso,
+    length: groupedWeeklyHistoryRowCount(seriesIds),
     'facets[series][]': seriesIds,
   }),
 })
