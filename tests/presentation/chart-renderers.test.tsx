@@ -83,7 +83,7 @@ describe('chart renderers', () => {
     const markup = [
       renderToStaticMarkup(<Sparkline input={sparklineInput} geometry={composeSparklineGeometry(sparklineInput, dimensions)} />),
       renderToStaticMarkup(<HistogramChart input={mapHistogramViewModelToWidgetInput(histogram)} />),
-      renderToStaticMarkup(<AreaChart input={mapAreaChartViewModelToWidgetInput(area)} />),
+      renderToStaticMarkup(<AreaChart input={mapAreaChartViewModelToWidgetInput(area)} xAxisTickCount={3} />),
     ].join('')
 
     expect(markup).toContain('oil-lint-sparkline__line')
