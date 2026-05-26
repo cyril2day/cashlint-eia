@@ -1,7 +1,7 @@
 import React from 'react'
 
 import type { VarianceChartEntryViewModel, VarianceChartViewModel } from '@/presentation/charts/contracts'
-import { ifElse } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 import {
@@ -38,7 +38,15 @@ const barWidth = (
 const varianceTickValues = (domain: ChartDomain): readonly number[] =>
   Array.from(new Set([domain.minimum, 0, domain.maximum]))
 
+const varianceTickAnchor = (value: number, domain: ChartDomain): 'start' | 'middle' | 'end' =>
+  cond<[number], 'start' | 'middle' | 'end'>([
+    [candidate => candidate === domain.minimum, () => 'start'],
+    [candidate => candidate === domain.maximum, () => 'end'],
+    [() => true, () => 'middle'],
+  ])(value)
+
 const varianceTick =
+  (domain: ChartDomain) =>
   (xScale: (value: number) => number) =>
   (value: number) => (
     <g key={value} className="variance-chart__axis-tick">
@@ -53,7 +61,7 @@ const varianceTick =
         className="variance-chart__axis-label"
         x={formatDecimalCoordinate(xScale(value))}
         y="114"
-        textAnchor="middle"
+        textAnchor={varianceTickAnchor(value, domain)}
       >
         {formatDecimal(value)}
       </text>
@@ -65,7 +73,7 @@ const varianceAxis = (
   xScale: (value: number) => number,
 ) => (
   <g className="variance-chart__axis-group">
-    {varianceTickValues(domain).map(varianceTick(xScale))}
+    {varianceTickValues(domain).map(varianceTick(domain)(xScale))}
     <line
       className="variance-chart__axis"
       x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
