@@ -23,13 +23,11 @@ const barItem = (largest: number) => (point: BarChartPointViewModel) => (
   <li key={point.category} className={`bar-chart__item bar-chart__item--${point.direction}`}>
     <div className="bar-chart__label-row">
       <span className="bar-chart__category">{point.category}</span>
-      <span className="bar-chart__value">
-        <span className={`bar-chart__direction bar-chart__direction--${point.direction}`}>{directionLabel(point)}</span>
-        {point.valueLabel}
-      </span>
+      <span className="bar-chart__value">{point.valueLabel}</span>
+      <span className={`bar-chart__direction bar-chart__direction--${point.direction}`}>{directionLabel(point)}</span>
     </div>
     <div className="bar-chart__track" aria-hidden="true">
-      <span className="bar-chart__bar" style={{ inlineSize: barWidth(largest)(point) }} />
+      <span className="bar-chart__bar" style={{ width: barWidth(largest)(point) }} />
     </div>
   </li>
 )

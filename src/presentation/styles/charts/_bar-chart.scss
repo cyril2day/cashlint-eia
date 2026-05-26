@@ -20,26 +20,26 @@
 }
 
 .bar-chart__label-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 
 .bar-chart__category {
+  min-width: 0;
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
 }
 
 .bar-chart__value {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
   color: var(--text-primary);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: var(--font-weight-normal);
+  white-space: nowrap;
 }
 
 .bar-chart__direction {
@@ -47,7 +47,7 @@
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   color: var(--surface-color-primary);
-  font-size: var(--text-xs);
+  font-size: 0.62rem;
   font-weight: var(--font-weight-bold);
 }
 
@@ -73,7 +73,6 @@
 .bar-chart__bar {
   display: block;
   height: 100%;
-  min-width: var(--space-1);
   border-radius: inherit;
   background: var(--bar-chart-positive);
 }
