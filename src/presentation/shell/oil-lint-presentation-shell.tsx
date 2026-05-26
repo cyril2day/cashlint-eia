@@ -114,7 +114,7 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
           />
 
           <div className="chart-gallery__grid">
-            {viewModel.primaryCharts.map(panel => <ChartPanel key={panel.id} viewModel={panel} />)}
+            {viewModel.primaryCharts.map(panel => <ChartPanel key={panel.id} viewModel={panel} controls={viewModel.chartsGallery.controls} />)}
           </div>
         </section>
 

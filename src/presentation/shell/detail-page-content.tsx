@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ChartPanel } from '@/presentation/charts/components/chart-panel'
+import { ChartPanel, defaultChartPanelControls } from '@/presentation/charts/components/chart-panel'
 import type { DetailPageViewModel } from '@/presentation/contracts'
 import { DetailPageShell } from '@/presentation/shell/detail-page-shell'
 import { DetailRowList } from '@/presentation/shell/detail-row-list'
@@ -19,7 +19,7 @@ export function DetailPageContent({ viewModel }: Readonly<{ readonly viewModel: 
       </section>
       <section className="detail-page__section" aria-label="Detail charts">
         <div className="chart-gallery__grid">
-          {viewModel.charts.map(panel => <ChartPanel key={panel.id} viewModel={panel} />)}
+          {viewModel.charts.map(panel => <ChartPanel key={panel.id} viewModel={panel} controls={defaultChartPanelControls} />)}
         </div>
       </section>
     </DetailPageShell>
