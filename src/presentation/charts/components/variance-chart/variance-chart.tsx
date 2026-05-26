@@ -1,7 +1,7 @@
 import React from 'react'
 
 import type { VarianceChartEntryViewModel, VarianceChartViewModel } from '@/presentation/charts/contracts'
-import { cond, ifElse } from '@/shared/fp'
+import { both, cond, ifElse } from '@/shared/fp'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import { renderMaybeText } from '@/presentation/utils/render-maybe-text'
 import {
@@ -23,6 +23,25 @@ const varianceDomain = (item: VarianceChartEntryViewModel) =>
     0,
   ])
 
+const domainRange = (domain: ChartDomain): number => domain.maximum - domain.minimum
+
+const minimumIsBelowZero = (domain: ChartDomain): boolean => domain.minimum < 0
+const maximumIsAboveZero = (domain: ChartDomain): boolean => domain.maximum > 0
+const zeroIsInsideDomain = both(minimumIsBelowZero, maximumIsAboveZero)
+
+const zeroHasLabelRoom = (domain: ChartDomain): boolean => {
+  const range = domainRange(domain)
+  const minimumDistance = Math.abs(domain.minimum) / range
+  const maximumDistance = Math.abs(domain.maximum) / range
+
+  return both(
+    (value: number): boolean => value > 0.18,
+    () => maximumDistance > 0.18,
+  )(minimumDistance)
+}
+
+const zeroTickIsRenderable = both(zeroIsInsideDomain, zeroHasLabelRoom)
+
 const barX = (
   item: VarianceChartEntryViewModel,
   xScale: (value: number) => number,
@@ -36,7 +55,10 @@ const barWidth = (
   Math.max(2, Math.abs(xScale(item.actualValue) - xScale(item.reference.value)))
 
 const varianceTickValues = (domain: ChartDomain): readonly number[] =>
-  Array.from(new Set([domain.minimum, 0, domain.maximum]))
+  cond<[ChartDomain], readonly number[]>([
+    [zeroTickIsRenderable, candidate => [candidate.minimum, 0, candidate.maximum]],
+    [() => true, candidate => [candidate.minimum, candidate.maximum]],
+  ])(domain)
 
 const varianceTickAnchor = (value: number, domain: ChartDomain): 'start' | 'middle' | 'end' =>
   cond<[number], 'start' | 'middle' | 'end'>([
