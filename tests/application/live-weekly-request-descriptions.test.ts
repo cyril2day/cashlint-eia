@@ -9,15 +9,10 @@ describe('live-weekly request descriptions', () => {
     expect(requests.inventoryRequest.endpoint).toBe('/v2/petroleum/stoc/wstk/data/')
     expect(requests.priceRequest.endpoint).toBe('/v2/petroleum/pri/spt/data/')
     expect(requests.refineryRequests.map(request => unwrap(request.params)?.['facets[series][]'])).toEqual([
-      'WCRRIUS2',
-      'WGIRIUS2',
-      'WOCLEUS2',
-      'WPULEUS3',
+      ['WCRRIUS2', 'WGIRIUS2', 'WOCLEUS2', 'WPULEUS3'],
     ])
     expect(requests.supplyRequests.map(request => unwrap(request.params)?.['facets[series][]'])).toEqual([
-      'WCRFPUS2',
-      'WCRIMUS2',
-      'WCREXUS2',
+      ['WCRFPUS2', 'WCRIMUS2', 'WCREXUS2'],
     ])
     expect(unwrap(requests.inventoryRequest.params)).toEqual({
       end: '2026-01-09',

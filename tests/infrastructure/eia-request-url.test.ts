@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildInventoryRequest, buildPriceRequest, buildRefineryRequest, buildSupplyRequest } from '@/application/ports/eia-request-builders'
+import { buildInventoryRequest, buildPriceRequest, buildRefineryRequest, buildRefineryRequests, buildSupplyRequest } from '@/application/ports/eia-request-builders'
 import { buildEiaRequestUrl, sanitizeEiaUrl, validateEiaRuntimeConfig } from '@/infrastructure/eia'
 import { ifElse } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
@@ -54,5 +54,12 @@ describe('EIA request URL construction', () => {
     expect(buildEiaRequestUrl(unwrapConfig(), buildSupplyRequest('2026-05-19')).toString()).toContain('facets%5Bseries%5D%5B%5D=WCRFPUS2')
     expect(sanitizeEiaUrl(url)).toContain('api_key=%5BREDACTED%5D')
     expect(sanitizeEiaUrl(url)).not.toContain('secret-test-key')
+  })
+
+  it('preserves repeated EIA facet params for grouped series requests', () => {
+    const url = buildEiaRequestUrl(unwrapConfig(), buildRefineryRequests('2026-05-19')[0])
+    const seriesValues = url.searchParams.getAll('facets[series][]')
+
+    expect(seriesValues).toEqual(['WCRRIUS2', 'WGIRIUS2', 'WOCLEUS2', 'WPULEUS3'])
   })
 })

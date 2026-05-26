@@ -6,7 +6,7 @@ import { createLiveWeeklyDependencies } from '@/application/dependencies/live-we
 import { cond } from '@/shared/fp'
 import { ifElse } from '@/shared/fp'
 import { isFailure, isSuccess, type Result, success } from '@/shared/result'
-import type { EiaRequest, UpstreamError } from '@/application/ports/eia-client'
+import type { EiaRequest, EiaRequestParamValue, UpstreamError } from '@/application/ports/eia-client'
 import { none, some } from '@/shared/maybe'
 import type { RawEiaEnvelope, RawEiaRow } from '@/contexts/acl/eia-ingestion-acl/contracts/raw-eia'
 import { inventoryValidEnvelope } from '../fixtures/eia/stoc-wstk/inventory-valid'
@@ -70,36 +70,54 @@ const rowFor = (seriesId: string, period: string, value: string, unit: string): 
   notes: none(),
 })
 
-const envelopeFor = (endpoint: string, seriesId: string, valuesBySeries: Readonly<Record<string, SeriesValues>>): RawEiaEnvelope => {
+const seriesRowsFor = (
+  seriesId: string,
+  valuesBySeries: Readonly<Record<string, SeriesValues>>,
+): readonly RawEiaRow[] => {
   const values = ifElse(
     (candidate: SeriesValues | undefined): candidate is SeriesValues => candidate !== undefined,
     candidate => candidate,
     () => defaultSeriesValues,
   )(valuesBySeries[seriesId])
 
-  return {
-    api: none(),
-    request: none(),
-    response: none(),
-    data: some(
-      fixturePeriods.map((period, index) =>
-        rowFor(seriesId, period, stringOrEmpty(valuesForHistory(values)[index]), values.unit),
-      ),
-    ),
-    endpoint: some(endpoint),
-    received_at: none(),
-  }
+  return fixturePeriods.map((period, index) =>
+    rowFor(seriesId, period, stringOrEmpty(valuesForHistory(values)[index]), values.unit),
+  )
 }
+
+const envelopeForSeriesIds = (
+  endpoint: string,
+  seriesIds: readonly string[],
+  valuesBySeries: Readonly<Record<string, SeriesValues>>,
+): RawEiaEnvelope => ({
+  api: none(),
+  request: none(),
+  response: none(),
+  data: some(seriesIds.flatMap(seriesId => seriesRowsFor(seriesId, valuesBySeries))),
+  endpoint: some(endpoint),
+  received_at: none(),
+})
 
 const paramsAreSome = (
   params: EiaRequest['params'],
 ): params is Extract<EiaRequest['params'], { readonly kind: 'Some' }> => params.kind === 'Some'
 
-const requestSeriesId = (request: EiaRequest): string =>
+const seriesParamValueToIds = (value: EiaRequestParamValue): readonly string[] =>
+  ifElse(
+    Array.isArray,
+    candidate => candidate,
+    candidate => [candidate],
+  )(value)
+
+const paramsToSeriesIds = (
+  params: Extract<EiaRequest['params'], { readonly kind: 'Some' }>,
+): readonly string[] => seriesParamValueToIds(params.value['facets[series][]'])
+
+const requestSeriesIds = (request: EiaRequest): readonly string[] =>
   ifElse(
     paramsAreSome,
-    candidate => stringOrEmpty(candidate.value['facets[series][]']),
-    () => '',
+    paramsToSeriesIds,
+    () => [],
   )(request.params)
 
 const emptyEnvelopeFor = (endpoint: string): RawEiaEnvelope => ({
@@ -115,8 +133,8 @@ const requestForEnvelope = (request: EiaRequest): typeof inventoryValidEnvelope 
   cond<[EiaRequest], typeof inventoryValidEnvelope | typeof priceValidEnvelope | RawEiaEnvelope>([
     [candidate => candidate.endpoint.includes('stoc'), () => inventoryValidEnvelope],
     [candidate => candidate.endpoint.includes('pri'), () => priceValidEnvelope],
-    [candidate => candidate.endpoint.includes('pnp'), candidate => envelopeFor(candidate.endpoint, requestSeriesId(candidate), refinerySeriesValues)],
-    [candidate => candidate.endpoint.includes('sum'), candidate => envelopeFor(candidate.endpoint, requestSeriesId(candidate), supplySeriesValues)],
+    [candidate => candidate.endpoint.includes('pnp'), candidate => envelopeForSeriesIds(candidate.endpoint, requestSeriesIds(candidate), refinerySeriesValues)],
+    [candidate => candidate.endpoint.includes('sum'), candidate => envelopeForSeriesIds(candidate.endpoint, requestSeriesIds(candidate), supplySeriesValues)],
     [() => true, candidate => emptyEnvelopeFor(candidate.endpoint)],
   ])(request)
 

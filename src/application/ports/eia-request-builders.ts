@@ -46,17 +46,30 @@ const buildSeriesRequest = (
   }),
 })
 
+const buildSeriesGroupRequest = (
+  endpoint: string,
+  reportWeekIso: string,
+  seriesIds: readonly string[],
+): EiaRequest => ({
+  endpoint,
+  params: some({
+    ...weeklyHistoryRowParams,
+    end: reportWeekIso,
+    'facets[series][]': seriesIds,
+  }),
+})
+
 export const buildRefineryRequest = (reportWeekIso: string): EiaRequest =>
   buildSeriesRequest('/v2/petroleum/pnp/wiup/data/', reportWeekIso, refinerySeriesIds[0])
 
 export const buildRefineryRequests = (reportWeekIso: string): readonly EiaRequest[] =>
-  refinerySeriesIds.map(seriesId => buildSeriesRequest('/v2/petroleum/pnp/wiup/data/', reportWeekIso, seriesId))
+  [buildSeriesGroupRequest('/v2/petroleum/pnp/wiup/data/', reportWeekIso, refinerySeriesIds)]
 
 export const buildSupplyRequest = (reportWeekIso: string): EiaRequest =>
   buildSeriesRequest('/v2/petroleum/sum/sndw/data/', reportWeekIso, supplySeriesIds[0])
 
 export const buildSupplyRequests = (reportWeekIso: string): readonly EiaRequest[] =>
-  supplySeriesIds.map(seriesId => buildSeriesRequest('/v2/petroleum/sum/sndw/data/', reportWeekIso, seriesId))
+  [buildSeriesGroupRequest('/v2/petroleum/sum/sndw/data/', reportWeekIso, supplySeriesIds)]
 
 export const buildUnfacetedRefineryRequest = (reportWeekIso: string): EiaRequest => ({
   endpoint: '/v2/petroleum/pnp/wiup/data/',

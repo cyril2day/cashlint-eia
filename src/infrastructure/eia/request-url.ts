@@ -1,4 +1,4 @@
-import type { EiaRequest } from '@/application/ports/eia-client'
+import type { EiaRequest, EiaRequestParamValue, EiaRequestParams } from '@/application/ports/eia-client'
 import { ifElse } from '@/shared/fp'
 import { matchMaybe } from '@/shared/maybe'
 import type { EiaRuntimeConfig } from '@/infrastructure/eia/runtime-config'
@@ -17,10 +17,32 @@ const removeLeadingSlash = (value: string): string =>
     candidate => candidate,
   )(value)
 
-const appendParams = (url: URL, params: Record<string, string>): URL => {
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value)
+const appendSingleParam = (url: URL, key: string, value: string): URL => {
+  url.searchParams.append(key, value)
+
+  return url
+}
+
+const appendMultipleParamValues = (url: URL, key: string, values: readonly string[]): URL => {
+  values.forEach(item => {
+    appendSingleParam(url, key, item)
   })
+
+  return url
+}
+
+const appendParamValue = (url: URL, key: string, value: EiaRequestParamValue): URL =>
+  ifElse(
+    Array.isArray,
+    values => appendMultipleParamValues(url, key, values),
+    candidate => appendSingleParam(url, key, candidate),
+  )(value)
+
+const appendParamEntry = (url: URL) =>
+  ([key, value]: readonly [string, EiaRequestParamValue]): URL => appendParamValue(url, key, value)
+
+const appendParams = (url: URL, params: EiaRequestParams): URL => {
+  Object.entries(params).forEach(appendParamEntry(url))
 
   return url
 }
@@ -32,7 +54,7 @@ const setRedactedSearchParam = (url: URL, key: string): void => {
 export const buildEiaRequestUrl = (config: EiaRuntimeConfig, request: EiaRequest): URL => {
   const url = new URL(removeLeadingSlash(request.endpoint), ensureTrailingSlash(config.baseUrl.toString()))
 
-  matchMaybe<Record<string, string>, void>({
+  matchMaybe<EiaRequestParams, void>({
     Some: params => {
       appendParams(url, params)
     },
