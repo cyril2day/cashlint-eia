@@ -3,9 +3,9 @@ import type { InterpretationCaveat } from '@/contexts/interpretation/model/inter
 import type { BaselineResult } from '@/contexts/interpretation/model/baseline'
 import type { InterpretationAnomalyState } from '@/contexts/interpretation/model/anomaly-state'
 import type { Trend } from '@/contexts/interpretation/model/trend'
-import { formatMeasurementUnit } from '@/contexts/measurement/model'
+import { formatMeasurementUnit, type MeasurementUnit } from '@/contexts/measurement/model'
 import { formatReportWeekIso, type ReportWeek } from '@/contexts/measurement/model/report-week'
-import { either, ifElse, isNonEmptyString, sortBy } from '@/shared/fp'
+import { cond, either, ifElse, isNonEmptyString, sortBy } from '@/shared/fp'
 import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import type { ChartCaveatViewModel, ChartDisplayState } from '@/presentation/charts/contracts'
@@ -159,7 +159,7 @@ export const createSignalAccessibilitySummary = (
   pointCount: number,
 ): string => {
   const signalKind = signal.signal.identity.kind.toLowerCase()
-  const unitLabel = formatMeasurementUnit(signal.signal.unit)
+  const unitLabel = friendlyMeasurementUnit(signal.signal.unit)
   const caveatSentence = ifElse(
     (candidate: ContextualizedSignal) => candidate.caveats.length > 0,
     candidate => `with ${formatWholeDecimal(candidate.caveats.length)} caveat(s)`,
@@ -178,8 +178,8 @@ export const createSignalAccessibilitySummary = (
 
 export const unitLabelFromSignal = (signal: ContextualizedSignal): Maybe<string> =>
   ifElse(
-    (candidate: ContextualizedSignal) => isNonEmptyString(formatMeasurementUnit(candidate.signal.unit)),
-    candidate => some(formatMeasurementUnit(candidate.signal.unit)),
+    (candidate: ContextualizedSignal) => isNonEmptyString(friendlyMeasurementUnit(candidate.signal.unit)),
+    candidate => some(friendlyMeasurementUnit(candidate.signal.unit)),
     () => none(),
   )(signal)
 
@@ -200,14 +200,28 @@ export const baselineAverageMarker = <MarkerValue>(
 
 export const trendLabelFromSignal = (signal: ContextualizedSignal): Maybe<string> =>
   matchMaybe<Trend, Maybe<string>>({
-    Some: trend => some(`Trend ${trend.direction.direction.toLowerCase()}`),
+    Some: trend => cond<[Trend], Maybe<string>>([
+      [candidate => candidate.direction.direction === 'Up', () => some('Upward trend')],
+      [candidate => candidate.direction.direction === 'Down', () => some('Downward trend')],
+      [() => true, () => some('Flat trend')],
+    ])(trend),
     None: () => none(),
   })(signal.trend)
 
+export const friendlyMeasurementUnit = (unit: MeasurementUnit): string =>
+  cond<[MeasurementUnit], string>([
+    [candidate => candidate.unit === 'ThousandBarrels', () => 'Mbbl'],
+    [candidate => candidate.unit === 'MillionBarrels', () => 'million barrels'],
+    [candidate => candidate.unit === 'ThousandBarrelsPerDay', () => 'Mbbl/d'],
+    [candidate => candidate.unit === 'Percent', () => 'percent'],
+    [candidate => candidate.unit === 'USDPerBarrel', () => 'USD per barrel'],
+    [() => true, formatMeasurementUnit],
+  ])(unit)
+
 export const anomalyStatusLabelFromSignal = (signal: ContextualizedSignal): Maybe<string> =>
   matchAnomaly<Maybe<string>>({
-    Normal: () => some('Anomaly normal'),
-    Anomalous: anomaly => some(`Anomalous ${anomaly.direction.toLowerCase()}`),
+    Normal: () => some('Normal range'),
+    Anomalous: anomaly => some(`Anomaly ${anomaly.direction.toLowerCase()}`),
     NotComputed: () => none(),
   })(signal.anomaly)
 

@@ -11,6 +11,8 @@ import type {
   TimeSeriesChartViewModel,
   VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
+import type { ChartGalleryControlsViewModel } from '@/presentation/contracts'
+import type { HistogramWidgetInput } from '@/presentation/charts/widgets/histogram/histogram-widget'
 import {
   composeTimeSeriesChartGeometry,
   composeSparklineGeometry,
@@ -30,6 +32,12 @@ import { MetricCardChart } from '@/presentation/charts/components/metric-card-ch
 import { BarChart } from '@/presentation/charts/components/bar-chart/bar-chart'
 import { BoxPlotChart } from '@/presentation/charts/components/box-plot-chart/box-plot-chart'
 import { VarianceChart } from '@/presentation/charts/components/variance-chart/variance-chart'
+
+export const defaultChartPanelControls: ChartGalleryControlsViewModel = {
+  histogramBinCount: 6,
+  lineXAxisTickCount: 3,
+  areaXAxisTickCount: 3,
+}
 
 type TimeSeriesPanel = ChartPanelViewModel & Readonly<{
   readonly chartKind: 'TimeSeries'
@@ -106,10 +114,10 @@ const sparklinePanelDimensions = (): ChartDimensions => {
 }
 
 const timeSeriesPanelDimensions = (): ChartDimensions => {
-  const dimensions = createChartDimensions(520, 220, {
+  const dimensions = createChartDimensions(520, 240, {
     top: 18,
     right: 18,
-    bottom: 42,
+    bottom: 62,
     left: 64,
   })
 
@@ -118,15 +126,15 @@ const timeSeriesPanelDimensions = (): ChartDimensions => {
     candidate => candidate.value,
     () => ({
       outerWidth: 520,
-      outerHeight: 220,
+      outerHeight: 240,
       margin: {
-        top: 24,
-        right: 24,
-        bottom: 44,
-        left: 60,
+        top: 18,
+        right: 18,
+        bottom: 62,
+        left: 64,
       },
-      innerWidth: 436,
-      innerHeight: 152,
+      innerWidth: 438,
+      innerHeight: 160,
     }),
   )(dimensions)
 }
@@ -140,10 +148,26 @@ const isBoxPlotPanel = (panel: ChartPanelViewModel): panel is BoxPlotPanel => pa
 const isAreaChartPanel = (panel: ChartPanelViewModel): panel is AreaChartPanel => panel.chartKind === 'AreaChart'
 const isVarianceChartPanel = (panel: ChartPanelViewModel): panel is VarianceChartPanel => panel.chartKind === 'VarianceChart'
 
-const renderTimeSeriesPanel = (panel: TimeSeriesPanel): ReactNode => (
+const histogramInputWithControls = (
+  input: HistogramWidgetInput,
+  controls: ChartGalleryControlsViewModel,
+): HistogramWidgetInput => ({
+  ...input,
+  binStrategy: {
+    kind: 'Automatic',
+    requestedBinCount: controls.histogramBinCount,
+  },
+})
+
+const renderTimeSeriesPanel =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: TimeSeriesPanel): ReactNode => (
   <TimeSeriesChart
     viewModel={panel.chartViewModel}
-    geometry={composeTimeSeriesChartGeometry(panel.chartViewModel, timeSeriesPanelDimensions())}
+    geometry={composeTimeSeriesChartGeometry(panel.chartViewModel, timeSeriesPanelDimensions(), {
+      xTickCount: controls.lineXAxisTickCount,
+      yTickCount: 5,
+    })}
   />
 )
 
@@ -158,11 +182,15 @@ const renderSparklinePanel = (panel: SparklinePanel): ReactNode => {
   )
 }
 
-const renderHistogramPanel = (panel: HistogramPanel): ReactNode => (
-  <HistogramChart input={mapHistogramViewModelToWidgetInput(panel.chartViewModel)} />
+const renderHistogramPanel =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: HistogramPanel): ReactNode => (
+  <HistogramChart input={histogramInputWithControls(mapHistogramViewModelToWidgetInput(panel.chartViewModel), controls)} />
 )
-const renderAreaChartPanel = (panel: AreaChartPanel): ReactNode => (
-  <AreaChart input={mapAreaChartViewModelToWidgetInput(panel.chartViewModel)} />
+const renderAreaChartPanel =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: AreaChartPanel): ReactNode => (
+  <AreaChart input={mapAreaChartViewModelToWidgetInput(panel.chartViewModel)} xAxisTickCount={controls.areaXAxisTickCount} />
 )
 const renderMetricCardPanel = (panel: MetricCardPanel): ReactNode => <MetricCardChart viewModel={panel.chartViewModel} />
 const renderBarChartPanel = (panel: BarChartPanel): ReactNode => <BarChart viewModel={panel.chartViewModel} />
@@ -176,26 +204,40 @@ const renderUnknownPanel = (panel: ChartPanelViewModel): ReactNode => (
 const renderAfterAreaChart = (panel: ChartPanelViewModel): ReactNode =>
   ifElse(isVarianceChartPanel, renderVarianceChartPanel, renderUnknownPanel)(panel)
 
-const renderAfterBoxPlot = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isAreaChartPanel, renderAreaChartPanel, renderAfterAreaChart)(panel)
+const renderAfterBoxPlot =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isAreaChartPanel, renderAreaChartPanel(controls), renderAfterAreaChart)(panel)
 
-const renderAfterHistogram = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isBoxPlotPanel, renderBoxPlotPanel, renderAfterBoxPlot)(panel)
+const renderAfterHistogram =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isBoxPlotPanel, renderBoxPlotPanel, renderAfterBoxPlot(controls))(panel)
 
-const renderAfterBarChart = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isHistogramPanel, renderHistogramPanel, renderAfterHistogram)(panel)
+const renderAfterBarChart =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isHistogramPanel, renderHistogramPanel(controls), renderAfterHistogram(controls))(panel)
 
-const renderAfterMetricCard = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isBarChartPanel, renderBarChartPanel, renderAfterBarChart)(panel)
+const renderAfterMetricCard =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isBarChartPanel, renderBarChartPanel, renderAfterBarChart(controls))(panel)
 
-const renderAfterSparkline = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isMetricCardPanel, renderMetricCardPanel, renderAfterMetricCard)(panel)
+const renderAfterSparkline =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isMetricCardPanel, renderMetricCardPanel, renderAfterMetricCard(controls))(panel)
 
-const renderAfterTimeSeries = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isSparklinePanel, renderSparklinePanel, renderAfterSparkline)(panel)
+const renderAfterTimeSeries =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isSparklinePanel, renderSparklinePanel, renderAfterSparkline(controls))(panel)
 
-const renderChartPayload = (panel: ChartPanelViewModel): ReactNode =>
-  ifElse(isTimeSeriesPanel, renderTimeSeriesPanel, renderAfterTimeSeries)(panel)
+const renderChartPayload =
+  (controls: ChartGalleryControlsViewModel) =>
+  (panel: ChartPanelViewModel): ReactNode =>
+  ifElse(isTimeSeriesPanel, renderTimeSeriesPanel(controls), renderAfterTimeSeries(controls))(panel)
 
 const chartKindLabel = (chartKind: ChartPanelKind): string =>
   cond<[ChartPanelKind], string>([
@@ -210,7 +252,10 @@ const chartKindLabel = (chartKind: ChartPanelKind): string =>
     [() => true, candidate => candidate],
   ])(chartKind)
 
-export function ChartPanel({ viewModel }: Readonly<{ readonly viewModel: ChartPanelViewModel }>) {
+export function ChartPanel({ viewModel, controls }: Readonly<{
+  readonly viewModel: ChartPanelViewModel
+  readonly controls: ChartGalleryControlsViewModel
+}>) {
   return (
     <section className={`chart-panel chart-panel--${viewModel.chartKind}`} aria-label={viewModel.accessibilitySummary}>
       <header className="chart-panel__header">
@@ -220,7 +265,7 @@ export function ChartPanel({ viewModel }: Readonly<{ readonly viewModel: ChartPa
         </div>
       </header>
       <div className="chart-panel__visual" role="img" aria-label={viewModel.chartViewModel.accessibilitySummary}>
-        {renderChartPayload(viewModel)}
+        {renderChartPayload(controls)(viewModel)}
       </div>
     </section>
   )

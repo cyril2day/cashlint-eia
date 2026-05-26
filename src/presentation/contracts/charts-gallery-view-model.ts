@@ -9,9 +9,16 @@ export type ChartGalleryStateSummaryItemViewModel = Readonly<{
   readonly description: string
 }>
 
+export type ChartGalleryControlsViewModel = Readonly<{
+  readonly histogramBinCount: number
+  readonly lineXAxisTickCount: number
+  readonly areaXAxisTickCount: number
+}>
+
 export type ChartsGalleryViewModel = Readonly<{
   readonly title: string
   readonly description: string
+  readonly controls: ChartGalleryControlsViewModel
   readonly stateSummary: readonly ChartGalleryStateSummaryItemViewModel[]
   readonly panels: readonly ChartPanelViewModel[]
   readonly caveats: readonly PresentationCaveatViewModel[]

@@ -10,6 +10,7 @@ import type {
   CaveatPanelViewModel,
   ChartPanelKind,
   ChartPanelViewModel,
+  ChartGalleryControlsViewModel,
   ChartGalleryStateSummaryItemViewModel,
   ChartsGalleryViewModel,
   DetailPageViewModel,
@@ -52,6 +53,8 @@ import {
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import { isNonEmptyArray, firstArrayItem } from '@/shared/collection'
+import { formatDateReadable, parseDate, type DateParseError, type DateValue } from '@/shared/date'
+import { isSuccess, type Result } from '@/shared/result'
 
 const shortHistoryMessage = 'This view uses the weekly window returned by the current run. When the window is thin, the chart stays cautious instead of smoothing over the gaps.'
 
@@ -395,6 +398,22 @@ const chartGalleryStateSummary = (
 ): readonly ChartGalleryStateSummaryItemViewModel[] =>
   chartGallerySummaryStates.map(chartGalleryStateSummaryItem(panels))
 
+const defaultChartGalleryControls: ChartGalleryControlsViewModel = {
+  histogramBinCount: 6,
+  lineXAxisTickCount: 3,
+  areaXAxisTickCount: 3,
+}
+
+const readableReportWeek = (reportWeekText: string): string =>
+  ifElse(
+    (result: Result<DateValue, DateParseError>) => isSuccess(result),
+    result => formatDateReadable(result.value),
+    () => reportWeekText,
+  )(parseDate(reportWeekText))
+
+const chartGalleryTitle = (summary: SummaryViewModel): string =>
+  `Petroleum charts for ${readableReportWeek(summary.reportWeekText)}`
+
 type LiveChartsGalleryInput = Readonly<{
   readonly summary: SummaryViewModel
   readonly signals: ContextualizedSignalSet
@@ -549,8 +568,9 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   ]
 
   return {
-    title: `${input.summary.reportWeekText} charts`,
+    title: chartGalleryTitle(input.summary),
     description: '',
+    controls: defaultChartGalleryControls,
     stateSummary: chartGalleryStateSummary(panels),
     panels,
     caveats: [presentationHistoryCaveat],
@@ -558,7 +578,7 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   }
 }
 
-export const mapSummaryToChartsGalleryViewModel = (_summary: SummaryViewModel): ChartsGalleryViewModel => {
+export const mapSummaryToChartsGalleryViewModel = (summary: SummaryViewModel): ChartsGalleryViewModel => {
   const panels = [
     chartPanel('price-line-panel', 'WTI weekly price line chart', 'TimeSeries', unavailableTimeSeries('price-line-chart', 'WTI weekly price line chart')),
     chartPanel('price-sparkline-panel', 'WTI weekly price trend', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
@@ -571,8 +591,9 @@ export const mapSummaryToChartsGalleryViewModel = (_summary: SummaryViewModel): 
   ]
 
   return {
-    title: 'Charts',
+    title: chartGalleryTitle(summary),
     description: '',
+    controls: defaultChartGalleryControls,
     stateSummary: chartGalleryStateSummary(panels),
     panels,
     caveats: [presentationHistoryCaveat],

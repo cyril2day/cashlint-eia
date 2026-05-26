@@ -1,10 +1,10 @@
 import type { SystemBalanceAnalysis } from '@/contexts/system-balance'
-import type { MeasurementUnit } from '@/contexts/measurement/model'
 import { formatDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { cond } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
 import type { BarChartViewModel, ChartCaveatViewModel, ChartDisplayState } from '@/presentation/charts/contracts'
 import { mapBarChartInput, type BarChartPointInput } from '@/presentation/charts/mappers/map-bar-chart-input'
+import { friendlyMeasurementUnit } from '@/presentation/charts/mappers/shared'
 
 type SystemBalanceDriverChartSource = Pick<SystemBalanceAnalysis, 'balanceState' | 'drivers' | 'caveats'>
 
@@ -50,16 +50,6 @@ const mapBalanceCaveat = (caveat: SystemBalanceAnalysis['caveats'][number]): Cha
   message: balanceCaveatTitles[caveat.kind],
   severity: 'warning',
 })
-
-const friendlyMeasurementUnit = (unit: MeasurementUnit): string =>
-  cond<[MeasurementUnit], string>([
-    [candidate => candidate.unit === 'ThousandBarrels', () => 'thousand barrels'],
-    [candidate => candidate.unit === 'MillionBarrels', () => 'million barrels'],
-    [candidate => candidate.unit === 'ThousandBarrelsPerDay', () => 'thousand barrels per day'],
-    [candidate => candidate.unit === 'Percent', () => 'percent'],
-    [candidate => candidate.unit === 'USDPerBarrel', () => 'USD per barrel'],
-    [() => true, candidate => candidate.unit],
-  ])(unit)
 
 const mapDriver = (driver: SystemBalanceAnalysis['drivers'][number]): BarChartPointInput => ({
   category: balanceDriverLabels[driver.kind],
