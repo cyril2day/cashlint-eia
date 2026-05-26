@@ -1,0 +1,16 @@
+.chart-error-message {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-3);
+  border: var(--border-width-1) var(--border-style-solid) var(--color-border);
+  border-inline-start: var(--border-width-2) var(--border-style-solid) var(--color-orange);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-color-primary) 88%, transparent);
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.chart-error-message strong {
+  color: var(--text-primary);
+}
