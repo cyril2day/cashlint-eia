@@ -1,0 +1,65 @@
+.oil-lint-time-series-chart {
+  --time-series-chart-line: var(--color-cyan);
+  --time-series-chart-marker: var(--color-orange);
+  --time-series-chart-baseline: var(--color-green);
+
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.oil-lint-time-series-chart__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.oil-lint-time-series-chart__title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.oil-lint-time-series-chart__svg {
+  display: block;
+  width: min(100%, 38rem);
+  height: auto;
+  max-width: 42rem;
+  overflow: visible;
+}
+
+.oil-lint-time-series-chart__axis {
+  stroke: color-mix(in srgb, var(--text-secondary) 86%, transparent);
+  stroke-width: 1;
+}
+
+.oil-lint-time-series-chart__axis-label,
+.oil-lint-time-series-chart__axis-tick-label {
+  fill: var(--text-primary);
+  font-size: 0.6rem;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.oil-lint-time-series-chart__grid-line {
+  stroke: color-mix(in srgb, var(--text-tertiary) 42%, transparent);
+  stroke-width: 1;
+}
+
+.oil-lint-time-series-chart__line {
+  stroke: var(--time-series-chart-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.oil-lint-time-series-chart__current-marker {
+  fill: var(--time-series-chart-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.oil-lint-time-series-chart__caveats {
+  display: none;
+}
