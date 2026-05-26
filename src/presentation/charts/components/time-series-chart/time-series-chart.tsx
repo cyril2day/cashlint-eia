@@ -6,7 +6,7 @@ import type {
   TimeSeriesChartGeometry,
 } from '@/presentation/charts/computation/time-series-chart-geometry'
 import { formatDecimalCoordinate } from '@/shared/decimal'
-import { cond } from '@/shared/fp'
+import { cond, ifElse } from '@/shared/fp'
 import { TimeSeriesChartLinePath } from '@/presentation/charts/components/time-series-chart/time-series-chart-line-path'
 import { TimeSeriesChartCurrentMarker } from '@/presentation/charts/components/time-series-chart/time-series-chart-current-marker'
 import { TimeSeriesChartCaveats } from '@/presentation/charts/components/time-series-chart/time-series-chart-caveats'
@@ -55,6 +55,50 @@ const xTickTextOffset =
       [() => true, () => 0],
     ])(tick)
 
+const hasSlantedXTickLabels = (geometry: TimeSeriesChartGeometry): boolean =>
+  geometry.xTickMarks.length > 4
+
+const straightXTickLabel =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick) => (
+    <text
+      className="oil-lint-time-series-chart__axis-tick-label"
+      x={formatDecimalCoordinate(tick.coordinate)}
+      y={formatDecimalCoordinate(xAxisY(geometry) + 16)}
+      dx={formatDecimalCoordinate(xTickTextOffset(geometry)(tick))}
+      textAnchor={xTickTextAnchor(geometry)(tick)}
+    >
+      {tick.label}
+    </text>
+  )
+
+const slantedXTickLabel =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick) => {
+    const labelY = xAxisY(geometry) + 24
+
+    return (
+      <text
+        className="oil-lint-time-series-chart__axis-tick-label"
+        x={formatDecimalCoordinate(tick.coordinate)}
+        y={formatDecimalCoordinate(labelY)}
+        transform={`rotate(-32 ${formatDecimalCoordinate(tick.coordinate)} ${formatDecimalCoordinate(labelY)})`}
+        textAnchor="end"
+      >
+        {tick.label}
+      </text>
+    )
+  }
+
+const xTickLabel =
+  (geometry: TimeSeriesChartGeometry) =>
+  (tick: TimeSeriesChartAxisTick) =>
+    ifElse(
+      hasSlantedXTickLabels,
+      () => slantedXTickLabel(geometry)(tick),
+      () => straightXTickLabel(geometry)(tick),
+    )(geometry)
+
 const xTick =
   (geometry: TimeSeriesChartGeometry) =>
   (tick: TimeSeriesChartAxisTick) => (
@@ -66,15 +110,7 @@ const xTick =
         y1={formatDecimalCoordinate(geometry.dimensions.margin.top)}
         y2={formatDecimalCoordinate(xAxisY(geometry))}
       />
-      <text
-        className="oil-lint-time-series-chart__axis-tick-label"
-        x={formatDecimalCoordinate(tick.coordinate)}
-        y={formatDecimalCoordinate(xAxisY(geometry) + 16)}
-        dx={formatDecimalCoordinate(xTickTextOffset(geometry)(tick))}
-        textAnchor={xTickTextAnchor(geometry)(tick)}
-      >
-        {tick.label}
-      </text>
+      {xTickLabel(geometry)(tick)}
     </g>
   )
 

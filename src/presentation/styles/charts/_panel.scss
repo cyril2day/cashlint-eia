@@ -31,7 +31,9 @@
   display: grid;
   place-items: center;
   min-width: 0;
+  padding: var(--space-4);
   background: var(--surface-color-primary);
+  overflow: hidden;
 }
 
 .chart-panel__visual-label {
