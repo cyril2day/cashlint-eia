@@ -2,7 +2,16 @@ import type { WeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
 import type { SystemBalanceAnalysis } from '@/contexts/system-balance/model'
-import { formatSummaryConditionLabel, formatSummaryConfidenceLabel, formatSummaryTrendLabel, formatSummaryAnomalyLabel } from '@/presentation/display-policies'
+import type { BalanceCaveat } from '@/contexts/system-balance/model'
+import {
+  formatBalanceCaveatMessage,
+  formatBalanceCaveatTitle,
+  formatSummaryConditionLabel,
+  formatSummaryConfidenceLabel,
+  formatSummaryTrendLabel,
+  formatSummaryAnomalyLabel,
+  formatSystemBalanceStateLabel,
+} from '@/presentation/display-policies'
 import {
   formatSummaryGeographyText,
   formatSummaryReportWeekText,
@@ -44,6 +53,9 @@ const hasReason = (candidate: object): candidate is Readonly<{ readonly reason: 
 const hasSource = (candidate: object): candidate is Readonly<{ readonly source: InterpretationCaveat }> =>
   'source' in candidate
 
+const hasBalanceSource = (candidate: object): candidate is Readonly<{ readonly source: BalanceCaveat }> =>
+  'source' in candidate
+
 const isPropagatedSystemBalanceCaveat = (
   caveat: AnalysisCaveat,
 ): caveat is Extract<AnalysisCaveat, { readonly kind: 'PropagatedSystemBalanceCaveat' }> =>
@@ -64,6 +76,19 @@ const formatSourceCaveatOrDefault = (fallback: PresentationCaveatViewModel) =>
     ifElse(
       hasSource,
       value => formatInterpretationCaveatMessage(value.source),
+      () => fallback,
+    )(candidate)
+
+const formatSystemBalanceCaveatOrDefault = (fallback: PresentationCaveatViewModel) =>
+  (candidate: object): PresentationCaveatViewModel =>
+    ifElse(
+      hasBalanceSource,
+      value => createCaveat(
+        'system-balance-caveat',
+        formatBalanceCaveatTitle(value.source.kind),
+        formatBalanceCaveatMessage(value.source.kind),
+        'info',
+      ),
       () => fallback,
     )(candidate)
 
@@ -107,7 +132,9 @@ const formatAnalysisCaveatMessage = (caveat: AnalysisCaveat): PresentationCaveat
     ],
     [
       isPropagatedSystemBalanceCaveat,
-      () => createCaveat('system-balance-caveat', 'System balance caveat', 'System balance emitted a caveat.', 'info'),
+      candidate => formatSystemBalanceCaveatOrDefault(
+        createCaveat('system-balance-caveat', 'System balance caveat', 'A physical balance caveat qualified this read.', 'info'),
+      )(candidate),
     ],
     [
       candidate => both((value: AnalysisCaveat) => value.kind === 'MixedEvidence', hasReason)(candidate),
@@ -139,6 +166,13 @@ const toMaybeJoinedMessages = (separator: string) =>
 const formatCardCaveatLabel = (signal: ContextualizedSignal): Maybe<string> =>
   toMaybeJoinedMessages(' · ')(signal.caveats.map(formatInterpretationCaveatMessage).map(caveat => caveat.message))
 
+const drilldownTargetForCardKind = (kind: SummaryCardKind): Maybe<string> =>
+  cond<[SummaryCardKind], Maybe<string>>([
+    [candidate => candidate === 'inventory', () => some('/inventory')],
+    [candidate => candidate === 'price', () => some('/price')],
+    [() => true, () => some('/balance')],
+  ])(kind)
+
 const mapCard = (
   kind: SummaryCardKind,
   title: string,
@@ -153,7 +187,7 @@ const mapCard = (
   trendLabel: formatSummaryTrendLabel(signal.trend),
   anomalyLabel: some(formatSummaryAnomalyLabel(signal.anomaly)),
   caveatLabel: formatCardCaveatLabel(signal),
-  drilldownTarget: none(),
+  drilldownTarget: drilldownTargetForCardKind(kind),
 })
 
 const summaryCardDefinitions: ReadonlyArray<Readonly<{
@@ -161,8 +195,8 @@ const summaryCardDefinitions: ReadonlyArray<Readonly<{
   readonly title: string
   readonly getSignal: (analysis: WeeklyAnalysis) => ContextualizedSignal
 }>> = [
-  { kind: 'inventory', title: 'Inventory', getSignal: analysis => analysis.keySignals.inventory },
-  { kind: 'price', title: 'WTI price', getSignal: analysis => analysis.keySignals.price },
+  { kind: 'inventory', title: 'Crude oil in storage', getSignal: analysis => analysis.keySignals.inventory },
+  { kind: 'price', title: 'WTI spot price', getSignal: analysis => analysis.keySignals.price },
 ]
 
 const systemBalanceCard = (
@@ -170,14 +204,14 @@ const systemBalanceCard = (
   balance: SystemBalanceAnalysis,
 ): SummaryCardViewModel => ({
   kind: 'system',
-  title: 'System balance',
-  valueText: balance.balanceState,
+  title: 'Supply & demand balance',
+  valueText: formatSystemBalanceStateLabel(balance.balanceState),
   statusLabel: conditionLabel,
   subtitleText: some(`${formatSummaryReportWeekText(balance.reportWeek)} · ${formatSummaryGeographyText(balance.geography)}`),
   trendLabel: none(),
   anomalyLabel: none(),
-  caveatLabel: toMaybeJoinedMessages(' · ')(balance.caveats.map(caveat => caveat.kind)),
-  drilldownTarget: none(),
+  caveatLabel: toMaybeJoinedMessages(' · ')(balance.caveats.map(caveat => formatBalanceCaveatMessage(caveat.kind))),
+  drilldownTarget: some('/balance'),
 })
 
 const systemBalanceCards = (
