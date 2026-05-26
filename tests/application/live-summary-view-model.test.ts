@@ -170,21 +170,26 @@ describe('live summary view model', () => {
     const summary = unwrapSuccess(result)
 
     expect(result.ok).toBe(true)
-    expect(summary.reportWeekText).toBe('2026-01-09')
-    expect(summary.geographyText).toBe('USTotal')
+    expect(summary.reportWeekText).toBe('January 9, 2026')
+    expect(summary.geographyText).toBe('United States')
     expect(summary.displayState).toBe('partial')
     expect(summary.cards).toHaveLength(3)
-    expect(summary.cards.find(card => card.kind === 'system')?.valueText).toBe('Tightening')
+    expect(summary.cards.find(card => card.kind === 'system')?.valueText).toBe('Tightening physical balance')
     expect(summary.cards.find(card => card.kind === 'inventory')?.valueText).toContain('836,125')
     expect(summary.cards.find(card => card.kind === 'price')?.valueText).toContain('76.31')
-    expect(summary.cards.find(card => card.kind === 'inventory')?.subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
-    expect(summary.cards.find(card => card.kind === 'price')?.subtitleText).toEqual({ kind: 'Some', value: '2026-01-09 · USTotal' })
+    expect(summary.cards.find(card => card.kind === 'inventory')?.subtitleText).toEqual({ kind: 'Some', value: 'January 9, 2026 · United States' })
+    expect(summary.cards.find(card => card.kind === 'price')?.subtitleText).toEqual({ kind: 'Some', value: 'January 9, 2026 · United States' })
     expect(summary.cards.find(card => card.kind === 'inventory')?.trendLabel).toEqual({ kind: 'Some', value: 'Down' })
     expect(summary.cards.find(card => card.kind === 'price')?.trendLabel).toEqual({ kind: 'Some', value: 'Up' })
     expect(summary.headline).toContain('Tightening')
     expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('missing-previous-observation')
     expect(summary.caveats.map(caveat => caveat.kind)).not.toContain('full-system-balance-not-computed')
     expect(summary.summary).not.toContain('live weekly')
+    expect(JSON.stringify(summary)).not.toContain('InventoryDraw')
+    expect(JSON.stringify(summary)).not.toContain('WeakerRefineryDemand')
+    expect(JSON.stringify(summary)).not.toContain('IncreasedImports')
+    expect(JSON.stringify(summary)).not.toContain('SimplifiedCrudeBalance')
+    expect(JSON.stringify(summary)).not.toContain('RateToStockComparisonLimitation')
   })
 
   it('returns a typed upstream failure when the underlying client fails', async () => {
@@ -220,20 +225,25 @@ describe('live summary view model', () => {
     const viewModel = unwrapSuccess(result)
 
     expect(viewModel.chartsGallery.panels.map(panel => panel.chartKind)).toEqual([
+      'TimeSeries',
       'Sparkline',
+      'MetricCard',
+      'BarChart',
       'Histogram',
+      'BoxPlot',
       'AreaChart',
+      'VarianceChart',
     ])
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Sparkline')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Histogram')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'AreaChart')?.state).toBe('Complete')
-    expect(viewModel.chartsGallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
-      'Ready:3',
-      'Cautious:0',
-      'Waiting:0',
-      'Needs history:0',
-    ])
+    expect(viewModel.chartsGallery.stateSummary.map(item => item.label)).toEqual(['Ready', 'Cautious', 'Waiting', 'Needs history'])
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('836125')
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('76.31')
+    expect(JSON.stringify(viewModel)).not.toContain('InventoryDraw')
+    expect(JSON.stringify(viewModel)).not.toContain('WeakerRefineryDemand')
+    expect(JSON.stringify(viewModel)).not.toContain('IncreasedImports')
+    expect(JSON.stringify(viewModel)).not.toContain('SimplifiedCrudeBalance')
+    expect(JSON.stringify(viewModel)).not.toContain('RateToStockComparisonLimitation')
   })
 })

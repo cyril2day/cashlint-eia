@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   mapContextualizedSignalToAreaChart,
   mapContextualizedSignalToHistogram,
+  mapSystemBalanceAnalysisToDriverBarChart,
 } from '@/presentation'
+import type { SystemBalanceAnalysis } from '@/contexts/system-balance'
 import {
   createBaseline,
   createBaselineNotComputedCaveat,
@@ -135,5 +137,44 @@ describe('Presentation chart mappers', () => {
     expect(area.points).toHaveLength(0)
     expect(area.displayState).toBe('Empty')
     expect(area.caveats).toHaveLength(1)
+  })
+
+  it('maps physical balance driver chart labels without leaking domain enum tokens', () => {
+    const analysis = {
+      balanceState: 'Tightening',
+      drivers: [
+        {
+          kind: 'InventoryDraw',
+          value: 5,
+          unit,
+          reportWeek,
+          geography,
+        },
+        {
+          kind: 'IncreasedImports',
+          value: 2,
+          unit,
+          reportWeek,
+          geography,
+        },
+      ],
+      caveats: [
+        {
+          kind: 'SimplifiedCrudeBalance',
+        },
+      ],
+    } satisfies Pick<SystemBalanceAnalysis, 'balanceState' | 'drivers' | 'caveats'>
+
+    const chart = mapSystemBalanceAnalysisToDriverBarChart({
+      id: 'balance-drivers',
+      title: 'Physical balance contributors',
+      analysis,
+    })
+
+    expect(chart.points.map(point => point.category)).toEqual(['Inventory draw', 'Higher crude imports'])
+    expect(chart.caveats.map(caveat => caveat.message)[0]).toContain('simplified weekly crude balance')
+    expect(JSON.stringify(chart)).not.toContain('InventoryDraw')
+    expect(JSON.stringify(chart)).not.toContain('IncreasedImports')
+    expect(JSON.stringify(chart)).not.toContain('SimplifiedCrudeBalance')
   })
 })

@@ -21,12 +21,19 @@ const viewModel: SummaryViewModel = {
 }
 
 describe('OilLintPresentationShell', () => {
-  it('renders the summary metrics region without placeholder wording', () => {
+  it('renders a minimal homepage with cards and charts only', () => {
     const markup = renderToStaticMarkup(<OilLintPresentationShell viewModel={mapSummaryToHomePageViewModel(viewModel)} />)
 
-    expect(markup).toContain('aria-label="Summary metrics"')
     expect(markup).not.toContain('Summary placeholders')
-    expect(markup).toContain('Live weekly petroleum summary')
-    expect(markup).toContain('Live data is rendered through the presentation shell.')
+    expect(markup).toContain('The U.S. oil market, translated')
+    expect(markup).toContain('This app reads it and tells you what it found.')
+    expect(markup).not.toContain('The three things that matter')
+    expect(markup).not.toContain('How this week compares to the past')
+    expect(markup).not.toContain('<h2')
+    expect(markup).not.toContain('hero-analysis')
+    expect(markup).not.toContain('caveat-panel')
+    expect(markup).not.toContain('How complete is this week')
+    expect(markup).not.toContain('analysis-control')
+    expect(markup).not.toContain('class="analysis-trace"')
   })
 })

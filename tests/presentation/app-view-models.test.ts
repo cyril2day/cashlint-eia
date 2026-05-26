@@ -13,7 +13,7 @@ import { none, some } from '@/shared/maybe'
 
 const inventoryCard: SummaryCardViewModel = {
   kind: 'inventory',
-  title: 'Inventory',
+  title: 'Crude oil in storage',
   valueText: '440 million barrels',
   statusLabel: 'Balanced',
   subtitleText: some('2026-05-19 · USTotal'),
@@ -25,7 +25,7 @@ const inventoryCard: SummaryCardViewModel = {
 
 const priceCard: SummaryCardViewModel = {
   kind: 'price',
-  title: 'WTI price',
+  title: 'WTI spot price',
   valueText: '72 USDPerBarrel',
   statusLabel: 'Watched',
   subtitleText: some('2026-05-19 · USTotal'),
@@ -37,7 +37,7 @@ const priceCard: SummaryCardViewModel = {
 
 const balanceCard: SummaryCardViewModel = {
   kind: 'system',
-  title: 'System balance',
+  title: 'Supply & demand balance',
   valueText: 'Mixed',
   statusLabel: 'Mixed',
   subtitleText: some('2026-05-19 · USTotal'),
@@ -73,9 +73,11 @@ describe('app view models', () => {
 
     expect(viewModel.navigation.items.map(item => item.href)).toEqual(['/', '/inventory', '/price', '/balance', '/analysis', '/charts'])
     expect(viewModel.controls.submitLabel).toBe('Refresh live data')
+    expect(viewModel.controls.comparisonWindowLabel).toBe('Latest weekly comparison window')
     expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['MetricCard', 'Sparkline', 'TimeSeries'])
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
-    expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Weekly story composed')
+    expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Analyst read composed')
+    expect(summary.cards.map(card => card.drilldownTarget)).toEqual([some('/balance'), some('/inventory'), some('/price')])
   })
 
   it('creates a gallery with the active chart kinds and honest unavailable states', () => {

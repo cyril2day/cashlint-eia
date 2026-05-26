@@ -87,8 +87,8 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
     const analysis = buildAnalysis()
     const viewModel = mapWeeklyAnalysisToSummaryViewModel(analysis)
 
-    expect(viewModel.reportWeekText).toBe('2026-05-19')
-    expect(viewModel.geographyText).toBe('USTotal')
+    expect(viewModel.reportWeekText).toBe('May 19, 2026')
+    expect(viewModel.geographyText).toBe('United States')
     expect(viewModel.headline).toContain('Inventory drew while price rose')
     expect(viewModel.summary).toContain('this read stays cautious')
     expect(viewModel.conditionLabel).toBe('Unknown')
@@ -99,27 +99,33 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
 
     expect(viewModel.cards[0]).toEqual(expect.objectContaining({
       kind: 'inventory',
-      title: 'Inventory',
-      valueText: '80 ThousandBarrels',
+      title: 'Crude oil in storage',
+      valueText: '80 thousand barrels',
       statusLabel: 'Unknown',
-      subtitleText: { kind: 'Some', value: '2026-05-19 · USTotal' },
+      subtitleText: { kind: 'Some', value: 'May 19, 2026 · United States' },
       trendLabel: { kind: 'None' },
       anomalyLabel: { kind: 'Some', value: 'Inventory anomaly is not computed yet.' },
       caveatLabel: { kind: 'None' },
-      drilldownTarget: { kind: 'None' },
+      drilldownTarget: { kind: 'Some', value: '/inventory' },
     }))
 
     expect(viewModel.cards[1]).toEqual(expect.objectContaining({
       kind: 'price',
-      title: 'WTI price',
-      valueText: '72.00 USDPerBarrel',
+      title: 'WTI spot price',
+      valueText: '72.00 dollars per barrel',
       statusLabel: 'Unknown',
-      subtitleText: { kind: 'Some', value: '2026-05-19 · USTotal' },
+      subtitleText: { kind: 'Some', value: 'May 19, 2026 · United States' },
       trendLabel: { kind: 'Some', value: 'Up' },
       anomalyLabel: { kind: 'Some', value: 'Price anomaly is not computed yet.' },
       caveatLabel: { kind: 'None' },
-      drilldownTarget: { kind: 'None' },
+      drilldownTarget: { kind: 'Some', value: '/price' },
     }))
+
+    expect(JSON.stringify(viewModel)).not.toContain('InventoryDraw')
+    expect(JSON.stringify(viewModel)).not.toContain('WeakerRefineryDemand')
+    expect(JSON.stringify(viewModel)).not.toContain('IncreasedImports')
+    expect(JSON.stringify(viewModel)).not.toContain('SimplifiedCrudeBalance')
+    expect(JSON.stringify(viewModel)).not.toContain('RateToStockComparisonLimitation')
 
     expect(viewModel.displayStateMessage).toEqual({ kind: 'Some', value: 'Live output includes caveats.' })
 

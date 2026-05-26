@@ -18,15 +18,16 @@ describe('SummaryCardShell', () => {
         anomalyLabel={some('Inventory anomaly is not computed yet.')}
         caveatLabel={none()}
         drilldownTarget={none()}
+        chart={none()}
       />,
     )
 
     expect(markup).toContain('Inventory')
     expect(markup).toContain('80 ThousandBarrels')
     expect(markup).toContain('Pending')
-    expect(markup).toContain('2026-05-19 · USTotal')
-    expect(markup).toContain('Not in this run')
-    expect(markup).toContain('No caveat attached')
+    expect(markup).not.toContain('2026-05-19 · USTotal')
+    expect(markup).toContain('Not enough history')
+    expect(markup).not.toContain('No caveat attached')
     expect(markup).toContain('Inventory anomaly is not computed yet.')
   })
 })
