@@ -23,6 +23,11 @@
   stroke-width: 1;
 }
 
+.area-chart__axis-tick {
+  stroke: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+  stroke-width: 1;
+}
+
 .area-chart__grid-line {
   stroke: color-mix(in srgb, var(--text-quinary) 72%, transparent);
   stroke-width: 1;

@@ -4,7 +4,7 @@ import type { AreaChartWidgetBaseline, AreaChartWidgetError, AreaChartWidgetInpu
 import { computeAreaChartOutput } from '@/presentation/charts/widgets/area-chart/area-chart-widget'
 import { ChartErrorMessage, type ChartErrorMessageViewModel } from '@/presentation/charts/components/chart-error-message'
 import { cond, ifElse } from '@/shared/fp'
-import { firstArrayItem, lastArrayItem } from '@/shared/collection'
+import { firstArrayItem } from '@/shared/collection'
 import { matchMaybe } from '@/shared/maybe'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import { isSuccess, type Result } from '@/shared/result'
@@ -21,6 +21,18 @@ import {
 } from '@/shared/chart-svg'
 
 type AreaChartRenderablePoints = AreaChartWidgetOutput['points']
+type AreaChartXAxisTick = Readonly<{
+  readonly point: AreaChartWidgetPoint
+  readonly coordinate: number
+}>
+
+type AreaChartProps = Readonly<{
+  readonly input: AreaChartWidgetInput
+  readonly xAxisTickCount: number
+}>
+
+const areaChartSvgHeight = defaultChartSvgFrame.height + 30
+const xAxisTickInset = 14
 
 const domainValues = (
   input: AreaChartWidgetInput,
@@ -77,21 +89,68 @@ const areaPolygonPoints = (
   },
 ]
 
-const middlePointIndex = (points: AreaChartRenderablePoints): number =>
-  Math.floor((points.length - 1) / 2)
+const boundedTickCount = (
+  requestedTickCount: number,
+  pointCount: number,
+): number =>
+  Math.max(2, Math.min(8, pointCount, Math.floor(requestedTickCount)))
 
-const middlePoint = (points: AreaChartRenderablePoints): AreaChartWidgetPoint =>
-  points[middlePointIndex(points)]
+const pointAtIndex = (points: AreaChartRenderablePoints, index: number): AreaChartWidgetPoint =>
+  ifElse(
+    (candidate: AreaChartWidgetPoint | undefined): candidate is AreaChartWidgetPoint => typeof candidate === 'object',
+    candidate => candidate,
+    () => firstArrayItem(points),
+  )(points[index])
 
-const xTickPoints = (points: AreaChartRenderablePoints): readonly AreaChartWidgetPoint[] => [
-  firstArrayItem(points),
-  middlePoint(points),
-  lastArrayItem(points),
-]
+const xTickPointAt =
+  (points: AreaChartRenderablePoints, requestedTickCount: number) =>
+  (_: unknown, index: number): AreaChartWidgetPoint => {
+    const denominator = boundedTickCount(requestedTickCount, points.length) - 1
+    const pointIndex = Math.round((points.length - 1) * (index / denominator))
+
+    return pointAtIndex(points, pointIndex)
+  }
+
+const xTickPoints = (
+  points: AreaChartRenderablePoints,
+  requestedTickCount: number,
+): readonly AreaChartWidgetPoint[] =>
+  Array.from(
+    new Map(
+      Array.from(
+        { length: boundedTickCount(requestedTickCount, points.length) },
+        xTickPointAt(points, requestedTickCount),
+      ).map(point => [point.xLabel, point]),
+    ).values(),
+  )
+
+const xTickCoordinate = (
+  tickCount: number,
+  index: number,
+): number =>
+  defaultChartSvgFrame.plotX + xAxisTickInset + ((defaultChartSvgFrame.plotWidth - (xAxisTickInset * 2)) * (index / Math.max(1, tickCount - 1)))
+
+const xAxisTick =
+  (tickCount: number) =>
+  (point: AreaChartWidgetPoint, index: number): AreaChartXAxisTick => ({
+    point,
+    coordinate: xTickCoordinate(tickCount, index),
+  })
+
+const xAxisTicks = (
+  points: AreaChartRenderablePoints,
+  requestedTickCount: number,
+): readonly AreaChartXAxisTick[] => {
+  const ticks = xTickPoints(points, requestedTickCount)
+
+  return ticks.map(xAxisTick(ticks.length))
+}
 
 const yTickValues = (domain: ChartDomain): readonly number[] => [
   domain.minimum,
+  domain.maximum / 4,
   domain.maximum / 2,
+  (domain.maximum / 4) * 3,
   domain.maximum,
 ]
 
@@ -117,45 +176,89 @@ const yTick =
     </g>
   )
 
-const xTick =
-  (xScale: (value: number) => number) =>
-  (point: AreaChartWidgetPoint) => (
+const hasSlantedXTickLabels = (ticks: readonly AreaChartXAxisTick[]): boolean =>
+  ticks.length > 4
+
+const straightXTickLabel = (tick: AreaChartXAxisTick) => (
+  <text
+    className="area-chart__axis-label"
+    x={formatDecimalCoordinate(tick.coordinate)}
+    y={formatDecimalCoordinate(defaultChartSvgFrame.height - 4)}
+    textAnchor="middle"
+  >
+    {tick.point.xLabel}
+  </text>
+)
+
+const slantedXTickLabel = (tick: AreaChartXAxisTick) => {
+  const labelY = defaultChartSvgFrame.height + 8
+
+  return (
     <text
-      key={`${point.xLabel}-${formatDecimalCoordinate(point.x)}`}
       className="area-chart__axis-label"
-      x={formatDecimalCoordinate(xScale(point.x))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.height - 4)}
-      textAnchor="middle"
+      x={formatDecimalCoordinate(tick.coordinate)}
+      y={formatDecimalCoordinate(labelY)}
+      transform={`rotate(-32 ${formatDecimalCoordinate(tick.coordinate)} ${formatDecimalCoordinate(labelY)})`}
+      textAnchor="end"
     >
-      {point.xLabel}
+      {tick.point.xLabel}
     </text>
+  )
+}
+
+const xTickLabel =
+  (ticks: readonly AreaChartXAxisTick[]) =>
+  (tick: AreaChartXAxisTick) =>
+    ifElse(
+      hasSlantedXTickLabels,
+      () => slantedXTickLabel(tick),
+      () => straightXTickLabel(tick),
+    )(ticks)
+
+const xTick =
+  (ticks: readonly AreaChartXAxisTick[]) =>
+  (tick: AreaChartXAxisTick) => (
+    <g key={`${tick.point.xLabel}-${formatDecimalCoordinate(tick.point.x)}`} className="area-chart__x-tick">
+      <line
+        className="area-chart__axis-tick"
+        x1={formatDecimalCoordinate(tick.coordinate)}
+        x2={formatDecimalCoordinate(tick.coordinate)}
+        y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
+        y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight + 5)}
+      />
+      {xTickLabel(ticks)(tick)}
+    </g>
   )
 
 const areaAxis = (
   points: AreaChartRenderablePoints,
   yDomain: ChartDomain,
-  xScale: (value: number) => number,
   yScale: (value: number) => number,
-) => (
-  <g className="area-chart__axes">
-    {yTickValues(yDomain).map(yTick(yScale))}
-    <line
-      className="area-chart__axis"
-      x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
-      x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
-      y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY)}
-      y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
-    />
-    <line
-      className="area-chart__axis"
-      x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
-      x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX + defaultChartSvgFrame.plotWidth)}
-      y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
-      y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
-    />
-    {xTickPoints(points).map(xTick(xScale))}
-  </g>
-)
+  xAxisTickCount: number,
+) => {
+  const ticks = xAxisTicks(points, xAxisTickCount)
+
+  return (
+    <g className="area-chart__axes">
+      {yTickValues(yDomain).map(yTick(yScale))}
+      <line
+        className="area-chart__axis"
+        x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
+        x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
+        y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY)}
+        y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
+      />
+      <line
+        className="area-chart__axis"
+        x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
+        x2={formatDecimalCoordinate(defaultChartSvgFrame.plotX + defaultChartSvgFrame.plotWidth)}
+        y1={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
+        y2={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight)}
+      />
+      {ticks.map(xTick(ticks))}
+    </g>
+  )
+}
 
 const baselineLabel = (
   input: AreaChartWidgetInput,
@@ -207,6 +310,7 @@ const currentMarker = (
 const areaSvgFromPoints = (
   input: AreaChartWidgetInput,
   output: AreaChartWidgetOutput,
+  xAxisTickCount: number,
 ) => {
   const points = output.points
   const baseline = output.baseline
@@ -219,11 +323,11 @@ const areaSvgFromPoints = (
   return (
     <svg
       className="area-chart__svg"
-      viewBox={`0 0 ${defaultChartSvgFrame.width} ${defaultChartSvgFrame.height}`}
+      viewBox={`0 0 ${defaultChartSvgFrame.width} ${areaChartSvgHeight}`}
       role="img"
       aria-label={input.accessibilitySummary}
     >
-      {areaAxis(points, yDomain, xScale, yScale)}
+      {areaAxis(points, yDomain, yScale, xAxisTickCount)}
       <line
         className="area-chart__baseline"
         x1={formatDecimalCoordinate(defaultChartSvgFrame.plotX)}
@@ -300,25 +404,25 @@ const areaChartErrorMessage = (error: AreaChartWidgetError): ChartErrorMessageVi
   ])(error)
 
 const areaSvgFromResult =
-  (input: AreaChartWidgetInput) =>
+  (input: AreaChartWidgetInput, xAxisTickCount: number) =>
   (result: Result<AreaChartWidgetOutput, AreaChartWidgetError>) =>
     ifElse(
       isSuccess<AreaChartWidgetOutput, AreaChartWidgetError>,
-      value => areaSvgFromPoints(input, value.value),
+      value => areaSvgFromPoints(input, value.value, xAxisTickCount),
       value => <ChartErrorMessage error={areaChartErrorMessage(value.error)} />,
     )(result)
 
-const areaSvg = (input: AreaChartWidgetInput) =>
+const areaSvg = (input: AreaChartWidgetInput, xAxisTickCount: number) =>
   ifElse(
     (candidate: AreaChartWidgetInput) => candidate.points.length > 0,
-    candidate => areaSvgFromResult(candidate)(computeAreaChartOutput(candidate)),
+    candidate => areaSvgFromResult(candidate, xAxisTickCount)(computeAreaChartOutput(candidate)),
     () => <ChartErrorMessage error={areaChartErrorMessage({ kind: 'InsufficientPoints' })} />,
   )(input)
 
-export function AreaChart({ input }: Readonly<{ readonly input: AreaChartWidgetInput }>) {
+export function AreaChart({ input, xAxisTickCount }: AreaChartProps) {
   return (
     <figure className="area-chart" aria-label={input.accessibilitySummary}>
-      {areaSvg(input)}
+      {areaSvg(input, xAxisTickCount)}
     </figure>
   )
 }
