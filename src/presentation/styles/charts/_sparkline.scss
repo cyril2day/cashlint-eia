@@ -1,0 +1,37 @@
+.oil-lint-sparkline {
+  --oil-lint-sparkline-line: var(--color-cyan);
+  --oil-lint-sparkline-marker: var(--color-orange);
+
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.oil-lint-sparkline__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.oil-lint-sparkline__line {
+  stroke: var(--oil-lint-sparkline-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.oil-lint-sparkline__current-marker {
+  fill: var(--oil-lint-sparkline-marker);
+  stroke: var(--surface-color-primary);
+  stroke-width: 2;
+}
+
+.oil-lint-sparkline__caption {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--line-height-normal);
+}
