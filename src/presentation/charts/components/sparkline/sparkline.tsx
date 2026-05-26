@@ -17,6 +17,7 @@ export function Sparkline({ input, geometry }: SparklineProps) {
         className="oil-lint-sparkline__svg"
         width={geometry.dimensions.outerWidth}
         height={geometry.dimensions.outerHeight}
+        viewBox={`0 0 ${geometry.dimensions.outerWidth} ${geometry.dimensions.outerHeight}`}
         role="img"
         aria-label={input.accessibilitySummary}
       >

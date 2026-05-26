@@ -11,9 +11,9 @@
 
 .oil-lint-sparkline__svg {
   display: block;
-  width: 100%;
+  width: min(100%, 30rem);
   height: auto;
-  max-width: 100%;
+  max-width: 30rem;
   overflow: hidden;
 }
 

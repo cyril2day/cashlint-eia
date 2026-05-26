@@ -1,7 +1,12 @@
 @use './charts/gallery';
 @use './charts/panel';
+@use './charts/time-series';
 @use './charts/sparkline';
+@use './charts/metric-card';
+@use './charts/bar-chart';
 @use './charts/histogram';
+@use './charts/box-plot';
 @use './charts/area-chart';
+@use './charts/variance-chart';
 @use './charts/chart-error';
 @use './charts/responsive';

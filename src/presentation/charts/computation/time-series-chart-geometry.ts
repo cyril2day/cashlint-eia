@@ -3,7 +3,7 @@ import { formatDecimal } from '@/shared/decimal'
 import { ifElse } from '@/shared/fp'
 import { none, some, matchMaybe, type Maybe } from '@/shared/maybe'
 import { firstArrayItem, isNonEmptyArray, lastArrayItem } from '@/shared/collection'
-import { chartDomainBounds, numericDomain, paddedNumericDomain, toSvgPathMaybe } from '@/shared/chart-svg'
+import { chartDomainBounds, numericDomain, toSvgPathMaybe, type ChartDomain } from '@/shared/chart-svg'
 import type { ChartDimensions, TimeSeriesChartViewModel } from '@/presentation/charts/contracts'
 
 type GeometryPoint = Readonly<{ readonly x: number; readonly y: number }>
@@ -21,7 +21,6 @@ export type TimeSeriesChartGeometry = Readonly<{
   readonly xTickMarks: readonly TimeSeriesChartAxisTick[]
   readonly yTickMarks: readonly TimeSeriesChartAxisTick[]
   readonly currentMarker: Maybe<Readonly<{ readonly x: number; readonly y: number }>>
-  readonly baselineBand: Maybe<Readonly<{ readonly yTop: number; readonly yBottom: number }>>
   readonly dimensions: ChartDimensions
 }>
 
@@ -39,19 +38,13 @@ const baselineDomainValues = (
     () => [],
   )(baseline)
 
-const baselineBand = (
-  viewModel: TimeSeriesChartViewModel,
-  yScale: (value: number) => number,
-): Maybe<Readonly<{ readonly yTop: number; readonly yBottom: number }>> =>
-  ifElse(
-    hasComputedBaseline,
-    baseline =>
-      some({
-        yTop: yScale(baseline.upperBound),
-        yBottom: yScale(baseline.lowerBound),
-      }),
-    () => none(),
-  )(viewModel.baseline)
+const yDomainMaximum = (values: readonly number[]): number =>
+  Math.max(1, ...values)
+
+const timeSeriesYDomain = (values: readonly number[]): ChartDomain => ({
+  minimum: 0,
+  maximum: yDomainMaximum(values) * 1.08,
+})
 
 const currentMarker = (
   viewModel: TimeSeriesChartViewModel,
@@ -128,7 +121,7 @@ export const composeTimeSeriesChartGeometry = (
   dimensions: ChartDimensions,
 ): TimeSeriesChartGeometry => {
   const xDomain = numericDomain(viewModel.points.map(point => point.x))
-  const yDomain = paddedNumericDomain([
+  const yDomain = timeSeriesYDomain([
     ...viewModel.points.map(point => point.y),
     ...baselineDomainValues(viewModel.baseline),
   ])
@@ -156,7 +149,6 @@ export const composeTimeSeriesChartGeometry = (
     xTickMarks: xTickMarks(viewModel, xScale),
     yTickMarks: yTickMarks(yTicks, yScale),
     currentMarker: currentMarker(viewModel, xScale, yScale),
-    baselineBand: baselineBand(viewModel, yScale),
     dimensions,
   }
 }
