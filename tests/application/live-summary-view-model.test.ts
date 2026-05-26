@@ -220,22 +220,16 @@ describe('live summary view model', () => {
     const viewModel = unwrapSuccess(result)
 
     expect(viewModel.chartsGallery.panels.map(panel => panel.chartKind)).toEqual([
-      'TimeSeries',
       'Sparkline',
-      'MetricCard',
-      'BarChart',
       'Histogram',
-      'BoxPlot',
       'AreaChart',
-      'VarianceChart',
     ])
-    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'TimeSeries')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Sparkline')?.state).toBe('Complete')
-    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'BarChart')?.state).toBe('Partial')
-    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'VarianceChart')?.state).toBe('Complete')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Histogram')?.state).toBe('Complete')
+    expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'AreaChart')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
-      'Ready:6',
-      'Cautious:2',
+      'Ready:3',
+      'Cautious:0',
       'Waiting:0',
       'Needs history:0',
     ])

@@ -33,27 +33,17 @@ const summary: SummaryViewModel = {
 }
 
 describe('all chart types visible', () => {
-  it('renders every required chart widget kind in the gallery', () => {
+  it('renders every active chart widget kind in the gallery', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
     const markup = renderToStaticMarkup(<ChartGallery viewModel={gallery} />)
 
     expect(gallery.panels.map(panel => panel.chartKind)).toEqual([
-      'TimeSeries',
       'Sparkline',
-      'MetricCard',
-      'BarChart',
       'Histogram',
-      'BoxPlot',
       'AreaChart',
-      'VarianceChart',
     ])
-    expect(markup).toContain('chart-panel--TimeSeries')
     expect(markup).toContain('chart-panel--Sparkline')
-    expect(markup).toContain('chart-panel--MetricCard')
-    expect(markup).toContain('chart-panel--BarChart')
     expect(markup).toContain('chart-panel--Histogram')
-    expect(markup).toContain('chart-panel--BoxPlot')
     expect(markup).toContain('chart-panel--AreaChart')
-    expect(markup).toContain('chart-panel--VarianceChart')
   })
 })

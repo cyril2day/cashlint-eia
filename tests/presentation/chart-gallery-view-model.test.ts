@@ -30,32 +30,27 @@ const summary: SummaryViewModel = {
 }
 
 describe('chart gallery view model', () => {
-  it('returns one honest panel for every required chart kind', () => {
+  it('returns one honest panel for every active chart kind', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
     expect(gallery.panels.map(panel => panel.chartKind)).toEqual([
-      'TimeSeries',
       'Sparkline',
-      'MetricCard',
-      'BarChart',
       'Histogram',
-      'BoxPlot',
       'AreaChart',
-      'VarianceChart',
     ])
-    expect(gallery.panels).toHaveLength(8)
+    expect(gallery.panels).toHaveLength(3)
     expect(gallery.panels.map(panel => panel.chartViewModel.accessibilitySummary)).not.toContain('')
   })
 
   it('keeps insufficient runtime history unavailable instead of substituting zeros', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
-    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(7)
+    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(3)
     expect(gallery.panels.map(panel => panel.chartViewModel.accessibilitySummary)).not.toContain('0')
     expect(gallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
-      'Ready:1',
+      'Ready:0',
       'Cautious:0',
-      'Waiting:7',
+      'Waiting:3',
       'Needs history:0',
     ])
   })

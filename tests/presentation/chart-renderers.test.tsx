@@ -2,19 +2,29 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import type {
-  AreaChartViewModel,
-  BoxPlotViewModel,
-  HistogramViewModel,
-  VarianceChartViewModel,
-} from '@/presentation/charts/contracts'
+import type { AreaChartViewModel, HistogramViewModel, SparklineViewModel } from '@/presentation/charts/contracts'
 import {
   AreaChart,
-  BoxPlotChart,
+  Sparkline,
+  composeSparklineGeometry,
+  createChartDimensions,
   HistogramChart,
-  VarianceChart,
+  mapAreaChartViewModelToWidgetInput,
+  mapHistogramViewModelToWidgetInput,
+  mapSparklineViewModelToWidgetInput,
 } from '@/presentation'
+import { ifElse } from '@/shared/fp'
 import { none, some } from '@/shared/maybe'
+import { isSuccess, type Result } from '@/shared/result'
+
+const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue =>
+  ifElse(
+    isSuccess,
+    candidate => candidate.value,
+    () => {
+      throw new Error('expected success')
+    },
+  )(result)
 
 const histogram: HistogramViewModel = {
   id: 'histogram',
@@ -34,23 +44,17 @@ const histogram: HistogramViewModel = {
   displayState: 'Complete',
 }
 
-const boxPlot: BoxPlotViewModel = {
-  id: 'box-plot',
-  title: 'WTI spread',
-  subtitle: none(),
-  unitLabel: none(),
-  summary: some({
-    minimum: 68,
-    firstQuartile: 69,
-    median: 70,
-    thirdQuartile: 71,
-    maximum: 72,
-  }),
-  outliers: [],
-  currentMarker: some({ value: 72, label: 'Current 72' }),
-  referenceMarkers: [{ value: 70, label: 'Baseline 70' }],
+const sparkline: SparklineViewModel = {
+  id: 'sparkline',
+  label: 'WTI short trend',
+  points: [
+    { x: 1, y: 68, reportWeekIso: '2026-05-05', isCurrent: false },
+    { x: 2, y: 70, reportWeekIso: '2026-05-12', isCurrent: false },
+    { x: 3, y: 72, reportWeekIso: '2026-05-19', isCurrent: true },
+  ],
+  currentPoint: some({ x: 3, y: 72, reportWeekIso: '2026-05-19', isCurrent: true }),
   caveats: [],
-  accessibilitySummary: 'WTI spread box plot.',
+  accessibilitySummary: 'WTI short trend sparkline.',
   displayState: 'Complete',
 }
 
@@ -64,7 +68,7 @@ const area: AreaChartViewModel = {
     { x: 2, y: some(70), reportWeekIso: '2026-05-12', valueLabel: some('70'), caveats: [] },
     { x: 3, y: some(72), reportWeekIso: '2026-05-19', valueLabel: some('72'), caveats: [] },
   ],
-  baseline: some({ value: 68, label: 'Zero baseline' }),
+  baseline: some({ value: 0, label: 'Zero baseline' }),
   currentMarker: some({ x: 3, y: 72, label: 'Current 72' }),
   referenceMarkers: [],
   caveats: [],
@@ -72,44 +76,18 @@ const area: AreaChartViewModel = {
   displayState: 'Complete',
 }
 
-const variance: VarianceChartViewModel = {
-  id: 'variance',
-  title: 'WTI baseline variance',
-  subtitle: none(),
-  unitLabel: none(),
-  referenceSemantics: 'Interpretation baseline average',
-  entries: [{
-    category: 'WTI',
-    actualValue: 72,
-    actualValueLabel: '72',
-    reference: {
-      label: 'Baseline',
-      value: 70,
-      valueLabel: '70',
-    },
-    varianceAmount: 2,
-    varianceAmountLabel: '2',
-    variancePercentageLabel: some('2.9%'),
-    directionLabel: 'Above reference',
-    caveats: [],
-  }],
-  caveats: [],
-  accessibilitySummary: 'WTI variance chart.',
-  displayState: 'Complete',
-}
-
 describe('chart renderers', () => {
-  it('renders histogram, box plot, area, and variance as svg chart visuals', () => {
+  it('renders sparkline, histogram, and area chart as svg chart visuals', () => {
+    const sparklineInput = mapSparklineViewModelToWidgetInput(sparkline)
+    const dimensions = unwrapSuccess(createChartDimensions(520, 120))
     const markup = [
-      renderToStaticMarkup(<HistogramChart viewModel={histogram} />),
-      renderToStaticMarkup(<BoxPlotChart viewModel={boxPlot} />),
-      renderToStaticMarkup(<AreaChart viewModel={area} />),
-      renderToStaticMarkup(<VarianceChart viewModel={variance} />),
+      renderToStaticMarkup(<Sparkline input={sparklineInput} geometry={composeSparklineGeometry(sparklineInput, dimensions)} />),
+      renderToStaticMarkup(<HistogramChart input={mapHistogramViewModelToWidgetInput(histogram)} />),
+      renderToStaticMarkup(<AreaChart input={mapAreaChartViewModelToWidgetInput(area)} />),
     ].join('')
 
+    expect(markup).toContain('oil-lint-sparkline__line')
     expect(markup).toContain('histogram-chart__svg')
-    expect(markup).toContain('box-plot-chart__box')
     expect(markup).toContain('area-chart__area')
-    expect(markup).toContain('variance-chart__bar')
   })
 })

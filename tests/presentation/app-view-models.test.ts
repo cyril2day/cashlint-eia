@@ -73,30 +73,25 @@ describe('app view models', () => {
 
     expect(viewModel.navigation.items.map(item => item.href)).toEqual(['/', '/inventory', '/price', '/balance', '/analysis', '/charts'])
     expect(viewModel.controls.submitLabel).toBe('Refresh live data')
-    expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['MetricCard', 'Sparkline', 'TimeSeries'])
+    expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['Sparkline', 'Histogram', 'AreaChart'])
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
     expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Weekly story composed')
   })
 
-  it('creates a gallery with all eight chart kinds and honest unavailable states', () => {
+  it('creates a gallery with the active chart kinds and honest unavailable states', () => {
     const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
     expect(gallery.panels.map(panel => panel.chartKind)).toEqual([
-      'TimeSeries',
       'Sparkline',
-      'MetricCard',
-      'BarChart',
       'Histogram',
-      'BoxPlot',
       'AreaChart',
-      'VarianceChart',
     ])
-    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(7)
-    expect(gallery.panels.filter(panel => panel.state === 'Complete')).toHaveLength(1)
+    expect(gallery.panels.filter(panel => panel.state === 'Unavailable')).toHaveLength(3)
+    expect(gallery.panels.filter(panel => panel.state === 'Complete')).toHaveLength(0)
     expect(gallery.stateSummary.map(item => `${item.label}:${item.valueLabel}`)).toEqual([
-      'Ready:1',
+      'Ready:0',
       'Cautious:0',
-      'Waiting:7',
+      'Waiting:3',
       'Needs history:0',
     ])
   })
@@ -109,7 +104,7 @@ describe('app view models', () => {
 
     expect(inventory.rows.map(row => row.value)).toEqual(['440 million barrels'])
     expect(price.rows[0].caveats.kind).toBe('Some')
-    expect(balance.charts.map(panel => panel.chartKind)).toEqual(['BarChart', 'VarianceChart'])
+    expect(balance.charts.map(panel => panel.chartKind)).toEqual([])
     expect(analysis.rows.map(row => row.value)).not.toContain('0')
   })
 })

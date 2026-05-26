@@ -4,18 +4,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   Sparkline,
-  TimeSeriesChart,
   composeSparklineGeometry,
-  composeTimeSeriesChartGeometry,
   createChartDimensions,
   mapContextualizedSignalToSparkline,
-  mapContextualizedSignalToTimeSeriesChart,
+  mapSparklineViewModelToWidgetInput,
 } from '@/presentation'
 import {
   createContextualizedSignal,
-  createBaseline,
-  createComputedBaselineResult,
-  createNormalAnomalyState,
   createNotComputedAnomalyState,
   createNotComputedBaselineResult,
   createPriceSignal,
@@ -29,9 +24,9 @@ import {
   parsePriceKind,
   parseReportWeek,
 } from '@/contexts/measurement/model'
-import { allPass, ifElse } from '@/shared/fp'
+import { ifElse } from '@/shared/fp'
+import { none } from '@/shared/maybe'
 import { isSuccess, type Result } from '@/shared/result'
-import { matchMaybe, none } from '@/shared/maybe'
 
 const unwrapSuccess = <SuccessValue, FailureValue>(result: Result<SuccessValue, FailureValue>): SuccessValue =>
   ifElse(
@@ -67,14 +62,6 @@ const contextualizedSignal = createContextualizedSignal(
   [],
 )
 
-const baselineSignal = createContextualizedSignal(
-  signal,
-  none(),
-  createComputedBaselineResult(createBaseline(identity, 3, 80, 4, unit)),
-  createNormalAnomalyState(0.5),
-  [],
-)
-
 const historicalPoints = [
   {
     reportWeek: unwrapSuccess(parseReportWeek('2026-05-05T00:00:00.000Z')),
@@ -91,15 +78,7 @@ const historicalPoints = [
 ]
 
 describe('Presentation chart foundation', () => {
-  it('maps contextualized signal to time-series and sparkline view models', () => {
-    const timeSeries = mapContextualizedSignalToTimeSeriesChart({
-      id: 'wti-time-series',
-      title: 'WTI weekly history',
-      subtitle: none(),
-      signal: contextualizedSignal,
-      historicalPoints,
-    })
-
+  it('maps contextualized signal to sparkline view models', () => {
     const sparkline = mapContextualizedSignalToSparkline({
       id: 'wti-sparkline',
       label: 'WTI short trend',
@@ -107,24 +86,13 @@ describe('Presentation chart foundation', () => {
       historicalPoints,
     })
 
-    expect(timeSeries.points).toHaveLength(3)
-    expect(timeSeries.displayState).toBe('Complete')
-    expect('sourceSignal' in timeSeries).toBe(false)
     expect(sparkline.points).toHaveLength(3)
     expect(sparkline.displayState).toBe('Complete')
     expect('sourceSignal' in sparkline).toBe(false)
   })
 
-  it('computes line and sparkline geometry using explicit dimensions', () => {
+  it('computes sparkline geometry using explicit dimensions', () => {
     const dimensions = unwrapSuccess(createChartDimensions(480, 220))
-
-    const timeSeries = mapContextualizedSignalToTimeSeriesChart({
-      id: 'wti-time-series',
-      title: 'WTI weekly history',
-      subtitle: none(),
-      signal: contextualizedSignal,
-      historicalPoints,
-    })
 
     const sparkline = mapContextualizedSignalToSparkline({
       id: 'wti-sparkline',
@@ -133,52 +101,13 @@ describe('Presentation chart foundation', () => {
       historicalPoints,
     })
 
-    const lineGeometry = composeTimeSeriesChartGeometry(timeSeries, dimensions)
     const sparklineGeometry = composeSparklineGeometry(sparkline, dimensions)
 
-    expect(lineGeometry.linePath.kind).toBe('Some')
-    expect(lineGeometry.xTicks.length).toBeGreaterThan(0)
     expect(sparklineGeometry.linePath.kind).toBe('Some')
   })
 
-  it('keeps computed baseline bands inside the time-series plot domain', () => {
+  it('renders modular sparkline components without DOM mutation', () => {
     const dimensions = unwrapSuccess(createChartDimensions(480, 220))
-
-    const timeSeries = mapContextualizedSignalToTimeSeriesChart({
-      id: 'wti-time-series',
-      title: 'WTI weekly history',
-      subtitle: none(),
-      signal: baselineSignal,
-      historicalPoints,
-    })
-
-    const geometry = composeTimeSeriesChartGeometry(timeSeries, dimensions)
-    const plotTop = dimensions.margin.top
-    const plotBottom = dimensions.margin.top + dimensions.innerHeight
-    const isInsidePlot = allPass([
-      (value: number): boolean => value >= plotTop,
-      (value: number): boolean => value <= plotBottom,
-    ])
-
-    expect(matchMaybe<Readonly<{ readonly yTop: number; readonly yBottom: number }>, boolean>({
-      Some: band => allPass([
-        (candidate: Readonly<{ readonly yTop: number; readonly yBottom: number }>): boolean => isInsidePlot(candidate.yTop),
-        (candidate: Readonly<{ readonly yTop: number; readonly yBottom: number }>): boolean => isInsidePlot(candidate.yBottom),
-      ])(band),
-      None: () => false,
-    })(geometry.baselineBand)).toBe(true)
-  })
-
-  it('renders modular chart components without DOM mutation', () => {
-    const dimensions = unwrapSuccess(createChartDimensions(480, 220))
-
-    const timeSeries = mapContextualizedSignalToTimeSeriesChart({
-      id: 'wti-time-series',
-      title: 'WTI weekly history',
-      subtitle: none(),
-      signal: contextualizedSignal,
-      historicalPoints,
-    })
 
     const sparkline = mapContextualizedSignalToSparkline({
       id: 'wti-sparkline',
@@ -187,16 +116,11 @@ describe('Presentation chart foundation', () => {
       historicalPoints,
     })
 
-    const lineMarkup = renderToStaticMarkup(
-      <TimeSeriesChart viewModel={timeSeries} geometry={composeTimeSeriesChartGeometry(timeSeries, dimensions)} />,
-    )
-
+    const sparklineInput = mapSparklineViewModelToWidgetInput(sparkline)
     const sparklineMarkup = renderToStaticMarkup(
-      <Sparkline viewModel={sparkline} geometry={composeSparklineGeometry(sparkline, dimensions)} />,
+      <Sparkline input={sparklineInput} geometry={composeSparklineGeometry(sparklineInput, dimensions)} />,
     )
 
-    expect(lineMarkup).toContain('WTI weekly history')
-    expect(lineMarkup).toContain('oil-lint-time-series-chart__line')
     expect(sparklineMarkup).toContain('WTI short trend')
     expect(sparklineMarkup).toContain('oil-lint-sparkline__line')
   })
