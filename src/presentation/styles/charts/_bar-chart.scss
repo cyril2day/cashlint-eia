@@ -1,0 +1,93 @@
+.bar-chart {
+  --bar-chart-positive: var(--color-cyan);
+  --bar-chart-negative: var(--color-orange);
+
+  width: 100%;
+  margin: 0;
+}
+
+.bar-chart__list {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.bar-chart__item {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.bar-chart__label-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.bar-chart__category {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.bar-chart__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+.bar-chart__direction {
+  display: inline-flex;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  color: var(--surface-color-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.bar-chart__direction--Positive {
+  background: var(--bar-chart-positive);
+}
+
+.bar-chart__direction--Negative {
+  background: var(--bar-chart-negative);
+}
+
+.bar-chart__direction--Zero {
+  background: var(--text-tertiary);
+}
+
+.bar-chart__track {
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--text-quinary) 60%, transparent);
+  overflow: hidden;
+}
+
+.bar-chart__bar {
+  display: block;
+  height: 100%;
+  min-width: var(--space-1);
+  border-radius: inherit;
+  background: var(--bar-chart-positive);
+}
+
+.bar-chart__item--Negative .bar-chart__bar {
+  background: var(--bar-chart-negative);
+}
+
+.bar-chart__item--Zero .bar-chart__bar {
+  background: var(--text-tertiary);
+}
+
+.bar-chart__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
