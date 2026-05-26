@@ -1,4 +1,4 @@
-import type { SummaryCardKind, SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
+import type { SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
 import type { ContextualizedSignalSet } from '@/contexts/interpretation/model/current-signal-set'
 import type { SystemBalanceAnalysis } from '@/contexts/system-balance/model'
 import type {
@@ -27,24 +27,14 @@ import type {
 } from '@/presentation/contracts'
 import type {
   AreaChartViewModel,
-  BarChartViewModel,
-  BoxPlotViewModel,
   ChartCaveatViewModel,
   HistogramViewModel,
-  MetricCardViewModel,
   SparklineViewModel,
-  TimeSeriesChartViewModel,
-  VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
 import {
   mapContextualizedSignalToAreaChart,
-  mapContextualizedSignalToBoxPlot,
   mapContextualizedSignalToHistogram,
   mapContextualizedSignalToSparkline,
-  mapContextualizedSignalToStandaloneMetricCard,
-  mapContextualizedSignalToTimeSeriesChart,
-  mapContextualizedSignalToVarianceChart,
-  mapSystemBalanceAnalysisToDriverBarChart,
   type HistoricalSignalPointInput,
 } from '@/presentation/charts/mappers'
 import { cond, ifElse } from '@/shared/fp'
@@ -53,13 +43,6 @@ import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 const shortHistoryMessage = 'This view uses the weekly window returned by the current run. When the window is thin, the chart stays cautious instead of smoothing over the gaps.'
 
 const activeRoute = (routeId: AppRouteId) => (candidate: AppRouteId): boolean => candidate === routeId
-
-const maybeFirst = <Value>(values: readonly Value[]): Maybe<Value> =>
-  ifElse(
-    (candidate: readonly Value[]) => candidate.length > 0,
-    candidate => some(candidate[0]),
-    () => none(),
-  )(values)
 
 const presentationStateFromSummaryState = (state: SummaryDisplayState): PresentationDisplayState =>
   cond<[SummaryDisplayState], PresentationDisplayState>([
@@ -218,62 +201,6 @@ export const createAnalysisTraceViewModel = (summary: SummaryViewModel): Analysi
   steps: traceSteps(presentationStateFromSummaryState(summary.displayState)),
 })
 
-const summaryCardByKind = (
-  summary: SummaryViewModel,
-  kind: SummaryCardKind,
-): Maybe<SummaryCardViewModel> => maybeFirst(summary.cards.filter(card => card.kind === kind))
-
-const fallbackMetricCard = (title: string): MetricCardViewModel => ({
-  id: `${title.toLowerCase().replaceAll(' ', '-')}-metric`,
-  title,
-  valueLabel: 'Not in this run',
-  unitLabel: none(),
-  comparison: none(),
-  trendLabel: none(),
-  statusLabel: some('Waiting on data'),
-  caveats: [chartCaveat],
-  sparkline: none(),
-  accessibilitySummary: `${title} metric was not included in this run.`,
-  displayState: 'Unavailable',
-})
-
-const metricCardFromSummaryCard = (card: SummaryCardViewModel): MetricCardViewModel => ({
-  id: `${card.kind}-metric`,
-  title: card.title,
-  valueLabel: card.valueText,
-  unitLabel: none(),
-  comparison: none(),
-  trendLabel: card.trendLabel,
-  statusLabel: some(card.statusLabel),
-  caveats: [],
-  sparkline: none(),
-  accessibilitySummary: `${card.title}, ${card.valueText}, ${card.statusLabel}.`,
-  displayState: 'Complete',
-})
-
-const metricCardFromMaybe = (
-  title: string,
-) =>
-  (card: Maybe<SummaryCardViewModel>): MetricCardViewModel =>
-    matchMaybe<SummaryCardViewModel, MetricCardViewModel>({
-      Some: metricCardFromSummaryCard,
-      None: () => fallbackMetricCard(title),
-    })(card)
-
-const unavailableTimeSeries = (id: string, title: string): TimeSeriesChartViewModel => ({
-  id,
-  title,
-  subtitle: some('Waiting for a usable weekly window'),
-  unitLabel: none(),
-  points: [],
-  currentPoint: none(),
-  baseline: { kind: 'NotComputed', reason: shortHistoryMessage },
-  anomaly: { kind: 'NotComputed', reason: shortHistoryMessage },
-  caveats: [chartCaveat],
-  accessibilitySummary: `${title} time series is waiting on a usable weekly window.`,
-  displayState: 'Unavailable',
-})
-
 const unavailableSparkline = (id: string, label: string): SparklineViewModel => ({
   id,
   label,
@@ -281,18 +208,6 @@ const unavailableSparkline = (id: string, label: string): SparklineViewModel => 
   currentPoint: none(),
   caveats: [chartCaveat],
   accessibilitySummary: `${label} sparkline is waiting on a usable weekly window.`,
-  displayState: 'Unavailable',
-})
-
-const unavailableBarChart = (id: string, title: string): BarChartViewModel => ({
-  id,
-  title,
-  subtitle: some('Driver values did not come through with this run.'),
-  unitLabel: none(),
-  ordering: 'InputOrder',
-  points: [],
-  caveats: [chartCaveat],
-  accessibilitySummary: `${title} bar chart is waiting on driver values.`,
   displayState: 'Unavailable',
 })
 
@@ -310,20 +225,6 @@ const unavailableHistogram = (id: string, title: string): HistogramViewModel => 
   displayState: 'Unavailable',
 })
 
-const unavailableBoxPlot = (id: string, title: string): BoxPlotViewModel => ({
-  id,
-  title,
-  subtitle: some('Needs enough observations for a fair spread.'),
-  unitLabel: none(),
-  summary: none(),
-  outliers: [],
-  currentMarker: none(),
-  referenceMarkers: [],
-  caveats: [chartCaveat],
-  accessibilitySummary: `${title} box plot is waiting on enough observations for a fair spread.`,
-  displayState: 'Unavailable',
-})
-
 const unavailableAreaChart = (id: string, title: string): AreaChartViewModel => ({
   id,
   title,
@@ -338,35 +239,14 @@ const unavailableAreaChart = (id: string, title: string): AreaChartViewModel => 
   displayState: 'Unavailable',
 })
 
-const unavailableVarianceChart = (id: string, title: string): VarianceChartViewModel => ({
-  id,
-  title,
-  subtitle: some('Needs a baseline before the comparison is fair.'),
-  unitLabel: none(),
-  referenceSemantics: 'Baseline reference comes from interpretation, not from the chart.',
-  entries: [],
-  caveats: [chartCaveat],
-  accessibilitySummary: `${title} variance chart is waiting on a baseline reference.`,
-  displayState: 'Unavailable',
-})
-
 const chartPanelDescription = (
   chartKind: ChartPanelKind,
-  state: PresentationDisplayState,
 ): Maybe<string> =>
   cond<[ChartPanelKind], Maybe<string>>([
-    [candidate => candidate === 'TimeSeries', () => some('A week-by-week line for the loaded inventory window.')],
     [candidate => candidate === 'Sparkline', () => some('A compact WTI read for quick scanning.')],
-    [candidate => candidate === 'MetricCard', () => some('The current value, kept close to its status and caveats.')],
-    [candidate => candidate === 'BarChart', () => some('Balance drivers shown side by side, without turning them into a verdict.')],
     [candidate => candidate === 'Histogram', () => some('A light distribution view of the weekly WTI values that came back.')],
-    [candidate => candidate === 'BoxPlot', () => ifElse(
-      (candidateState: PresentationDisplayState) => candidateState === 'Partial',
-      () => some('The shape is intentionally restrained until the weekly range is deep enough.'),
-      () => some('A compact spread view for the loaded weekly range.'),
-    )(state)],
     [candidate => candidate === 'AreaChart', () => some('Inventory magnitude over the loaded weekly window.')],
-    [() => true, () => some('Current value against a baseline when interpretation has enough history to supply one.')],
+    [() => true, () => some('Chart widget input for the current visualization workbench.')],
   ])(chartKind)
 
 const chartPanel = (
@@ -377,7 +257,7 @@ const chartPanel = (
 ): ChartPanelViewModel => ({
   id,
   title,
-  description: chartPanelDescription(chartKind, chartViewModel.displayState),
+  description: chartPanelDescription(chartKind),
   chartKind,
   chartViewModel,
   state: chartViewModel.displayState,
@@ -439,34 +319,7 @@ type LiveChartsGalleryInput = Readonly<{
   readonly priceHistory: readonly HistoricalSignalPointInput[]
 }>
 
-const partialBoxPlot = (viewModel: BoxPlotViewModel): BoxPlotViewModel => ({
-  ...viewModel,
-  displayState: 'Partial',
-})
-
-const balanceBarChart = (input: LiveChartsGalleryInput): BarChartViewModel =>
-  matchMaybe<SystemBalanceAnalysis, BarChartViewModel>({
-    Some: analysis => mapSystemBalanceAnalysisToDriverBarChart({
-      id: 'balance-driver-bars',
-      title: 'Balance driver bars',
-      analysis,
-    }),
-    None: () => unavailableBarChart('balance-driver-bars', 'Balance driver bars'),
-  })(input.systemBalance)
-
 export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGalleryInput): ChartsGalleryViewModel => {
-  const inventoryMetric = mapContextualizedSignalToStandaloneMetricCard({
-    id: 'inventory-metric',
-    title: 'Inventory metric card',
-    signal: input.signals.inventory,
-  })
-  const inventoryTimeSeries = mapContextualizedSignalToTimeSeriesChart({
-    id: 'inventory-time-series',
-    title: 'Inventory time series',
-    subtitle: some('Weekly inventory observations from the current run'),
-    signal: input.signals.inventory,
-    historicalPoints: input.inventoryHistory,
-  })
   const priceSparkline = mapContextualizedSignalToSparkline({
     id: 'price-sparkline',
     label: 'WTI price sparkline',
@@ -481,15 +334,6 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
     historicalPoints: input.priceHistory,
     binStrategy: { kind: 'Automatic', requestedBinCount: 6 },
   })
-  const inventoryBoxPlot = partialBoxPlot(mapContextualizedSignalToBoxPlot({
-    id: 'inventory-box-plot',
-    title: 'Inventory box plot',
-    subtitle: some('A box plot needs a deeper weekly range than this run returned'),
-    signal: input.signals.inventory,
-    historicalPoints: input.inventoryHistory,
-    summary: none(),
-    outliers: [],
-  }))
   const inventoryAreaChart = mapContextualizedSignalToAreaChart({
     id: 'inventory-area-chart',
     title: 'Inventory area chart',
@@ -498,28 +342,15 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
     historicalPoints: input.inventoryHistory,
     baseline: none(),
   })
-  const balanceVariance = mapContextualizedSignalToVarianceChart({
-    id: 'balance-variance-chart',
-    title: 'Inventory baseline variance',
-    subtitle: some('Baseline reference comes from interpretation context'),
-    signal: input.signals.inventory,
-    referenceLabel: 'Baseline',
-    referenceSemantics: 'Interpretation baseline average',
-  })
   const panels = [
-    chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', inventoryTimeSeries),
-    chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', priceSparkline),
-    chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
-    chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', balanceBarChart(input)),
-    chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', priceHistogram),
-    chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', inventoryBoxPlot),
-    chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', inventoryAreaChart),
-    chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', balanceVariance),
+    chartPanel('price-sparkline-panel', 'WTI weekly price trend', 'Sparkline', priceSparkline),
+    chartPanel('price-histogram-panel', 'WTI weekly price distribution', 'Histogram', priceHistogram),
+    chartPanel('inventory-area-panel', 'Weekly commercial crude inventory', 'AreaChart', inventoryAreaChart),
   ]
 
   return {
-    title: 'Visual analysis gallery',
-    description: 'A single place to inspect the market read: what is backed by the current weekly window, and what is still too thin to overstate.',
+    title: `${input.summary.reportWeekText} charts`,
+    description: '',
     stateSummary: chartGalleryStateSummary(panels),
     panels,
     caveats: [presentationHistoryCaveat],
@@ -527,22 +358,16 @@ export const mapLiveAnalysisToChartsGalleryViewModel = (input: LiveChartsGallery
   }
 }
 
-export const mapSummaryToChartsGalleryViewModel = (summary: SummaryViewModel): ChartsGalleryViewModel => {
-  const inventoryMetric = metricCardFromMaybe('Inventory')(summaryCardByKind(summary, 'inventory'))
+export const mapSummaryToChartsGalleryViewModel = (_summary: SummaryViewModel): ChartsGalleryViewModel => {
   const panels = [
-    chartPanel('inventory-time-series-panel', 'Inventory time series', 'TimeSeries', unavailableTimeSeries('inventory-time-series', 'Inventory time series')),
-    chartPanel('price-sparkline-panel', 'WTI sparkline', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
-    chartPanel('inventory-metric-panel', 'Inventory metric card', 'MetricCard', inventoryMetric),
-    chartPanel('balance-driver-panel', 'Balance driver bars', 'BarChart', unavailableBarChart('balance-driver-bars', 'Balance driver bars')),
-    chartPanel('price-histogram-panel', 'WTI distribution histogram', 'Histogram', unavailableHistogram('price-histogram', 'WTI distribution histogram')),
-    chartPanel('inventory-box-panel', 'Inventory box plot', 'BoxPlot', unavailableBoxPlot('inventory-box-plot', 'Inventory box plot')),
-    chartPanel('inventory-area-panel', 'Inventory area chart', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Inventory area chart')),
-    chartPanel('balance-variance-panel', 'Balance variance chart', 'VarianceChart', unavailableVarianceChart('balance-variance-chart', 'Balance variance chart')),
+    chartPanel('price-sparkline-panel', 'WTI weekly price trend', 'Sparkline', unavailableSparkline('price-sparkline', 'WTI price sparkline')),
+    chartPanel('price-histogram-panel', 'WTI weekly price distribution', 'Histogram', unavailableHistogram('price-histogram', 'WTI distribution histogram')),
+    chartPanel('inventory-area-panel', 'Weekly commercial crude inventory', 'AreaChart', unavailableAreaChart('inventory-area-chart', 'Inventory area chart')),
   ]
 
   return {
-    title: 'Visual analysis gallery',
-    description: 'A single place to inspect every visual surface, including the places where the data is still too thin to push harder.',
+    title: 'Charts',
+    description: '',
     stateSummary: chartGalleryStateSummary(panels),
     panels,
     caveats: [presentationHistoryCaveat],
@@ -610,10 +435,7 @@ export const mapSummaryWithChartsToInventoryDetailViewModel = (
     some('Inventory facts and visual states'),
     inventoryCards,
     [
-      ...panelsByKind(gallery, 'TimeSeries'),
-      ...panelsByKind(gallery, 'MetricCard'),
       ...panelsByKind(gallery, 'AreaChart'),
-      ...panelsByKind(gallery, 'BoxPlot'),
     ],
     summary,
   )
@@ -638,7 +460,6 @@ export const mapSummaryWithChartsToPriceDetailViewModel = (
     [
       ...panelsByKind(gallery, 'Sparkline'),
       ...panelsByKind(gallery, 'Histogram'),
-      ...panelsByKind(gallery, 'TimeSeries'),
     ],
     summary,
   )
@@ -652,18 +473,15 @@ export const mapSummaryToBalanceDetailViewModel = (summary: SummaryViewModel): B
 
 export const mapSummaryWithChartsToBalanceDetailViewModel = (
   summary: SummaryViewModel,
-  gallery: ChartsGalleryViewModel,
+  _gallery: ChartsGalleryViewModel,
 ): BalanceDetailViewModel => {
   const balanceCards = summary.cards.filter(card => card.kind === 'system')
 
   return detailPage(
     'System balance',
-    some('System balance summary and driver chart states'),
+    some('System balance summary without inactive chart widgets'),
     balanceCards,
-    [
-      ...panelsByKind(gallery, 'BarChart'),
-      ...panelsByKind(gallery, 'VarianceChart'),
-    ],
+    [],
     summary,
   )
 }
@@ -697,9 +515,9 @@ export const mapSummaryWithChartsToHomePageViewModel = (
   navigation: createAppNavigationViewModel('home'),
   controls: createAnalysisControlViewModel(summary),
   primaryCharts: [
-    ...panelsByKind(gallery, 'MetricCard'),
     ...panelsByKind(gallery, 'Sparkline'),
-    ...panelsByKind(gallery, 'TimeSeries'),
+    ...panelsByKind(gallery, 'Histogram'),
+    ...panelsByKind(gallery, 'AreaChart'),
   ],
   chartsGallery: gallery,
   caveatPanel: createCaveatPanelViewModel(summary),

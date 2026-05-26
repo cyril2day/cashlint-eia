@@ -27,16 +27,16 @@ export type ChartSvgPoint = Readonly<{
 }>
 
 export const defaultChartSvgFrame: ChartSvgFrame = {
-  width: 360,
-  height: 180,
+  width: 420,
+  height: 220,
   paddingTop: 18,
-  paddingRight: 18,
-  paddingBottom: 28,
-  paddingLeft: 36,
-  plotX: 36,
+  paddingRight: 20,
+  paddingBottom: 46,
+  paddingLeft: 72,
+  plotX: 72,
   plotY: 18,
-  plotWidth: 306,
-  plotHeight: 134,
+  plotWidth: 328,
+  plotHeight: 156,
 }
 
 const defaultDomain: ChartDomain = {

@@ -1,12 +1,7 @@
 import type {
   AreaChartViewModel,
-  BarChartViewModel,
-  BoxPlotViewModel,
   HistogramViewModel,
-  MetricCardViewModel,
   SparklineViewModel,
-  TimeSeriesChartViewModel,
-  VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
 import type { Maybe } from '@/shared/maybe'
 
@@ -14,24 +9,14 @@ import type { PresentationCaveatViewModel } from '@/presentation/contracts/prese
 import type { PresentationDisplayState } from '@/presentation/contracts/presentation-display-state'
 
 export type ChartPanelKind =
-  | 'TimeSeries'
   | 'Sparkline'
-  | 'MetricCard'
-  | 'BarChart'
   | 'Histogram'
-  | 'BoxPlot'
   | 'AreaChart'
-  | 'VarianceChart'
 
 export type ChartPanelPayload =
-  | TimeSeriesChartViewModel
   | SparklineViewModel
-  | MetricCardViewModel
-  | BarChartViewModel
   | HistogramViewModel
-  | BoxPlotViewModel
   | AreaChartViewModel
-  | VarianceChartViewModel
 
 export type ChartPanelViewModel = Readonly<{
   readonly id: string
