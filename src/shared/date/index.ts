@@ -1,4 +1,4 @@
-import { compareAsc, formatISO, isValid, parseISO } from 'date-fns'
+import { compareAsc, format, formatISO, isValid, parseISO } from 'date-fns'
 import { ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
@@ -57,6 +57,8 @@ export const isDateValue = (input: unknown): input is DateValue =>
 export const formatDateIso = (date: DateValue): string => formatISO(date)
 
 export const formatDateIsoDate = (date: DateValue): string => formatISO(date, { representation: 'date' })
+
+export const formatDateReadable = (date: DateValue): string => format(date, 'MMMM d, yyyy')
 
 export const compareDates = (left: DateValue, right: DateValue): number => compareAsc(left, right)
 
