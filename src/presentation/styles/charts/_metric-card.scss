@@ -9,7 +9,7 @@
 .metric-card-chart__header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 
@@ -78,19 +78,8 @@
 
 .metric-card-chart__meta-item {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
   gap: var(--space-2);
   padding-block: var(--space-1);
-  border-block-end: var(--border-width-1) var(--border-style-solid) color-mix(in srgb, var(--color-border) 72%, transparent);
-}
-
-.metric-card-chart__meta-label {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--letter-spacing-wider);
-  text-transform: uppercase;
 }
 
 .metric-card-chart__meta-value {

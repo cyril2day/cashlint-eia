@@ -49,11 +49,10 @@ const trendItem = (viewModel: MetricCardViewModel) =>
   matchMaybe<string, React.ReactNode>({
     Some: text => (
       <div className="metric-card-chart__meta-item">
-        <dt className="metric-card-chart__meta-label">Trend</dt>
-        <dd className="metric-card-chart__meta-value metric-card-chart__trend-value">
+        <p className="metric-card-chart__meta-value metric-card-chart__trend-value">
           {trendIcon(text)}
           <span>{text}</span>
-        </dd>
+        </p>
       </div>
     ),
     None: () => null,
@@ -63,7 +62,6 @@ export function MetricCardChart({ viewModel }: Readonly<{ readonly viewModel: Me
   return (
     <article className="metric-card-chart" aria-label={viewModel.accessibilitySummary}>
       <header className="metric-card-chart__header">
-        <p className="metric-card-chart__title">{viewModel.title}</p>
         {statusBadge(viewModel)}
       </header>
       <div className="metric-card-chart__primary">
@@ -71,9 +69,9 @@ export function MetricCardChart({ viewModel }: Readonly<{ readonly viewModel: Me
         {unitLabel(viewModel)}
       </div>
       {comparison(viewModel)}
-      <dl className="metric-card-chart__meta">
+      <div className="metric-card-chart__meta">
         {trendItem(viewModel)}
-      </dl>
+      </div>
     </article>
   )
 }
