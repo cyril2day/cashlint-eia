@@ -1,103 +1,47 @@
 import React from 'react'
 
-import type { HistogramBinStrategy, HistogramMarkerViewModel, HistogramValueViewModel, HistogramViewModel } from '@/presentation/charts/contracts'
-import { ifElse } from '@/shared/fp'
-import { matchMaybe } from '@/shared/maybe'
+import type { HistogramWidgetBin, HistogramWidgetError, HistogramWidgetInput, HistogramWidgetMarker } from '@/presentation/charts/widgets/histogram/histogram-widget'
+import { computeHistogramBins } from '@/presentation/charts/widgets/histogram/histogram-widget'
+import { cond, ifElse } from '@/shared/fp'
+import { isSuccess, type Result } from '@/shared/result'
 import { formatDecimal, formatDecimalCoordinate } from '@/shared/decimal'
 import {
-  type ChartDomain,
-  chartValueAxisLabel,
   defaultChartSvgFrame,
   numericDomain,
   scaleXInFrame,
 } from '@/shared/chart-svg'
+import { ChartErrorMessage, type ChartErrorMessageViewModel } from '@/presentation/charts/components/chart-error-message'
 
-type HistogramBinView = Readonly<{
-  readonly index: number
-  readonly minimum: number
-  readonly maximum: number
-  readonly count: number
-}>
-
-type AutomaticHistogramBinStrategy = Extract<HistogramBinStrategy, { readonly kind: 'Automatic' }>
-type ManualHistogramBinStrategy = Extract<HistogramBinStrategy, { readonly kind: 'ManualThresholds' }>
-
-const isAutomaticBinStrategy = (strategy: HistogramBinStrategy): strategy is AutomaticHistogramBinStrategy =>
-  strategy.kind === 'Automatic'
-
-const requestedBinCount = (strategy: HistogramBinStrategy): number =>
-  ifElse(
-    isAutomaticBinStrategy,
-    candidate => candidate.requestedBinCount,
-    (candidate: ManualHistogramBinStrategy) => candidate.thresholds.length + 1,
-  )(strategy)
-
-const safeBinCount = (strategy: HistogramBinStrategy): number =>
-  Math.max(1, requestedBinCount(strategy))
-
-const binIndexForValue =
-  (domain: ReturnType<typeof numericDomain>, binCount: number) =>
-  (value: number): number => {
-    const ratio = (value - domain.minimum) / (domain.maximum - domain.minimum)
-    const rawIndex = Math.floor(ratio * binCount)
-
-    return Math.min(binCount - 1, Math.max(0, rawIndex))
-  }
-
-const binCountAtIndex =
-  (values: readonly HistogramValueViewModel[], domain: ReturnType<typeof numericDomain>, binCount: number) =>
-  (index: number): number =>
-    values.filter(value => binIndexForValue(domain, binCount)(value.value) === index).length
-
-const binAtIndex =
-  (values: readonly HistogramValueViewModel[], domain: ReturnType<typeof numericDomain>, binCount: number) =>
-  (_: unknown, index: number): HistogramBinView => {
-    const binWidth = (domain.maximum - domain.minimum) / binCount
-    const minimum = domain.minimum + (binWidth * index)
-
-    return {
-      index,
-      minimum,
-      maximum: minimum + binWidth,
-      count: binCountAtIndex(values, domain, binCount)(index),
-    }
-  }
-
-const binsForViewModel = (viewModel: HistogramViewModel): readonly HistogramBinView[] => {
-  const domain = numericDomain(viewModel.values.map(value => value.value))
-  const binCount = safeBinCount(viewModel.binStrategy)
-
-  return Array.from({ length: binCount }, binAtIndex(viewModel.values, domain, binCount))
-}
-
-const largestBinCount = (bins: readonly HistogramBinView[]): number =>
+const largestBinCount = (bins: readonly HistogramWidgetBin[]): number =>
   Math.max(1, ...bins.map(bin => bin.count))
 
 const countTickValues = (largest: number): readonly number[] =>
-  Array.from(new Set([0, Math.ceil(largest / 2), largest]))
+  Array.from({ length: largest + 1 }, (_, index) => index)
 
 const binX =
   (domain: ReturnType<typeof numericDomain>) =>
-  (bin: HistogramBinView): number =>
+  (bin: HistogramWidgetBin): number =>
     scaleXInFrame(domain, defaultChartSvgFrame)(bin.minimum)
 
 const binWidth =
   (domain: ReturnType<typeof numericDomain>) =>
-  (bin: HistogramBinView): number =>
-    Math.max(2, scaleXInFrame(domain, defaultChartSvgFrame)(bin.maximum) - binX(domain)(bin) - 4)
+  (bin: HistogramWidgetBin): number =>
+    Math.max(2, scaleXInFrame(domain, defaultChartSvgFrame)(bin.maximum) - binX(domain)(bin))
+
+const binCenterX =
+  (domain: ReturnType<typeof numericDomain>) =>
+  (bin: HistogramWidgetBin): number =>
+    binX(domain)(bin) + (binWidth(domain)(bin) / 2)
 
 const binHeight =
   (largest: number) =>
-  (bin: HistogramBinView): number =>
+  (bin: HistogramWidgetBin): number =>
     (bin.count / largest) * defaultChartSvgFrame.plotHeight
 
 const binY =
   (largest: number) =>
-  (bin: HistogramBinView): number =>
+  (bin: HistogramWidgetBin): number =>
     defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight - binHeight(largest)(bin)
-
-const binLabel = (bin: HistogramBinView): string =>
-  `${formatDecimal(bin.minimum)}-${formatDecimal(bin.maximum)}`
 
 const countTickY =
   (largest: number) =>
@@ -130,9 +74,75 @@ const countTick =
     )
   }
 
+const isClosedBin = (bin: HistogramWidgetBin): boolean => bin.boundary === 'Closed'
+
+const binRangeText = (bin: HistogramWidgetBin): string =>
+  ifElse(
+    isClosedBin,
+    candidate => `[${formatDecimal(candidate.minimum)}, ${formatDecimal(candidate.maximum)}]`,
+    candidate => `[${formatDecimal(candidate.minimum)}, ${formatDecimal(candidate.maximum)})`,
+  )(bin)
+
+const binAxisTick =
+  (domain: ReturnType<typeof numericDomain>, rotateLabel: boolean) =>
+  (bin: HistogramWidgetBin) => {
+    const x = binCenterX(domain)(bin)
+    const y = defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight
+
+    const rotatedLabel = (_candidate: HistogramWidgetBin) => (
+      <g key={bin.index} className="histogram-chart__bin-axis-tick">
+        <line
+          className="histogram-chart__axis-tick"
+          x1={formatDecimalCoordinate(x)}
+          x2={formatDecimalCoordinate(x)}
+          y1={formatDecimalCoordinate(y)}
+          y2={formatDecimalCoordinate(y + 5)}
+        />
+        <text
+          className="histogram-chart__axis-label histogram-chart__bin-axis-label"
+          x={formatDecimalCoordinate(x)}
+          y={formatDecimalCoordinate(y + 18)}
+          textAnchor="end"
+          transform={`rotate(-32 ${formatDecimalCoordinate(x)} ${formatDecimalCoordinate(y + 18)})`}
+        >
+          {binRangeText(bin)}
+        </text>
+      </g>
+    )
+
+    const straightLabel = (_candidate: HistogramWidgetBin) => (
+      <g key={bin.index} className="histogram-chart__bin-axis-tick">
+        <line
+          className="histogram-chart__axis-tick"
+          x1={formatDecimalCoordinate(x)}
+          x2={formatDecimalCoordinate(x)}
+          y1={formatDecimalCoordinate(y)}
+          y2={formatDecimalCoordinate(y + 5)}
+        />
+        <text
+          className="histogram-chart__axis-label histogram-chart__bin-axis-label"
+          x={formatDecimalCoordinate(x)}
+          y={formatDecimalCoordinate(y + 18)}
+          textAnchor="middle"
+        >
+          {binRangeText(bin)}
+        </text>
+      </g>
+    )
+
+    return ifElse(
+      (candidate: boolean) => candidate,
+      () => rotatedLabel(bin),
+      () => straightLabel(bin),
+    )(rotateLabel)
+  }
+
+const shouldRotateBinLabels = (bins: readonly HistogramWidgetBin[]): boolean =>
+  bins.length > 4
+
 const histogramAxes = (
-  viewModel: HistogramViewModel,
-  domain: ChartDomain,
+  bins: readonly HistogramWidgetBin[],
+  domain: ReturnType<typeof numericDomain>,
   largest: number,
 ) => (
   <g className="histogram-chart__axes">
@@ -151,43 +161,13 @@ const histogramAxes = (
       y1={defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight}
       y2={defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight}
     />
-    <text
-      className="histogram-chart__axis-label"
-      x={formatDecimalCoordinate(defaultChartSvgFrame.plotX + (defaultChartSvgFrame.plotWidth / 2))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.height - 2)}
-      textAnchor="middle"
-    >
-      {chartValueAxisLabel(viewModel.unitLabel)}
-    </text>
-    <text
-      className="histogram-chart__axis-label"
-      transform={`translate(10 ${formatDecimalCoordinate(defaultChartSvgFrame.plotY + (defaultChartSvgFrame.plotHeight / 2))}) rotate(-90)`}
-      textAnchor="middle"
-    >
-      Frequency
-    </text>
-    <text
-      className="histogram-chart__axis-label"
-      x={formatDecimalCoordinate(scaleXInFrame(domain, defaultChartSvgFrame)(domain.minimum))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight + 16)}
-      textAnchor="start"
-    >
-      {formatDecimal(domain.minimum)}
-    </text>
-    <text
-      className="histogram-chart__axis-label"
-      x={formatDecimalCoordinate(scaleXInFrame(domain, defaultChartSvgFrame)(domain.maximum))}
-      y={formatDecimalCoordinate(defaultChartSvgFrame.plotY + defaultChartSvgFrame.plotHeight + 16)}
-      textAnchor="end"
-    >
-      {formatDecimal(domain.maximum)}
-    </text>
+    {bins.map(binAxisTick(domain, shouldRotateBinLabels(bins)))}
   </g>
 )
 
 const bar =
   (domain: ReturnType<typeof numericDomain>, largest: number) =>
-  (bin: HistogramBinView) => (
+  (bin: HistogramWidgetBin) => (
     <g key={bin.index} className="histogram-chart__bin">
       <rect
         className="histogram-chart__bar"
@@ -196,30 +176,13 @@ const bar =
         width={formatDecimalCoordinate(binWidth(domain)(bin))}
         height={formatDecimalCoordinate(binHeight(largest)(bin))}
       />
-      <text
-        className="histogram-chart__axis-label"
-        x={formatDecimalCoordinate(binX(domain)(bin))}
-        y={formatDecimalCoordinate(defaultChartSvgFrame.height - 8)}
-      >
-        {binLabel(bin)}
-      </text>
+      <title>{`${binRangeText(bin)}: ${formatDecimal(bin.count)}`}</title>
     </g>
   )
 
-const currentMarker = (viewModel: HistogramViewModel): readonly HistogramMarkerViewModel[] =>
-  matchMaybe<HistogramMarkerViewModel, readonly HistogramMarkerViewModel[]>({
-    Some: marker => [marker],
-    None: () => [],
-  })(viewModel.currentMarker)
-
-const markers = (viewModel: HistogramViewModel): readonly HistogramMarkerViewModel[] => [
-  ...viewModel.referenceMarkers,
-  ...currentMarker(viewModel),
-]
-
 const markerLine =
   (domain: ReturnType<typeof numericDomain>) =>
-  (marker: HistogramMarkerViewModel) => {
+  (marker: HistogramWidgetMarker) => {
     const x = scaleXInFrame(domain, defaultChartSvgFrame)(marker.value)
 
     return (
@@ -234,11 +197,22 @@ const markerLine =
     )
   }
 
-const histogramSvg = (viewModel: HistogramViewModel) => {
-  const bins = binsForViewModel(viewModel)
+const domainValues = (
+  input: HistogramWidgetInput,
+  bins: readonly HistogramWidgetBin[],
+): readonly number[] => [
+  ...bins.map(bin => bin.minimum),
+  ...bins.map(bin => bin.maximum),
+  ...input.markers.map(marker => marker.value),
+]
+
+const histogramSvg = (
+  input: HistogramWidgetInput,
+  bins: readonly HistogramWidgetBin[],
+) => {
   const domain = numericDomain([
-    ...viewModel.values.map(value => value.value),
-    ...markers(viewModel).map(marker => marker.value),
+    ...input.values,
+    ...domainValues(input, bins),
   ])
   const largest = largestBinCount(bins)
 
@@ -247,26 +221,49 @@ const histogramSvg = (viewModel: HistogramViewModel) => {
       className="histogram-chart__svg"
       viewBox={`0 0 ${defaultChartSvgFrame.width} ${defaultChartSvgFrame.height}`}
       role="img"
-      aria-label={viewModel.accessibilitySummary}
+      aria-label={input.accessibilitySummary}
     >
-      {histogramAxes(viewModel, domain, largest)}
+      {histogramAxes(bins, domain, largest)}
       {bins.map(bar(domain, largest))}
-      {markers(viewModel).map(markerLine(domain))}
+      {input.markers.map(markerLine(domain))}
     </svg>
   )
 }
 
-const histogram = (viewModel: HistogramViewModel) =>
-  ifElse(
-    (candidate: HistogramViewModel) => candidate.values.length > 0,
-    histogramSvg,
-    () => <p className="histogram-chart__empty">Not enough weekly values to sketch a distribution yet.</p>,
-  )(viewModel)
+const histogramErrorMessage = (error: HistogramWidgetError): string =>
+  cond<[HistogramWidgetError], string>([
+    [candidate => candidate.kind === 'EmptyDataset', () => 'Not enough values to compute a histogram yet.'],
+    [candidate => candidate.kind === 'NonNumericValue', () => 'Histogram values must be finite numbers.'],
+    [candidate => candidate.kind === 'InvalidBinCount', () => 'Histogram bin count must be a positive integer.'],
+    [candidate => candidate.kind === 'InvalidBinBoundaries', () => 'Histogram bin boundaries must be finite and strictly ascending.'],
+    [candidate => candidate.kind === 'BoundariesOutsideDatasetRange', () => 'Histogram bin boundaries must cover the dataset range.'],
+    [() => true, () => 'Histogram input could not be rendered.'],
+  ])(error)
+const histogramError = (error: HistogramWidgetError): ChartErrorMessageViewModel => ({
+  title: 'Histogram input could not be rendered',
+  message: histogramErrorMessage(error),
+})
 
-export function HistogramChart({ viewModel }: Readonly<{ readonly viewModel: HistogramViewModel }>) {
+const histogramFromResult =
+  (input: HistogramWidgetInput) =>
+  (result: Result<readonly HistogramWidgetBin[], HistogramWidgetError>) =>
+    ifElse(
+      isSuccess<readonly HistogramWidgetBin[], HistogramWidgetError>,
+      value => histogramSvg(input, value.value),
+      value => <ChartErrorMessage error={histogramError(value.error)} />,
+    )(result)
+
+const histogram = (input: HistogramWidgetInput) =>
+  ifElse(
+    (candidate: HistogramWidgetInput) => candidate.values.length > 0,
+    candidate => histogramFromResult(candidate)(computeHistogramBins(candidate)),
+    () => <ChartErrorMessage error={histogramError({ kind: 'EmptyDataset' })} />,
+  )(input)
+
+export function HistogramChart({ input }: Readonly<{ readonly input: HistogramWidgetInput }>) {
   return (
-    <figure className="histogram-chart" aria-label={viewModel.accessibilitySummary}>
-      {histogram(viewModel)}
+    <figure className="histogram-chart" aria-label={input.accessibilitySummary}>
+      {histogram(input)}
     </figure>
   )
 }

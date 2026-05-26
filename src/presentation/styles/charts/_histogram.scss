@@ -1,0 +1,57 @@
+.histogram-chart {
+  --histogram-chart-bar: var(--color-cyan);
+  --histogram-chart-marker: var(--color-orange);
+
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+}
+
+.histogram-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 42rem;
+  min-height: 10rem;
+  overflow: visible;
+}
+
+.histogram-chart__axis,
+.histogram-chart__axis-tick {
+  stroke: color-mix(in srgb, var(--text-tertiary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.histogram-chart__grid-line {
+  stroke: color-mix(in srgb, var(--text-quinary) 72%, transparent);
+  stroke-width: 1;
+}
+
+.histogram-chart__axis-label {
+  fill: var(--text-secondary);
+  font-size: 0.62rem;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.histogram-chart__bin-axis-label {
+  font-size: 0.56rem;
+}
+
+.histogram-chart__bar {
+  fill: color-mix(in srgb, var(--histogram-chart-bar) 72%, transparent);
+  stroke: var(--surface-color-primary);
+  stroke-width: 1;
+}
+
+.histogram-chart__marker {
+  stroke: var(--histogram-chart-marker);
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.histogram-chart__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
