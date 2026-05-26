@@ -2,17 +2,7 @@ import React from 'react'
 
 import type { MetricCardComparisonViewModel, MetricCardViewModel } from '@/presentation/charts/contracts'
 import { matchMaybe } from '@/shared/maybe'
-
-const maybeItem = (label: string, value: MetricCardViewModel['trendLabel']) =>
-  matchMaybe<string, React.ReactNode>({
-    Some: text => (
-      <div className="metric-card-chart__meta-item">
-        <dt className="metric-card-chart__meta-label">{label}</dt>
-        <dd className="metric-card-chart__meta-value">{text}</dd>
-      </div>
-    ),
-    None: () => null,
-  })(value)
+import { cond } from '@/shared/fp'
 
 const statusBadge = (viewModel: MetricCardViewModel) =>
   matchMaybe<string, React.ReactNode>({
@@ -44,6 +34,31 @@ const comparison = (viewModel: MetricCardViewModel) =>
     None: () => null,
   })(viewModel.comparison)
 
+const trendDirectionClass = (trend: string): string =>
+  cond<[string], string>([
+    [candidate => candidate.toLowerCase().includes('up'), () => 'metric-card-chart__trend-icon--up'],
+    [candidate => candidate.toLowerCase().includes('down'), () => 'metric-card-chart__trend-icon--down'],
+    [() => true, () => 'metric-card-chart__trend-icon--flat'],
+  ])(trend)
+
+const trendIcon = (trend: string) => (
+  <span className={`metric-card-chart__trend-icon ${trendDirectionClass(trend)}`} aria-hidden="true" />
+)
+
+const trendItem = (viewModel: MetricCardViewModel) =>
+  matchMaybe<string, React.ReactNode>({
+    Some: text => (
+      <div className="metric-card-chart__meta-item">
+        <dt className="metric-card-chart__meta-label">Trend</dt>
+        <dd className="metric-card-chart__meta-value metric-card-chart__trend-value">
+          {trendIcon(text)}
+          <span>{text}</span>
+        </dd>
+      </div>
+    ),
+    None: () => null,
+  })(viewModel.trendLabel)
+
 export function MetricCardChart({ viewModel }: Readonly<{ readonly viewModel: MetricCardViewModel }>) {
   return (
     <article className="metric-card-chart" aria-label={viewModel.accessibilitySummary}>
@@ -57,7 +72,7 @@ export function MetricCardChart({ viewModel }: Readonly<{ readonly viewModel: Me
       </div>
       {comparison(viewModel)}
       <dl className="metric-card-chart__meta">
-        {maybeItem('Trend', viewModel.trendLabel)}
+        {trendItem(viewModel)}
       </dl>
     </article>
   )
