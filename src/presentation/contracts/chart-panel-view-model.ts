@@ -8,7 +8,6 @@ import type {
   TimeSeriesChartViewModel,
   VarianceChartViewModel,
 } from '@/presentation/charts/contracts'
-import type { Maybe } from '@/shared/maybe'
 
 import type { PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
 import type { PresentationDisplayState } from '@/presentation/contracts/presentation-display-state'
@@ -35,8 +34,6 @@ export type ChartPanelPayload =
 
 export type ChartPanelViewModel = Readonly<{
   readonly id: string
-  readonly title: string
-  readonly description: Maybe<string>
   readonly chartKind: ChartPanelKind
   readonly chartViewModel: ChartPanelPayload
   readonly state: PresentationDisplayState

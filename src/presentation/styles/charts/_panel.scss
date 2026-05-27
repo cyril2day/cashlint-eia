@@ -8,24 +8,6 @@
   background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
 }
 
-.chart-panel__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.chart-panel__heading {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.chart-panel__title {
-  font-size: var(--text-lg);
-  line-height: var(--line-height-tight);
-}
-
 .chart-panel__visual {
   min-height: 8rem;
   display: grid;

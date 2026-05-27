@@ -21,8 +21,8 @@ import {
   mapHistogramViewModelToWidgetInput,
   mapSparklineViewModelToWidgetInput,
 } from '@/presentation/charts'
-import type { ChartPanelKind, ChartPanelViewModel } from '@/presentation/contracts'
-import { cond, ifElse } from '@/shared/fp'
+import type { ChartPanelViewModel } from '@/presentation/contracts'
+import { ifElse } from '@/shared/fp'
 import type { Result, SuccessResult } from '@/shared/result'
 import { Sparkline } from '@/presentation/charts/components/sparkline/sparkline'
 import { HistogramChart } from '@/presentation/charts/components/histogram-chart/histogram-chart'
@@ -238,19 +238,6 @@ const renderChartPayload =
   (controls: ChartGalleryControlsViewModel) =>
   (panel: ChartPanelViewModel): ReactNode =>
   ifElse(isTimeSeriesPanel, renderTimeSeriesPanel(controls), renderAfterTimeSeries(controls))(panel)
-
-const chartKindLabel = (chartKind: ChartPanelKind): string =>
-  cond<[ChartPanelKind], string>([
-    [candidate => candidate === 'TimeSeries', () => 'Line chart'],
-    [candidate => candidate === 'Sparkline', () => 'Sparkline'],
-    [candidate => candidate === 'MetricCard', () => 'KPI card'],
-    [candidate => candidate === 'BarChart', () => 'Bar chart'],
-    [candidate => candidate === 'Histogram', () => 'Histogram'],
-    [candidate => candidate === 'BoxPlot', () => 'Box plot'],
-    [candidate => candidate === 'AreaChart', () => 'Area chart'],
-    [candidate => candidate === 'VarianceChart', () => 'Variance chart'],
-    [() => true, candidate => candidate],
-  ])(chartKind)
 
 export function ChartPanel({ viewModel, controls }: Readonly<{
   readonly viewModel: ChartPanelViewModel
