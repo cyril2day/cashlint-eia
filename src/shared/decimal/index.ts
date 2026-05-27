@@ -47,6 +47,11 @@ const readableDecimalFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
+const oneDecimalFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
 const fixedMoneyDecimalFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -81,6 +86,9 @@ export const formatWholeDecimal = (value: Decimal): string =>
 
 export const formatDecimal = (value: Decimal): string =>
   readableDecimalFormatter.format(value)
+
+export const formatOneDecimal = (value: Decimal): string =>
+  oneDecimalFormatter.format(value)
 
 export const formatFixedMoneyDecimal = (value: Decimal): string =>
   fixedMoneyDecimalFormatter.format(value)
