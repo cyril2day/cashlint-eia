@@ -1,6 +1,6 @@
 import type { Maybe } from '@/shared/maybe'
 
-export type SummaryCardKind = 'inventory' | 'price' | 'system'
+export type SummaryCardKind = 'inventory' | 'price' | 'availableSupply' | 'refineryDemand' | 'system'
 
 export type SummaryCardViewModel = Readonly<{
   readonly kind: SummaryCardKind
