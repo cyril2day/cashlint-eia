@@ -16,16 +16,19 @@ import type { Signal } from '@/contexts/interpretation/model/signal'
 import type { InterpretationPolicies } from '@/contexts/interpretation/policies'
 import { parseComparisonWindow } from '@/contexts/measurement/model'
 import { formatReportWeekIso } from '@/contexts/measurement/model/report-week'
+import type { RefinerySet } from '@/contexts/measurement/model/refinery-set'
+import type { SupplySet } from '@/contexts/measurement/model/supply-set'
 import type { WeeklyPetroleumFacts } from '@/contexts/measurement/model/weekly-petroleum-facts'
 import { composeSystemBalanceAnalysis, defaultSystemBalancePolicy, type SystemBalanceAnalysis } from '@/contexts/system-balance'
 import type { ChartsGalleryViewModel } from '@/presentation/contracts/charts-gallery-view-model'
 import type { SummaryViewModel } from '@/presentation/contracts/summary-view-model'
 import { mapLiveAnalysisToChartsGalleryViewModel, mapWeeklyAnalysisToSummaryViewModel } from '@/presentation/mappers'
 import type { HistoricalSignalPointInput } from '@/presentation/charts/mappers'
+import type { HomeMetricChartHistoryInput, HomeMetricCompositionPointInput } from '@/presentation/mappers/home-metric-chart-view-model'
 import { allPass, ifElse } from '@/shared/fp'
 import { bindAsyncResult } from '@/shared/async-result'
 import { bindResult, combineResults, failure, mapError, mapResult, sequenceResults, success, type Result } from '@/shared/result'
-import { none, some, type Maybe } from '@/shared/maybe'
+import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 
 const liveInventoryFlatThreshold = 1
 const livePriceFlatThreshold = 1
@@ -40,12 +43,10 @@ type LiveSummaryInput = Readonly<{
 export type LiveAppViewModel = Readonly<{
   readonly summary: SummaryViewModel
   readonly chartsGallery: ChartsGalleryViewModel
+  readonly homeMetricChartHistory: HomeMetricChartHistoryInput
 }>
 
-type LiveChartHistory = Readonly<{
-  readonly inventory: readonly HistoricalSignalPointInput[]
-  readonly price: readonly HistoricalSignalPointInput[]
-}>
+type LiveChartHistory = HomeMetricChartHistoryInput
 
 type LiveSignalHistory = Readonly<{
   readonly currentSignals: CurrentSignalSet
@@ -201,6 +202,31 @@ const toPriceHistoricalPoint = (signals: CurrentSignalSet): HistoricalSignalPoin
   value: signals.price.value,
 })
 
+const maybeToArray = <Value>(value: Maybe<Value>): readonly Value[] =>
+  matchMaybe<Value, readonly Value[]>({
+    Some: item => [item],
+    None: () => [],
+  })(value)
+
+const toAvailableSupplyHistoricalPoint = (facts: WeeklyPetroleumFacts): Maybe<HomeMetricCompositionPointInput> =>
+  matchMaybe<SupplySet, Maybe<HomeMetricCompositionPointInput>>({
+    Some: supply => some({
+      reportWeek: supply.reportWeek,
+      value: supply.production.fact.value,
+      secondaryValue: supply.imports.fact.value - supply.exports.fact.value,
+    }),
+    None: () => none(),
+  })(facts.supply)
+
+const toRefineryDemandHistoricalPoint = (facts: WeeklyPetroleumFacts): Maybe<HistoricalSignalPointInput> =>
+  matchMaybe<RefinerySet, Maybe<HistoricalSignalPointInput>>({
+    Some: refinery => some({
+      reportWeek: refinery.reportWeek,
+      value: refinery.netInput.fact.value,
+    }),
+    None: () => none(),
+  })(facts.refinery)
+
 const extractCurrentSignalSetFromFacts = (
   facts: WeeklyPetroleumFacts,
 ): Result<CurrentSignalSet, ApplicationError> =>
@@ -214,6 +240,8 @@ const buildLiveChartHistory = (
     signals => ({
       inventory: signals.map(toInventoryHistoricalPoint),
       price: signals.map(toPriceHistoricalPoint),
+      availableSupply: factSeries.flatMap(facts => maybeToArray(toAvailableSupplyHistoricalPoint(facts))),
+      refineryDemand: factSeries.flatMap(facts => maybeToArray(toRefineryDemandHistoricalPoint(facts))),
     }),
   )
 
@@ -347,6 +375,7 @@ const buildChartsForSignals = (
 ): ((systemBalance: Maybe<SystemBalanceAnalysis>, history: LiveChartHistory) => LiveAppViewModel) =>
   (systemBalance, history) => ({
     summary,
+    homeMetricChartHistory: history,
     chartsGallery: mapLiveAnalysisToChartsGalleryViewModel({
       summary,
       signals: contextualizedSignals,

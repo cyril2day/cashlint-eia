@@ -99,7 +99,11 @@ const configurationErrorViewModel = (
 
 const createSummaryHomePageModel = (viewModel: LiveAppViewModel): HomePageModel => ({
   kind: 'home',
-  viewModel: mapSummaryWithChartsToHomePageViewModel(viewModel.summary, viewModel.chartsGallery),
+  viewModel: mapSummaryWithChartsToHomePageViewModel(
+    viewModel.summary,
+    viewModel.chartsGallery,
+    some(viewModel.homeMetricChartHistory),
+  ),
 })
 
 const createErrorHomePageModel = (viewModel: PresentationErrorViewModel): HomePageModel => ({

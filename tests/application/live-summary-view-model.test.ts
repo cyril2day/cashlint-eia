@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { buildLiveAppViewModel, buildLiveSummaryViewModel } from '@/application/workflows/build-live-summary-view-model'
 import { createFakeEiaClient } from '@/application/ports/fake-eia-client'
 import { createLiveWeeklyDependencies } from '@/application/dependencies/live-weekly-dependencies'
+import { mapSummaryWithChartsToHomePageViewModel } from '@/presentation/mappers'
 import { cond } from '@/shared/fp'
 import { ifElse } from '@/shared/fp'
 import { isFailure, isSuccess, type Result, success } from '@/shared/result'
@@ -240,6 +241,9 @@ describe('live summary view model', () => {
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'Histogram')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.panels.find(panel => panel.chartKind === 'AreaChart')?.state).toBe('Complete')
     expect(viewModel.chartsGallery.stateSummary.map(item => item.label)).toEqual(['Ready', 'Cautious', 'Waiting', 'Needs history'])
+    expect(viewModel.homeMetricChartHistory.availableSupply.map(point => point.value)).toContain(13000)
+    expect(viewModel.homeMetricChartHistory.availableSupply.map(point => point.secondaryValue)).toContain(3000)
+    expect(viewModel.homeMetricChartHistory.refineryDemand.map(point => point.value)).toContain(16958)
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('836125')
     expect(JSON.stringify(viewModel.chartsGallery)).toContain('76.31')
     expect(JSON.stringify(viewModel)).not.toContain('InventoryDraw')
@@ -247,5 +251,27 @@ describe('live summary view model', () => {
     expect(JSON.stringify(viewModel)).not.toContain('IncreasedImports')
     expect(JSON.stringify(viewModel)).not.toContain('SimplifiedCrudeBalance')
     expect(JSON.stringify(viewModel)).not.toContain('RateToStockComparisonLimitation')
+  })
+
+  it('maps live fact history into responsive homepage card charts', async () => {
+    const fakeClient = createFakeEiaClient((request: EiaRequest) =>
+      Promise.resolve(success(requestForEnvelope(request))),
+    )
+
+    const runner = buildLiveAppViewModel(
+      createLiveWeeklyDependencies({ eiaClient: fakeClient }),
+    )
+
+    const result = await runner({ reportWeekIso: '2026-01-09' })
+    const viewModel = unwrapSuccess(result)
+    const home = mapSummaryWithChartsToHomePageViewModel(
+      viewModel.summary,
+      viewModel.chartsGallery,
+      some(viewModel.homeMetricChartHistory),
+    )
+
+    expect(home.metrics.find(metric => metric.id === 'availableSupply')?.chart.points.map(point => point.value)).toContain(13000)
+    expect(home.metrics.find(metric => metric.id === 'availableSupply')?.chart.points.map(point => point.secondaryValue)).toContainEqual(some(3000))
+    expect(home.metrics.find(metric => metric.id === 'refineryDemand')?.chart.points.map(point => point.value)).toContain(16958)
   })
 })
