@@ -54,6 +54,7 @@
 
   .oil-lint-shell__meta,
   .oil-lint-shell__summary-metrics,
+  .oil-lint-shell__nav-card-grid,
   .analysis-control__fieldset,
   .hero-analysis__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -100,6 +101,10 @@
 
   .oil-lint-shell__card-grid,
   .oil-lint-shell__state-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .oil-lint-shell__nav-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

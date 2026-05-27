@@ -7,6 +7,8 @@ import { matchMaybe, type Maybe } from '@/shared/maybe'
 const summaryCardModifierByKind: Readonly<Record<SummaryCardViewModel['kind'], string>> = {
   inventory: 'oil-lint-shell__card--inventory',
   price: 'oil-lint-shell__card--price',
+  availableSupply: 'oil-lint-shell__card--supply',
+  refineryDemand: 'oil-lint-shell__card--refinery',
   system: 'oil-lint-shell__card--system',
 }
 
@@ -16,8 +18,8 @@ type CardMetaEntry = Readonly<{
 }>
 
 const createCardMetaEntries = (card: SummaryCardViewModel): readonly CardMetaEntry[] => [
-  { label: 'Trend', value: renderMaybeText('Not enough history')(card.trendLabel) },
-  { label: 'Anomaly', value: renderMaybeText('No anomaly detected')(card.anomalyLabel) },
+  { label: 'This week', value: renderMaybeText('No weekly change available')(card.trendLabel) },
+  { label: 'About', value: renderMaybeText('No description supplied')(card.subtitleText) },
 ]
 
 type SummaryCardShellProps = SummaryCardViewModel & Readonly<{
@@ -27,6 +29,11 @@ type SummaryCardShellProps = SummaryCardViewModel & Readonly<{
 const renderCardChart = matchMaybe<ReactNode, ReactNode>({
   Some: chart => <div className="oil-lint-shell__card-chart">{chart}</div>,
   None: () => null,
+})
+
+const cardChartModifier = matchMaybe<ReactNode, string>({
+  Some: () => ' oil-lint-shell__card--with-chart',
+  None: () => '',
 })
 
 export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitleText, trendLabel, anomalyLabel, caveatLabel, drilldownTarget, chart }: SummaryCardShellProps) {
@@ -43,7 +50,7 @@ export function SummaryCardShell({ kind, title, valueText, statusLabel, subtitle
   })
 
   return (
-    <li className={`oil-lint-shell__card ${summaryCardModifierByKind[kind]}`}>
+    <li className={`oil-lint-shell__card ${summaryCardModifierByKind[kind]}${cardChartModifier(chart)}`}>
       <div className="oil-lint-shell__card-head">
         <p className="oil-lint-shell__card-title">{title}</p>
         <span className="oil-lint-shell__card-status">{statusLabel}</span>
