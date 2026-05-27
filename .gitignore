@@ -6,6 +6,7 @@ dist
 *.tsbuildinfo
 .env*.local
 .DS_Store
+scripts
 docs
 .vscode
 .github
