@@ -245,13 +245,13 @@ export const composeFullAnalysisCaveats = (
 
   const mixed = ifElse(
     () => condition.condition === 'Mixed',
-    () => [createMixedEvidenceCaveat('physical balance and signal context conflict')],
+    () => [createMixedEvidenceCaveat('balance and signal context conflict')],
     () => [],
   )()
 
   const priceContradiction = ifElse(
     () => contradictorySignals.some(signal => signal.signal.identity.kind === 'Price'),
-    () => [createPriceContradictionCaveat('price context contradicted the physical balance read')],
+    () => [createPriceContradictionCaveat('price context contradicted the balance result')],
     () => [],
   )()
 
@@ -354,7 +354,7 @@ const caveatPhrase = (caveats: readonly AnalysisCaveat[]): string =>
   ifElse(
     (candidate: readonly AnalysisCaveat[]) => candidate.length > 0,
     candidate => `${String(candidate.length)} caveat(s) kept the read conservative`,
-    () => 'no caveats attached to the weekly read',
+    () => 'no caveats attached to the result',
   )(caveats)
 
 const validateNarrative = (
@@ -382,7 +382,7 @@ export const buildFullAnalysisHeadline = (
   policies: FullAnalysisPolicies,
 ): Result<string, AnalysisError> =>
   validateNarrative(
-    `${conditionLabel(condition)} weekly read driven by ${describeDrivers(drivers)}.`,
+    `${conditionLabel(condition)} condition rests on ${describeDrivers(drivers)}.`,
     policies,
     'headline',
   )
@@ -395,7 +395,7 @@ export const buildFullAnalysisSummary = (
   policies: FullAnalysisPolicies,
 ): Result<string, AnalysisError> =>
   validateNarrative(
-    `${conditionLabel(condition)} weekly read supported by ${describeSignals(supportingSignals)}, ${contradictionPhrase(contradictorySignals)}, and ${caveatPhrase(caveats)}.`,
+    `${conditionLabel(condition)} condition has support from ${describeSignals(supportingSignals)}, ${contradictionPhrase(contradictorySignals)}, and ${caveatPhrase(caveats)}.`,
     policies,
     'summary',
   )
