@@ -1,6 +1,7 @@
 import type { WeeklyAnalysis } from '@/contexts/analysis/model/weekly-analysis'
 import type { AnalysisCaveat } from '@/contexts/analysis/model/analysis-caveat'
 import type { ContextualizedSignal } from '@/contexts/interpretation/model/contextualized-signal'
+import type { Trend } from '@/contexts/interpretation/model/trend'
 import type { SystemBalanceAnalysis } from '@/contexts/system-balance/model'
 import type { BalanceCaveat } from '@/contexts/system-balance/model'
 import {
@@ -8,7 +9,6 @@ import {
   formatBalanceCaveatTitle,
   formatSummaryConditionLabel,
   formatSummaryConfidenceLabel,
-  formatSummaryTrendLabel,
   formatSummaryAnomalyLabel,
   formatSystemBalanceStateLabel,
 } from '@/presentation/display-policies'
@@ -16,12 +16,12 @@ import {
   formatSummaryGeographyText,
   formatSummaryReportWeekText,
   formatSummarySignalSubtitleText,
-  formatSummarySignalValueText,
 } from '@/presentation/formatting-policies'
 import { isStringInput } from '@/shared/domain'
+import { formatFixedMoneyDecimal, formatOneDecimal, formatWholeDecimal } from '@/shared/decimal'
 import { both, cond, ifElse } from '@/shared/fp'
 import { getKey } from '@/shared/object'
-import { none, some, type Maybe } from '@/shared/maybe'
+import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 
 import type { PresentationCaveatKind, PresentationCaveatViewModel } from '@/presentation/contracts/presentation-caveat-view-model'
 import type { SummaryCardKind, SummaryCardViewModel } from '@/presentation/contracts/summary-card-view-model'
@@ -133,7 +133,7 @@ const formatAnalysisCaveatMessage = (caveat: AnalysisCaveat): PresentationCaveat
     [
       isPropagatedSystemBalanceCaveat,
       candidate => formatSystemBalanceCaveatOrDefault(
-        createCaveat('system-balance-caveat', 'System balance caveat', 'A physical balance caveat qualified this read.', 'info'),
+        createCaveat('system-balance-caveat', 'System balance caveat', 'A balance caveat qualified this result.', 'info'),
       )(candidate),
     ],
     [
@@ -170,7 +170,69 @@ const drilldownTargetForCardKind = (kind: SummaryCardKind): Maybe<string> =>
   cond<[SummaryCardKind], Maybe<string>>([
     [candidate => candidate === 'inventory', () => some('/inventory')],
     [candidate => candidate === 'price', () => some('/price')],
+    [candidate => candidate === 'availableSupply', () => some('/balance')],
+    [candidate => candidate === 'refineryDemand', () => some('/balance')],
     [() => true, () => some('/balance')],
+  ])(kind)
+
+const formatMillionBarrels = (value: number): string =>
+  `${formatOneDecimal(value / 1000)} million barrels`
+
+const formatMoneyPerBarrel = (value: number): string =>
+  `$${formatFixedMoneyDecimal(value)}`
+
+const formatDailyFlow = (value: number): string =>
+  `${formatWholeDecimal(value)} Mbbl/d`
+
+const signalValueText = (
+  kind: SummaryCardKind,
+  signal: ContextualizedSignal,
+): string =>
+  cond<[SummaryCardKind], string>([
+    [candidate => candidate === 'inventory', () => formatMillionBarrels(signal.signal.value)],
+    [candidate => candidate === 'price', () => formatMoneyPerBarrel(signal.signal.value)],
+    [() => true, () => formatDailyFlow(signal.signal.value)],
+  ])(kind)
+
+const trendDirectionWord = (trend: Trend): string =>
+  cond<[Trend], string>([
+    [candidate => candidate.direction.direction === 'Up', () => 'Up'],
+    [candidate => candidate.direction.direction === 'Down', () => 'Down'],
+    [() => true, () => 'Flat'],
+  ])(trend)
+
+const trendMagnitudeText = (
+  kind: SummaryCardKind,
+  trend: Trend,
+): string =>
+  cond<[SummaryCardKind], string>([
+    [candidate => candidate === 'inventory', () => `${formatMillionBarrels(trend.magnitude)} vs. last week`],
+    [candidate => candidate === 'price', () => `${formatMoneyPerBarrel(trend.magnitude)} vs. last week`],
+    [() => true, () => `${formatDailyFlow(trend.magnitude)} vs. last week`],
+  ])(kind)
+
+const trendChangeText =
+  (kind: SummaryCardKind) =>
+  (trend: Trend): string =>
+    `${trendDirectionWord(trend)} ${trendMagnitudeText(kind, trend)}`
+
+const formatCardTrendLabel = (
+  kind: SummaryCardKind,
+  signal: ContextualizedSignal,
+): Maybe<string> =>
+  matchMaybe<Trend, Maybe<string>>({
+    Some: trend => some(trendChangeText(kind)(trend)),
+    None: () => none(),
+  })(signal.trend)
+
+const subtitleForCardKind = (
+  kind: SummaryCardKind,
+  signal: ContextualizedSignal,
+): Maybe<string> =>
+  cond<[SummaryCardKind], Maybe<string>>([
+    [candidate => candidate === 'inventory', () => some('U.S. commercial crude inventories')],
+    [candidate => candidate === 'price', () => some('West Texas Intermediate spot price')],
+    [() => true, () => some(formatSummarySignalSubtitleText(signal.signal))],
   ])(kind)
 
 const mapCard = (
@@ -181,10 +243,10 @@ const mapCard = (
 ): SummaryCardViewModel => ({
   kind,
   title,
-  valueText: formatSummarySignalValueText(signal.signal),
+  valueText: signalValueText(kind, signal),
   statusLabel,
-  subtitleText: some(formatSummarySignalSubtitleText(signal.signal)),
-  trendLabel: formatSummaryTrendLabel(signal.trend),
+  subtitleText: subtitleForCardKind(kind, signal),
+  trendLabel: formatCardTrendLabel(kind, signal),
   anomalyLabel: some(formatSummaryAnomalyLabel(signal.anomaly)),
   caveatLabel: formatCardCaveatLabel(signal),
   drilldownTarget: drilldownTargetForCardKind(kind),
@@ -195,9 +257,51 @@ const summaryCardDefinitions: ReadonlyArray<Readonly<{
   readonly title: string
   readonly getSignal: (analysis: WeeklyAnalysis) => ContextualizedSignal
 }>> = [
-  { kind: 'inventory', title: 'Crude oil in storage', getSignal: analysis => analysis.keySignals.inventory },
-  { kind: 'price', title: 'WTI spot price', getSignal: analysis => analysis.keySignals.price },
+  { kind: 'inventory', title: 'Crude Stocks', getSignal: analysis => analysis.keySignals.inventory },
+  { kind: 'price', title: 'WTI Spot Price', getSignal: analysis => analysis.keySignals.price },
 ]
+
+const flowCard = (
+  kind: SummaryCardKind,
+  title: string,
+  valueText: string,
+  subtitleText: string,
+  statusLabel: string,
+): SummaryCardViewModel => ({
+  kind,
+  title,
+  valueText,
+  statusLabel,
+  subtitleText: some(subtitleText),
+  trendLabel: none(),
+  anomalyLabel: none(),
+  caveatLabel: none(),
+  drilldownTarget: some('/balance'),
+})
+
+const availableSupplyCard = (
+  conditionLabel: string,
+  balance: SystemBalanceAnalysis,
+): SummaryCardViewModel =>
+  flowCard(
+    'availableSupply',
+    'Available Supply',
+    formatDailyFlow(balance.availableSupply.value),
+    'Production + net imports',
+    conditionLabel,
+  )
+
+const refineryDemandCard = (
+  conditionLabel: string,
+  balance: SystemBalanceAnalysis,
+): SummaryCardViewModel =>
+  flowCard(
+    'refineryDemand',
+    'Refinery Demand',
+    formatDailyFlow(balance.refineryDemand.value),
+    'Refinery net crude input',
+    conditionLabel,
+  )
 
 const systemBalanceCard = (
   conditionLabel: string,
@@ -220,7 +324,11 @@ const systemBalanceCards = (
 ): readonly SummaryCardViewModel[] =>
   ifElse(
     hasAnalysisTrace,
-    candidate => [systemBalanceCard(conditionLabel, candidate.trace.value.systemBalanceAnalysis)],
+    candidate => [
+      availableSupplyCard(conditionLabel, candidate.trace.value.systemBalanceAnalysis),
+      refineryDemandCard(conditionLabel, candidate.trace.value.systemBalanceAnalysis),
+      systemBalanceCard(conditionLabel, candidate.trace.value.systemBalanceAnalysis),
+    ],
     () => [],
   )(analysis)
 
@@ -242,10 +350,10 @@ export const mapWeeklyAnalysisToSummaryViewModel = (analysis: WeeklyAnalysis): S
     conditionLabel,
     confidenceLabel: formatSummaryConfidenceLabel(analysis.confidence),
     cards: [
-      ...systemBalanceCards(analysis, conditionLabel),
       ...summaryCardDefinitions.map(definition =>
         mapCard(definition.kind, definition.title, definition.getSignal(analysis), conditionLabel),
       ),
+      ...systemBalanceCards(analysis, conditionLabel),
     ],
     caveats: analysis.caveats.map(formatAnalysisCaveatMessage),
     displayState: mapDisplayState(analysis),

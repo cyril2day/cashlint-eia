@@ -64,7 +64,7 @@ export const formatBalanceCaveatTitle = (kind: BalanceCaveatKind): string =>
 
 export const formatBalanceCaveatMessage = (kind: BalanceCaveatKind): string =>
   cond<[BalanceCaveatKind], string>([
-    [value => value === 'SimplifiedCrudeBalance', () => 'The physical balance uses a simplified weekly crude balance rather than a full refinery accounting model.'],
+    [value => value === 'SimplifiedCrudeBalance', () => 'The balance uses a simplified U.S. crude equation rather than a full refinery accounting model.'],
     [value => value === 'RateToStockComparisonLimitation', () => 'Flow rates and stock changes are compared cautiously because they are measured on different bases.'],
     [value => value === 'MissingOptionalComponent', () => 'One optional balance component was unavailable, so the read keeps that limitation visible.'],
     [value => value === 'MixedSignalDirection', () => 'The balance drivers do not all point in the same direction.'],
@@ -74,9 +74,9 @@ export const formatBalanceCaveatMessage = (kind: BalanceCaveatKind): string =>
 
 export const formatSystemBalanceStateLabel = (state: SystemBalanceState): string =>
   cond<[SystemBalanceState], string>([
-    [value => value === 'Tightening', () => 'Tightening physical balance'],
-    [value => value === 'Loosening', () => 'Loosening physical balance'],
-    [value => value === 'Balanced', () => 'Balanced physical market'],
-    [value => value === 'Mixed', () => 'Mixed physical signal'],
+    [value => value === 'Tightening', () => 'Tightening balance'],
+    [value => value === 'Loosening', () => 'Loosening balance'],
+    [value => value === 'Balanced', () => 'Balanced market'],
+    [value => value === 'Mixed', () => 'Mixed signal'],
     [() => true, () => 'Evidence incomplete'],
   ])(state)
