@@ -8,8 +8,7 @@
   gap: 0;
 }
 
-.chart-gallery__eyebrow,
-.chart-panel__kind {
+.chart-gallery__eyebrow {
   margin: 0;
   color: var(--color-link);
   font-size: var(--text-xs);
@@ -18,8 +17,7 @@
   text-transform: uppercase;
 }
 
-.chart-gallery__title,
-.chart-panel__title {
+.chart-gallery__title {
   margin: 0;
   color: var(--text-primary);
   letter-spacing: var(--letter-spacing-normal);
