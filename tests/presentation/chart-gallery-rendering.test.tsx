@@ -39,7 +39,7 @@ describe('chart gallery rendering', () => {
     expect(markup).toContain('WTI trend window')
     expect(markup).toContain('WTI trend sparkline')
     expect(markup).toContain('WTI spot price')
-    expect(markup).toContain('Physical balance contributors')
+    expect(markup).toContain('Balance contributors')
     expect(markup).toContain('WTI sample distribution')
     expect(markup).toContain('WTI spread and quartiles')
     expect(markup).toContain('Commercial crude stock level')

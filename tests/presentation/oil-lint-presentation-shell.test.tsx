@@ -21,15 +21,18 @@ const viewModel: SummaryViewModel = {
 }
 
 describe('OilLintPresentationShell', () => {
-  it('renders a minimal homepage with cards and charts only', () => {
+  it('renders the warm dashboard shell without legacy workbench panels', () => {
     const markup = renderToStaticMarkup(<OilLintPresentationShell viewModel={mapSummaryToHomePageViewModel(viewModel)} />)
 
     expect(markup).not.toContain('Summary placeholders')
-    expect(markup).toContain('The U.S. oil market, translated')
-    expect(markup).toContain('This app reads it and tells you what it found.')
+    expect(markup).toContain('The crude balance came in roughly even.')
+    expect(markup).toContain('Week ending 2026-05-19')
+    expect(markup).toContain('Balance snapshot')
+    expect(markup).toContain('Crude Stocks')
+    expect(markup).toContain('WTI Price')
+    expect(markup).toContain('Weekly Analysis')
     expect(markup).not.toContain('The three things that matter')
     expect(markup).not.toContain('How this week compares to the past')
-    expect(markup).not.toContain('<h2')
     expect(markup).not.toContain('hero-analysis')
     expect(markup).not.toContain('caveat-panel')
     expect(markup).not.toContain('How complete is this week')

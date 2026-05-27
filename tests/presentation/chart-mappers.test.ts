@@ -139,7 +139,7 @@ describe('Presentation chart mappers', () => {
     expect(area.caveats).toHaveLength(1)
   })
 
-  it('maps physical balance driver chart labels without leaking domain enum tokens', () => {
+  it('maps balance driver chart labels without leaking domain enum tokens', () => {
     const analysis = {
       balanceState: 'Tightening',
       drivers: [
@@ -167,12 +167,12 @@ describe('Presentation chart mappers', () => {
 
     const chart = mapSystemBalanceAnalysisToDriverBarChart({
       id: 'balance-drivers',
-      title: 'Physical balance contributors',
+      title: 'Balance contributors',
       analysis,
     })
 
     expect(chart.points.map(point => point.category)).toEqual(['Inventory draw', 'Higher crude imports'])
-    expect(chart.caveats.map(caveat => caveat.message)[0]).toContain('simplified weekly crude balance')
+    expect(chart.caveats.map(caveat => caveat.message)[0]).toContain('simplified U.S. crude equation')
     expect(JSON.stringify(chart)).not.toContain('InventoryDraw')
     expect(JSON.stringify(chart)).not.toContain('IncreasedImports')
     expect(JSON.stringify(chart)).not.toContain('SimplifiedCrudeBalance')

@@ -163,8 +163,8 @@ describe('Full WeeklyAnalysis synthesis', () => {
     expect(analysis.supportingSignals.length).toBeGreaterThan(0)
     expect(analysis.contradictorySignals.length).toBe(0)
     expect(analysis.trace.kind).toBe('Some')
-    expect(analysis.headline).toContain('weekly read')
-    expect(analysis.summary).toContain('weekly read')
+    expect(analysis.headline).toContain('condition rests')
+    expect(analysis.summary).toContain('condition has support')
     expect(analysis.explanation).toContain('System balance')
   })
 

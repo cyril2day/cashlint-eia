@@ -47,6 +47,30 @@ const balanceCard: SummaryCardViewModel = {
   drilldownTarget: some('/balance'),
 }
 
+const availableSupplyCard: SummaryCardViewModel = {
+  kind: 'availableSupply',
+  title: 'Available supply',
+  valueText: '17 million barrels per day',
+  statusLabel: 'Firm',
+  subtitleText: some('2026-05-19 · USTotal'),
+  trendLabel: some('Up 0.2'),
+  anomalyLabel: none(),
+  caveatLabel: none(),
+  drilldownTarget: some('/balance'),
+}
+
+const refineryDemandCard: SummaryCardViewModel = {
+  kind: 'refineryDemand',
+  title: 'Refinery demand',
+  valueText: '16 million barrels per day',
+  statusLabel: 'Steady',
+  subtitleText: some('2026-05-19 · USTotal'),
+  trendLabel: some('Down 0.1'),
+  anomalyLabel: none(),
+  caveatLabel: none(),
+  drilldownTarget: some('/balance'),
+}
+
 const summary: SummaryViewModel = {
   reportWeekText: '2026-05-19',
   geographyText: 'USTotal',
@@ -67,6 +91,11 @@ const summary: SummaryViewModel = {
   displayStateMessage: some('Live output includes caveats.'),
 }
 
+const dashboardSummary: SummaryViewModel = {
+  ...summary,
+  cards: [inventoryCard, priceCard, availableSupplyCard, refineryDemandCard, balanceCard],
+}
+
 describe('app view models', () => {
   it('maps summary data into a home page model with navigation, controls, caveats, and trace', () => {
     const viewModel = mapSummaryToHomePageViewModel(summary)
@@ -78,6 +107,18 @@ describe('app view models', () => {
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
     expect(viewModel.tracePanel.steps.map(step => step.label)).toContain('Analyst read composed')
     expect(summary.cards.map(card => card.drilldownTarget)).toEqual([some('/balance'), some('/inventory'), some('/price')])
+  })
+
+  it('maps homepage metrics to dedicated chart shapes with a shared history length', () => {
+    const viewModel = mapSummaryToHomePageViewModel(dashboardSummary)
+
+    expect(viewModel.metrics.map(metric => metric.chart.kind)).toEqual([
+      'VarianceBars',
+      'SparklineLine',
+      'StackedArea',
+      'BarSequence',
+    ])
+    expect(viewModel.metrics.map(metric => metric.chart.points.length)).toEqual([12, 12, 12, 12])
   })
 
   it('creates a gallery with the active chart kinds and honest unavailable states', () => {

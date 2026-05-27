@@ -244,7 +244,7 @@ describe('Full analysis workflows', () => {
   it('rejects full analysis headline when policy forbids generated phrase', () => {
     const restrictedPolicies = {
       ...createFullAnalysisPolicies(),
-      forbiddenNarrativePhrases: ['weekly read'],
+      forbiddenNarrativePhrases: ['condition rests'],
     }
 
     const result = buildFullAnalysisHeadline(

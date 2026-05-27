@@ -83,7 +83,7 @@ const buildAnalysis = () => {
 }
 
 describe('mapWeeklyAnalysisToSummaryViewModel', () => {
-  it('maps weekly analysis into presentation-safe summary and card view models', () => {
+  it('maps weekly analysis into summary and card view models ready for presentation', () => {
     const analysis = buildAnalysis()
     const viewModel = mapWeeklyAnalysisToSummaryViewModel(analysis)
 
@@ -99,10 +99,10 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
 
     expect(viewModel.cards[0]).toEqual(expect.objectContaining({
       kind: 'inventory',
-      title: 'Crude oil in storage',
-      valueText: '80 thousand barrels',
+      title: 'Crude Stocks',
+      valueText: '0.1 million barrels',
       statusLabel: 'Unknown',
-      subtitleText: { kind: 'Some', value: 'May 19, 2026 · United States' },
+      subtitleText: { kind: 'Some', value: 'U.S. commercial crude inventories' },
       trendLabel: { kind: 'None' },
       anomalyLabel: { kind: 'Some', value: 'Inventory anomaly is not computed yet.' },
       caveatLabel: { kind: 'None' },
@@ -111,11 +111,11 @@ describe('mapWeeklyAnalysisToSummaryViewModel', () => {
 
     expect(viewModel.cards[1]).toEqual(expect.objectContaining({
       kind: 'price',
-      title: 'WTI spot price',
-      valueText: '72.00 dollars per barrel',
+      title: 'WTI Spot Price',
+      valueText: '$72.00',
       statusLabel: 'Unknown',
-      subtitleText: { kind: 'Some', value: 'May 19, 2026 · United States' },
-      trendLabel: { kind: 'Some', value: 'Up' },
+      subtitleText: { kind: 'Some', value: 'West Texas Intermediate spot price' },
+      trendLabel: { kind: 'Some', value: 'Up $4.00 vs. last week' },
       anomalyLabel: { kind: 'Some', value: 'Price anomaly is not computed yet.' },
       caveatLabel: { kind: 'None' },
       drilldownTarget: { kind: 'Some', value: '/price' },
