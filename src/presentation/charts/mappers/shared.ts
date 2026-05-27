@@ -15,8 +15,17 @@ export type HistoricalSignalPointInput = Readonly<{
   readonly value: number
 }>
 
+export type ReportWeekPointInput = Readonly<{
+  readonly reportWeek: ReportWeek
+}>
+
+export const sortReportWeekPoints = <PointValue extends ReportWeekPointInput>(
+  points: readonly PointValue[],
+): readonly PointValue[] =>
+  sortBy((point: PointValue) => point.reportWeek.date.getTime())(points)
+
 export const sortHistoricalPoints = (points: readonly HistoricalSignalPointInput[]): readonly HistoricalSignalPointInput[] =>
-  sortBy((point: HistoricalSignalPointInput) => point.reportWeek.date.getTime())(points)
+  sortReportWeekPoints(points)
 
 type CaveatKind = InterpretationCaveat['kind']
 type ComputedBaseline = Extract<BaselineResult, { readonly kind: 'Computed' }>

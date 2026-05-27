@@ -368,15 +368,16 @@
 }
 
 .home-metric-chart {
+  --home-metric-chart-primary: var(--color-cyan);
+  --home-metric-chart-secondary: var(--color-orange);
+
   min-height: 12rem;
   display: grid;
   margin: 0;
   padding: var(--space-4);
-  border: var(--border-width-1) var(--border-style-solid) color-mix(in srgb, var(--color-border) 72%, transparent);
+  border: var(--border-width-1) var(--border-style-solid) var(--color-border);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-color-primary) 92%, transparent), color-mix(in srgb, var(--surface-color-quaternary) 62%, transparent));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-white) 52%, transparent);
+  background: color-mix(in srgb, var(--surface-color-secondary) 92%, transparent);
 }
 
 .home-metric-chart__frame {
@@ -391,8 +392,7 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-sm);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-color-primary) 96%, transparent), color-mix(in srgb, var(--surface-color-secondary) 72%, transparent));
+  background: var(--surface-color-primary);
 }
 
 .home-metric-chart__plot--variance,
@@ -406,8 +406,8 @@
 
 .home-metric-chart__plot--variance {
   background:
-    linear-gradient(180deg, transparent 0 49%, color-mix(in srgb, var(--color-border) 64%, transparent) 49% 51%, transparent 51% 100%),
-    color-mix(in srgb, var(--surface-color-primary) 90%, transparent);
+    linear-gradient(180deg, transparent 0 49%, color-mix(in srgb, var(--text-quinary) 72%, transparent) 49% 51%, transparent 51% 100%),
+    var(--surface-color-primary);
 }
 
 .home-metric-chart__variance-point {
@@ -439,37 +439,22 @@
 
 .home-metric-chart__variance-bar--positive {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: color-mix(in srgb, var(--oil-lint-accent-tertiary) 56%, var(--surface-color-primary));
+  background: color-mix(in srgb, var(--home-metric-chart-primary) 72%, transparent);
 }
 
 .home-metric-chart__variance-bar--negative {
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-  background: color-mix(in srgb, var(--oil-lint-accent-primary) 56%, var(--surface-color-primary));
+  background: color-mix(in srgb, var(--home-metric-chart-secondary) 72%, transparent);
 }
 
 .home-metric-chart__variance-point--current .home-metric-chart__variance-bar--positive,
 .home-metric-chart__variance-point--current .home-metric-chart__variance-bar--negative {
-  background: var(--color-link);
+  background: currentColor;
 }
 
 .home-metric-chart__plot--sparkline,
 .home-metric-chart__plot--stacked {
   padding: var(--space-2);
-}
-
-.home-metric-chart--SparklineLine {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-color-primary) 88%, transparent), color-mix(in srgb, var(--oil-lint-accent-secondary) 12%, var(--surface-color-secondary)));
-}
-
-.home-metric-chart--StackedArea {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-color-primary) 88%, transparent), color-mix(in srgb, var(--oil-lint-accent-tertiary) 14%, var(--surface-color-secondary)));
-}
-
-.home-metric-chart--BarSequence {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-color-primary) 88%, transparent), color-mix(in srgb, var(--color-link-hover) 10%, var(--surface-color-secondary)));
 }
 
 .home-metric-chart__svg {
@@ -486,19 +471,8 @@
 }
 
 .home-metric-chart__sparkline {
-  stroke: var(--color-link);
-  stroke-width: 4;
-}
-
-.home-metric-chart__spark-marker {
-  fill: color-mix(in srgb, var(--surface-color-primary) 86%, transparent);
-  stroke: color-mix(in srgb, var(--color-link) 54%, transparent);
-  stroke-width: 1.8;
-}
-
-.home-metric-chart__spark-marker--current {
-  fill: var(--color-link);
-  stroke: var(--surface-color-primary);
+  stroke: var(--home-metric-chart-primary);
+  stroke-width: 2;
 }
 
 .home-metric-chart__area {
@@ -506,16 +480,16 @@
 }
 
 .home-metric-chart__area--production {
-  fill: color-mix(in srgb, var(--oil-lint-accent-tertiary) 56%, var(--surface-color-primary));
+  fill: color-mix(in srgb, var(--home-metric-chart-primary) 18%, transparent);
 }
 
 .home-metric-chart__area--imports {
-  fill: color-mix(in srgb, var(--oil-lint-accent-primary) 48%, transparent);
+  fill: color-mix(in srgb, var(--home-metric-chart-secondary) 18%, transparent);
 }
 
 .home-metric-chart__area-line {
-  stroke: color-mix(in srgb, var(--color-link) 72%, var(--text-primary));
-  stroke-width: 2.5;
+  stroke: var(--home-metric-chart-primary);
+  stroke-width: 2;
 }
 
 .home-metric-chart__bar-point {
@@ -526,11 +500,11 @@
 
 .home-metric-chart__bar {
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: color-mix(in srgb, var(--color-link-hover) 42%, var(--surface-color-primary));
+  background: color-mix(in srgb, var(--home-metric-chart-primary) 64%, transparent);
 }
 
 .home-metric-chart__bar-point--current .home-metric-chart__bar {
-  background: var(--color-link);
+  background: var(--home-metric-chart-primary);
 }
 
 .oil-lint-shell__balance-snapshot,
