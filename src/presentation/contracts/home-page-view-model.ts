@@ -15,6 +15,12 @@ export type HomeHeroViewModel = Readonly<{
   readonly summary: string
 }>
 
+export type HomeReportWeekControlViewModel = Readonly<{
+  readonly inputLabel: string
+  readonly value: string
+  readonly submitLabel: string
+}>
+
 export type DashboardMetricViewModel = Readonly<{
   readonly id: string
   readonly title: string
@@ -59,6 +65,7 @@ export type HomeNavigationCardViewModel = Readonly<{
 export type HomePageViewModel = Readonly<{
   readonly summary: SummaryViewModel
   readonly hero: HomeHeroViewModel
+  readonly reportWeekControl: HomeReportWeekControlViewModel
   readonly metrics: readonly DashboardMetricViewModel[]
   readonly balanceSnapshot: BalanceSnapshotViewModel
   readonly navigationCards: readonly HomeNavigationCardViewModel[]

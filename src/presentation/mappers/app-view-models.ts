@@ -28,6 +28,7 @@ import type {
   HomePageViewModel,
   HomeHeroViewModel,
   HomeNavigationCardViewModel,
+  HomeReportWeekControlViewModel,
   SummaryDisplayState,
   SummaryViewModel,
 } from '@/presentation/contracts'
@@ -619,10 +620,16 @@ const dashboardHeadlineFromCondition = (summary: SummaryViewModel): string =>
   ])(summary)
 
 const homeHeroViewModel = (summary: SummaryViewModel): HomeHeroViewModel => ({
-  reportWeekLabel: `Week ending ${summary.reportWeekText}`,
+  reportWeekLabel: `Report week as of ${summary.reportWeekText}`,
   headline: dashboardHeadlineFromCondition(summary),
   conditionLabel: summary.conditionLabel,
   summary: summary.summary,
+})
+
+const homeReportWeekControlViewModel = (reportWeekIso: string): HomeReportWeekControlViewModel => ({
+  inputLabel: 'Report date',
+  value: reportWeekIso,
+  submitLabel: 'Load report',
 })
 
 const isDashboardMetricCard = (card: SummaryCardViewModel): boolean =>
@@ -938,16 +945,21 @@ export const mapSummaryWithChartsToAnalysisDetailViewModel = (
 export const mapSummaryToHomePageViewModel = (summary: SummaryViewModel): HomePageViewModel => {
   const gallery = mapSummaryToChartsGalleryViewModel(summary)
 
-  return mapSummaryWithChartsToHomePageViewModel(summary, gallery, none())
+  return mapSummaryWithChartsToHomePageViewModel(summary, gallery, none(), none())
 }
 
 export const mapSummaryWithChartsToHomePageViewModel = (
   summary: SummaryViewModel,
   gallery: ChartsGalleryViewModel,
   homeChartHistory: Maybe<HomeMetricChartHistoryInput>,
+  reportWeekIso: Maybe<string>,
 ): HomePageViewModel => ({
   summary,
   hero: homeHeroViewModel(summary),
+  reportWeekControl: matchMaybe<string, HomeReportWeekControlViewModel>({
+    Some: homeReportWeekControlViewModel,
+    None: () => homeReportWeekControlViewModel(summary.reportWeekText),
+  })(reportWeekIso),
   metrics: dashboardMetricsFromSummary(summary, homeChartHistory),
   balanceSnapshot: balanceSnapshotViewModel(summary),
   navigationCards: homeNavigationCards,

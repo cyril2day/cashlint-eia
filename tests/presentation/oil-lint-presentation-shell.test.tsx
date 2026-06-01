@@ -26,7 +26,9 @@ describe('OilLintPresentationShell', () => {
 
     expect(markup).not.toContain('Summary placeholders')
     expect(markup).toContain('The crude balance came in roughly even.')
-    expect(markup).toContain('Week ending 2026-05-19')
+    expect(markup).toContain('Report week as of 2026-05-19')
+    expect(markup).toContain('type="date"')
+    expect(markup).toContain('name="reportWeek"')
     expect(markup).toContain('Balance snapshot')
     expect(markup).toContain('Crude Stocks')
     expect(markup).toContain('WTI Price')

@@ -45,6 +45,20 @@ export function OilLintPresentationShell({ viewModel }: Readonly<{ readonly view
   return (
     <div className="oil-lint-shell__workspace" aria-labelledby="oil-lint-shell-title">
       <header className="oil-lint-shell__header">
+        <form className="oil-lint-shell__report-week-form" action="/" method="get" aria-label="Report week controls">
+          <label className="oil-lint-shell__report-week-field">
+            <span className="oil-lint-shell__report-week-label">{viewModel.reportWeekControl.inputLabel}</span>
+            <input
+              className="oil-lint-shell__report-week-input"
+              name="reportWeek"
+              type="date"
+              defaultValue={viewModel.reportWeekControl.value}
+            />
+          </label>
+          <button className="oil-lint-shell__report-week-submit" type="submit">
+            {viewModel.reportWeekControl.submitLabel}
+          </button>
+        </form>
         <p className="oil-lint-shell__eyebrow">{viewModel.hero.reportWeekLabel}</p>
         <h1 className="oil-lint-shell__title" id="oil-lint-shell-title">
           {viewModel.hero.headline}

@@ -76,6 +76,47 @@
   font-size: var(--text-xs);
 }
 
+.oil-lint-shell__report-week-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.oil-lint-shell__report-week-field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: min(100%, 14rem);
+}
+
+.oil-lint-shell__report-week-label {
+  color: var(--color-link);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.oil-lint-shell__report-week-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--oil-lint-panel-border);
+  border-radius: var(--oil-lint-card-radius);
+  background: var(--surface-color-primary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.oil-lint-shell__report-week-submit {
+  min-height: calc(var(--space-4) + var(--space-5));
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width-1) var(--border-style-solid) color-mix(in srgb, var(--oil-lint-accent-primary) 52%, var(--color-border));
+  border-radius: var(--oil-lint-card-radius);
+  background: color-mix(in srgb, var(--oil-lint-accent-primary) 16%, var(--surface-color-secondary));
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+}
+
 .oil-lint-shell__title {
   margin: 0;
   max-width: 100%;
