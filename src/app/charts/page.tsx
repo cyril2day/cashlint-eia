@@ -2,17 +2,16 @@ import type { ReactElement } from 'react'
 
 import { ChartGallery, PresentationErrorShell, AppShell } from '@/presentation'
 import type { ChartGalleryControlsViewModel, ChartsGalleryViewModel } from '@/presentation/contracts'
-import { createAppNavigationViewModel } from '@/presentation/mappers'
 import { cond, ifElse } from '@/shared/fp'
 import { resolveChartsPageModel, type AppPageModel } from '@/app/resolve-app-page-models'
+import { resolveReportWeekSelection, type ReportWeekSearchParamValue, type ReportWeekSearchParams } from '@/app/report-week-selection'
 
 type ChartsPageModel = AppPageModel<ChartsGalleryViewModel>
-type ChartsSearchParams = Readonly<Record<string, string | readonly string[] | undefined>>
 type ChartsPageProps = Readonly<{
-  readonly searchParams: Promise<ChartsSearchParams>
+  readonly searchParams: Promise<ReportWeekSearchParams>
 }>
 
-const stringFromSearchParam = (value: string | readonly string[] | undefined): string =>
+const stringFromSearchParam = (value: ReportWeekSearchParamValue): string =>
   ifElse(
     Array.isArray,
     candidate => String(candidate[0]),
@@ -20,7 +19,7 @@ const stringFromSearchParam = (value: string | readonly string[] | undefined): s
   )(value)
 
 const numberFromSearchParam =
-  (params: ChartsSearchParams) =>
+  (params: ReportWeekSearchParams) =>
   (name: string): number =>
     Number(stringFromSearchParam(params[name]))
 
@@ -37,7 +36,7 @@ const boundedControlNumber = (
     [() => true, value => Math.floor(value)],
   ])(candidate)
 
-const chartControlsFromSearchParams = (params: ChartsSearchParams): ChartGalleryControlsViewModel => {
+const chartControlsFromSearchParams = (params: ReportWeekSearchParams): ChartGalleryControlsViewModel => {
   const numberParam = numberFromSearchParam(params)
 
   return {
@@ -70,7 +69,7 @@ const pageModelWithControls =
 const renderChartsPage = (
   model: Extract<ChartsPageModel, { readonly kind: 'page' }>,
 ): ReactElement => (
-  <AppShell navigation={createAppNavigationViewModel('charts')}>
+  <AppShell navigation={model.navigation}>
     <ChartGallery viewModel={model.viewModel} />
   </AppShell>
 )
@@ -78,7 +77,7 @@ const renderChartsPage = (
 const renderErrorPage = (
   model: Extract<ChartsPageModel, { readonly kind: 'error' }>,
 ): ReactElement => (
-  <AppShell navigation={createAppNavigationViewModel('charts')}>
+  <AppShell navigation={model.navigation}>
     <PresentationErrorShell {...model.viewModel} />
   </AppShell>
 )
@@ -92,7 +91,7 @@ const renderPage = (model: ChartsPageModel): ReactElement =>
 
 export default function ChartsPage({ searchParams }: ChartsPageProps): Promise<ReactElement> {
   return searchParams.then(params =>
-    resolveChartsPageModel()
+    resolveChartsPageModel(resolveReportWeekSelection(params))
       .then(pageModelWithControls(chartControlsFromSearchParams(params)))
       .then(renderPage),
   )

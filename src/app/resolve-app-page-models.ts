@@ -6,32 +6,43 @@ import type {
   InventoryDetailViewModel,
   PriceDetailViewModel,
   HomePageViewModel,
+  AppNavigationViewModel,
 } from '@/presentation/contracts'
 import {
+  createAppNavigationViewModelWithReportWeek,
   mapSummaryWithChartsToAnalysisDetailViewModel,
   mapSummaryWithChartsToBalanceDetailViewModel,
   mapSummaryWithChartsToInventoryDetailViewModel,
   mapSummaryWithChartsToPriceDetailViewModel,
 } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { defaultReportWeekIso, resolveHomePageModel, type HomePageModel } from '@/app/resolve-home-page-model'
+import { resolveHomePageModel, type HomePageModel } from '@/app/resolve-home-page-model'
+import type { ReportWeekSelection } from '@/app/report-week-selection'
 
 export type AppPageModel<ViewModel> = Readonly<{
   readonly kind: 'page'
   readonly viewModel: ViewModel
+  readonly navigation: AppNavigationViewModel
 } | {
   readonly kind: 'error'
   readonly viewModel: PresentationErrorViewModel
+  readonly navigation: AppNavigationViewModel
 }>
 
-const createPageModel = <ViewModel>(viewModel: ViewModel): AppPageModel<ViewModel> => ({
+const createPageModel =
+  <ViewModel>(navigation: AppNavigationViewModel) =>
+  (viewModel: ViewModel): AppPageModel<ViewModel> => ({
   kind: 'page',
   viewModel,
+  navigation,
 })
 
-const createErrorModel = <ViewModel>(viewModel: PresentationErrorViewModel): AppPageModel<ViewModel> => ({
+const createErrorModel =
+  <ViewModel>(navigation: AppNavigationViewModel) =>
+  (viewModel: PresentationErrorViewModel): AppPageModel<ViewModel> => ({
   kind: 'error',
   viewModel,
+  navigation,
 })
 
 const isHomeModel = (
@@ -40,31 +51,52 @@ const isHomeModel = (
 
 const mapHomeModel = <ViewModel>(
   mapper: (viewModel: HomePageViewModel) => ViewModel,
+  navigation: AppNavigationViewModel,
 ) =>
   (model: HomePageModel): AppPageModel<ViewModel> =>
     ifElse(
       isHomeModel,
-      candidate => createPageModel(mapper(candidate.viewModel)),
-      candidate => createErrorModel<ViewModel>(candidate.viewModel),
+      candidate => createPageModel<ViewModel>(navigation)(mapper(candidate.viewModel)),
+      candidate => createErrorModel<ViewModel>(navigation)(candidate.viewModel),
     )(model)
 
-export const resolveInventoryPageModel = (): Promise<AppPageModel<InventoryDetailViewModel>> =>
-  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToInventoryDetailViewModel(candidate.summary, candidate.chartsGallery)))
+export const resolveInventoryPageModel = (selection: ReportWeekSelection): Promise<AppPageModel<InventoryDetailViewModel>> =>
+  resolveHomePageModel(selection.requestReportWeekIso, selection.controlReportWeekIso).then(
+    mapHomeModel(
+      candidate => mapSummaryWithChartsToInventoryDetailViewModel(candidate.summary, candidate.chartsGallery),
+      createAppNavigationViewModelWithReportWeek('inventory', selection.controlReportWeekIso),
+    ),
+  )
 
-export const resolvePricePageModel = (): Promise<AppPageModel<PriceDetailViewModel>> =>
-  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToPriceDetailViewModel(candidate.summary, candidate.chartsGallery)))
+export const resolvePricePageModel = (selection: ReportWeekSelection): Promise<AppPageModel<PriceDetailViewModel>> =>
+  resolveHomePageModel(selection.requestReportWeekIso, selection.controlReportWeekIso).then(
+    mapHomeModel(
+      candidate => mapSummaryWithChartsToPriceDetailViewModel(candidate.summary, candidate.chartsGallery),
+      createAppNavigationViewModelWithReportWeek('price', selection.controlReportWeekIso),
+    ),
+  )
 
-export const resolveBalancePageModel = (): Promise<AppPageModel<BalanceDetailViewModel>> =>
-  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToBalanceDetailViewModel(candidate.summary, candidate.chartsGallery)))
+export const resolveBalancePageModel = (selection: ReportWeekSelection): Promise<AppPageModel<BalanceDetailViewModel>> =>
+  resolveHomePageModel(selection.requestReportWeekIso, selection.controlReportWeekIso).then(
+    mapHomeModel(
+      candidate => mapSummaryWithChartsToBalanceDetailViewModel(candidate.summary, candidate.chartsGallery),
+      createAppNavigationViewModelWithReportWeek('balance', selection.controlReportWeekIso),
+    ),
+  )
 
-export const resolveAnalysisPageModel = (): Promise<AppPageModel<AnalysisDetailViewModel>> =>
-  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToAnalysisDetailViewModel(candidate.summary, candidate.chartsGallery)))
+export const resolveAnalysisPageModel = (selection: ReportWeekSelection): Promise<AppPageModel<AnalysisDetailViewModel>> =>
+  resolveHomePageModel(selection.requestReportWeekIso, selection.controlReportWeekIso).then(
+    mapHomeModel(
+      candidate => mapSummaryWithChartsToAnalysisDetailViewModel(candidate.summary, candidate.chartsGallery),
+      createAppNavigationViewModelWithReportWeek('analysis', selection.controlReportWeekIso),
+    ),
+  )
 
-export const resolveChartsPageModel = (): Promise<AppPageModel<ChartsGalleryViewModel>> =>
-  resolveHomePageModel(defaultReportWeekIso).then(
+export const resolveChartsPageModel = (selection: ReportWeekSelection): Promise<AppPageModel<ChartsGalleryViewModel>> =>
+  resolveHomePageModel(selection.requestReportWeekIso, selection.controlReportWeekIso).then(
     ifElse(
       isHomeModel,
-      candidate => createPageModel(candidate.viewModel.chartsGallery),
-      candidate => createErrorModel<ChartsGalleryViewModel>(candidate.viewModel),
+      candidate => createPageModel<ChartsGalleryViewModel>(createAppNavigationViewModelWithReportWeek('charts', selection.controlReportWeekIso))(candidate.viewModel.chartsGallery),
+      candidate => createErrorModel<ChartsGalleryViewModel>(createAppNavigationViewModelWithReportWeek('charts', selection.controlReportWeekIso))(candidate.viewModel),
     ),
   )

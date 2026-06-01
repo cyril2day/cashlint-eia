@@ -21,8 +21,6 @@ export type HomePageModel = Readonly<{
 
 type SummaryResult = Result<LiveAppViewModel, ApplicationError>
 
-export const defaultReportWeekIso = '2026-01-09'
-
 const isStringValue = (value: string | undefined): value is string => typeof value === 'string'
 
 const trimTextToMaybe = (value: string): Maybe<string> =>
@@ -91,14 +89,14 @@ const configurationErrorViewModel = (
 })
 
 const createSummaryHomePageModel =
-  (reportWeekIso: string) =>
+  (controlReportWeekIso: Maybe<string>) =>
   (viewModel: LiveAppViewModel): HomePageModel => ({
   kind: 'home',
   viewModel: mapSummaryWithChartsToHomePageViewModel(
     viewModel.summary,
     viewModel.chartsGallery,
     some(viewModel.homeMetricChartHistory),
-    some(reportWeekIso),
+    controlReportWeekIso,
   ),
 })
 
@@ -112,11 +110,11 @@ const isSummarySuccess = (
 ): candidate is Extract<SummaryResult, { readonly ok: true }> => candidate.ok === true
 
 const summaryResultToHomePageModel =
-  (reportWeekIso: string) =>
+  (controlReportWeekIso: Maybe<string>) =>
   (result: SummaryResult): HomePageModel =>
   ifElse(
     isSummarySuccess,
-    candidate => createSummaryHomePageModel(reportWeekIso)(candidate.value),
+    candidate => createSummaryHomePageModel(controlReportWeekIso)(candidate.value),
     candidate => createErrorHomePageModel(applicationErrorToViewModel(candidate.error)),
   )(result)
 
@@ -270,17 +268,21 @@ const applicationErrorToViewModel = (error: ApplicationError): PresentationError
 const loadLiveSummary = (
   config: EiaRuntimeConfig,
   reportWeekIso: string,
+  controlReportWeekIso: Maybe<string>,
 ): Promise<HomePageModel> => {
   const client: EiaClient = createRealEiaClient(config)
   const command = { reportWeekIso }
   const dependencies = createLiveWeeklyDependencies({ eiaClient: client })
 
-  return buildLiveAppViewModel(dependencies)(command).then(summaryResultToHomePageModel(reportWeekIso))
+  return buildLiveAppViewModel(dependencies)(command).then(summaryResultToHomePageModel(controlReportWeekIso))
 }
 
-export const resolveHomePageModel = (reportWeekIso: string): Promise<HomePageModel> =>
+export const resolveHomePageModel = (
+  reportWeekIso: string,
+  controlReportWeekIso: Maybe<string>,
+): Promise<HomePageModel> =>
   ifElse(
     isConfigSuccess,
-    candidate => loadLiveSummary(candidate.value, reportWeekIso),
+    candidate => loadLiveSummary(candidate.value, reportWeekIso, controlReportWeekIso),
     candidate => Promise.resolve(createErrorHomePageModel(configurationErrorViewModel(candidate.error))),
   )(validateEiaRuntimeConfig(readRuntimeConfigInput()))
