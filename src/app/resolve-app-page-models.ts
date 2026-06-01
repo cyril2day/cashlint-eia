@@ -14,7 +14,7 @@ import {
   mapSummaryWithChartsToPriceDetailViewModel,
 } from '@/presentation/mappers'
 import { ifElse } from '@/shared/fp'
-import { resolveHomePageModel, type HomePageModel } from '@/app/resolve-home-page-model'
+import { defaultReportWeekIso, resolveHomePageModel, type HomePageModel } from '@/app/resolve-home-page-model'
 
 export type AppPageModel<ViewModel> = Readonly<{
   readonly kind: 'page'
@@ -49,19 +49,19 @@ const mapHomeModel = <ViewModel>(
     )(model)
 
 export const resolveInventoryPageModel = (): Promise<AppPageModel<InventoryDetailViewModel>> =>
-  resolveHomePageModel().then(mapHomeModel(candidate => mapSummaryWithChartsToInventoryDetailViewModel(candidate.summary, candidate.chartsGallery)))
+  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToInventoryDetailViewModel(candidate.summary, candidate.chartsGallery)))
 
 export const resolvePricePageModel = (): Promise<AppPageModel<PriceDetailViewModel>> =>
-  resolveHomePageModel().then(mapHomeModel(candidate => mapSummaryWithChartsToPriceDetailViewModel(candidate.summary, candidate.chartsGallery)))
+  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToPriceDetailViewModel(candidate.summary, candidate.chartsGallery)))
 
 export const resolveBalancePageModel = (): Promise<AppPageModel<BalanceDetailViewModel>> =>
-  resolveHomePageModel().then(mapHomeModel(candidate => mapSummaryWithChartsToBalanceDetailViewModel(candidate.summary, candidate.chartsGallery)))
+  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToBalanceDetailViewModel(candidate.summary, candidate.chartsGallery)))
 
 export const resolveAnalysisPageModel = (): Promise<AppPageModel<AnalysisDetailViewModel>> =>
-  resolveHomePageModel().then(mapHomeModel(candidate => mapSummaryWithChartsToAnalysisDetailViewModel(candidate.summary, candidate.chartsGallery)))
+  resolveHomePageModel(defaultReportWeekIso).then(mapHomeModel(candidate => mapSummaryWithChartsToAnalysisDetailViewModel(candidate.summary, candidate.chartsGallery)))
 
 export const resolveChartsPageModel = (): Promise<AppPageModel<ChartsGalleryViewModel>> =>
-  resolveHomePageModel().then(
+  resolveHomePageModel(defaultReportWeekIso).then(
     ifElse(
       isHomeModel,
       candidate => createPageModel(candidate.viewModel.chartsGallery),

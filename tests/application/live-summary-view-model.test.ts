@@ -268,6 +268,7 @@ describe('live summary view model', () => {
       viewModel.summary,
       viewModel.chartsGallery,
       some(viewModel.homeMetricChartHistory),
+      some('2026-01-09'),
     )
 
     expect(home.metrics.find(metric => metric.id === 'availableSupply')?.chart.points.map(point => point.value)).toContain(13000)

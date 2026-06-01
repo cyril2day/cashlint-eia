@@ -21,7 +21,7 @@ export type HomePageModel = Readonly<{
 
 type SummaryResult = Result<LiveAppViewModel, ApplicationError>
 
-const defaultReportWeekIso = '2026-01-09'
+export const defaultReportWeekIso = '2026-01-09'
 
 const isStringValue = (value: string | undefined): value is string => typeof value === 'string'
 
@@ -77,13 +77,6 @@ const readRuntimeConfigInput = (): EiaRuntimeConfigInput => ({
   userAgent: maybeTextFromEnv(process.env.EIA_USER_AGENT),
 })
 
-const resolveReportWeekIso = (): string =>
-  ifElse(
-    isStringValue,
-    candidate => candidate.trim(),
-    () => defaultReportWeekIso,
-  )(process.env.OIL_LINT_REPORT_WEEK)
-
 const isConfigSuccess = (
   candidate: Result<EiaRuntimeConfig, EiaRuntimeConfigurationError>,
 ): candidate is Extract<Result<EiaRuntimeConfig, EiaRuntimeConfigurationError>, { readonly ok: true }> => candidate.ok === true
@@ -97,12 +90,15 @@ const configurationErrorViewModel = (
   retryHint: some('Set EIA_BASE_URL and EIA_API_KEY in your local environment, then refresh the page.'),
 })
 
-const createSummaryHomePageModel = (viewModel: LiveAppViewModel): HomePageModel => ({
+const createSummaryHomePageModel =
+  (reportWeekIso: string) =>
+  (viewModel: LiveAppViewModel): HomePageModel => ({
   kind: 'home',
   viewModel: mapSummaryWithChartsToHomePageViewModel(
     viewModel.summary,
     viewModel.chartsGallery,
     some(viewModel.homeMetricChartHistory),
+    some(reportWeekIso),
   ),
 })
 
@@ -115,10 +111,12 @@ const isSummarySuccess = (
   candidate: SummaryResult,
 ): candidate is Extract<SummaryResult, { readonly ok: true }> => candidate.ok === true
 
-const summaryResultToHomePageModel = (result: SummaryResult): HomePageModel =>
+const summaryResultToHomePageModel =
+  (reportWeekIso: string) =>
+  (result: SummaryResult): HomePageModel =>
   ifElse(
     isSummarySuccess,
-    candidate => createSummaryHomePageModel(candidate.value),
+    candidate => createSummaryHomePageModel(reportWeekIso)(candidate.value),
     candidate => createErrorHomePageModel(applicationErrorToViewModel(candidate.error)),
   )(result)
 
@@ -271,17 +269,18 @@ const applicationErrorToViewModel = (error: ApplicationError): PresentationError
 
 const loadLiveSummary = (
   config: EiaRuntimeConfig,
+  reportWeekIso: string,
 ): Promise<HomePageModel> => {
   const client: EiaClient = createRealEiaClient(config)
-  const command = { reportWeekIso: resolveReportWeekIso() }
+  const command = { reportWeekIso }
   const dependencies = createLiveWeeklyDependencies({ eiaClient: client })
 
-  return buildLiveAppViewModel(dependencies)(command).then(summaryResultToHomePageModel)
+  return buildLiveAppViewModel(dependencies)(command).then(summaryResultToHomePageModel(reportWeekIso))
 }
 
-export const resolveHomePageModel = (): Promise<HomePageModel> =>
+export const resolveHomePageModel = (reportWeekIso: string): Promise<HomePageModel> =>
   ifElse(
     isConfigSuccess,
-    candidate => loadLiveSummary(candidate.value),
+    candidate => loadLiveSummary(candidate.value, reportWeekIso),
     candidate => Promise.resolve(createErrorHomePageModel(configurationErrorViewModel(candidate.error))),
   )(validateEiaRuntimeConfig(readRuntimeConfigInput()))
