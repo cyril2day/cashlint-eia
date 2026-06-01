@@ -1,4 +1,4 @@
-import { compareAsc, format, formatISO, isValid, parseISO } from 'date-fns'
+import { compareAsc, constructNow, format, formatISO, isValid, parseISO } from 'date-fns'
 import { ifElse } from '@/shared/fp'
 import { failure, success } from '@/shared/result'
 import type { Result } from '@/shared/result'
@@ -61,6 +61,10 @@ export const formatDateIsoDate = (date: DateValue): string => formatISO(date, { 
 export const formatDateReadable = (date: DateValue): string => format(date, 'MMMM d, yyyy')
 
 export const compareDates = (left: DateValue, right: DateValue): number => compareAsc(left, right)
+
+export const currentDate = (): DateValue => constructNow(undefined)
+
+export const currentIsoDate = (): string => formatDateIsoDate(currentDate())
 
 // ISO date parser for ACL period interpretation (strict YYYY-MM-DD)
 export type IsoDateString = string
