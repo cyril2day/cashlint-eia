@@ -60,12 +60,28 @@ import { homeMetricChartFromCard, type HomeMetricChartHistoryInput } from '@/pre
 import { cond, ifElse } from '@/shared/fp'
 import { matchMaybe, none, some, type Maybe } from '@/shared/maybe'
 import { isNonEmptyArray, firstArrayItem } from '@/shared/collection'
-import { formatDateReadable, parseDate, type DateParseError, type DateValue } from '@/shared/date'
+import { currentIsoDate, formatDateIsoDate, formatDateReadable, parseDate, type DateParseError, type DateValue } from '@/shared/date'
 import { isSuccess, type Result } from '@/shared/result'
 
 const shortHistoryMessage = 'The statistical sample window is limited to the weekly rows returned by the current run. When that window is thin, trend, baseline, variance, and anomaly calls stay cautious.'
 
 const activeRoute = (routeId: AppRouteId) => (candidate: AppRouteId): boolean => candidate === routeId
+
+const appendReportWeekToHref =
+  (reportWeekIso: Maybe<string>) =>
+  (href: string): string =>
+    matchMaybe<string, string>({
+      Some: value => `${href}?reportWeek=${encodeURIComponent(value)}`,
+      None: () => href,
+    })(reportWeekIso)
+
+const appendReportWeekToMaybeHref =
+  (reportWeekIso: Maybe<string>) =>
+  (href: Maybe<string>): Maybe<string> =>
+    matchMaybe<string, Maybe<string>>({
+      Some: value => some(appendReportWeekToHref(reportWeekIso)(value)),
+      None: () => none(),
+    })(href)
 
 const presentationStateFromSummaryState = (state: SummaryDisplayState): PresentationDisplayState =>
   cond<[SummaryDisplayState], PresentationDisplayState>([
@@ -161,11 +177,12 @@ const routeLabel = (routeId: AppRouteId): string =>
 
 const navigationItem = (
   activeRouteId: AppRouteId,
+  reportWeekIso: Maybe<string>,
 ) =>
   (routeId: AppRouteId): AppNavigationItemViewModel => ({
     routeId,
     label: routeLabel(routeId),
-    href: routeHref(routeId),
+    href: appendReportWeekToHref(reportWeekIso)(routeHref(routeId)),
     isActive: activeRoute(activeRouteId)(routeId),
     description: routeDescription(routeId),
   })
@@ -175,7 +192,14 @@ const appRouteIds: readonly AppRouteId[] = ['home', 'inventory', 'price', 'balan
 export const createAppNavigationViewModel = (
   activeRouteId: AppRouteId,
 ): AppNavigationViewModel => ({
-  items: appRouteIds.map(navigationItem(activeRouteId)),
+  items: appRouteIds.map(navigationItem(activeRouteId, none())),
+})
+
+export const createAppNavigationViewModelWithReportWeek = (
+  activeRouteId: AppRouteId,
+  reportWeekIso: Maybe<string>,
+): AppNavigationViewModel => ({
+  items: appRouteIds.map(navigationItem(activeRouteId, reportWeekIso)),
 })
 
 export const createAnalysisControlViewModel = (summary: SummaryViewModel): AnalysisControlViewModel => ({
@@ -632,26 +656,37 @@ const homeReportWeekControlViewModel = (reportWeekIso: string): HomeReportWeekCo
   submitLabel: 'Load report',
 })
 
+const summaryReportWeekIso = (summary: SummaryViewModel): string =>
+  ifElse(
+    (result: Result<DateValue, DateParseError>) => isSuccess(result),
+    result => formatDateIsoDate(result.value),
+    currentIsoDate,
+  )(parseDate(summary.reportWeekText))
+
+const homeReportWeekControlFromSummary = (summary: SummaryViewModel): HomeReportWeekControlViewModel =>
+  homeReportWeekControlViewModel(summaryReportWeekIso(summary))
+
 const isDashboardMetricCard = (card: SummaryCardViewModel): boolean =>
   card.kind !== 'system'
 
 const dashboardMetricFromCard =
-  (homeChartHistory: Maybe<HomeMetricChartHistoryInput>) =>
+  (homeChartHistory: Maybe<HomeMetricChartHistoryInput>, reportWeekIso: Maybe<string>) =>
   (card: SummaryCardViewModel): DashboardMetricViewModel => ({
     id: card.kind,
     title: card.title,
     valueText: card.valueText,
     changeText: card.trendLabel,
     subtitleText: card.subtitleText,
-    href: card.drilldownTarget,
+    href: appendReportWeekToMaybeHref(reportWeekIso)(card.drilldownTarget),
     chart: homeMetricChartFromCard(homeChartHistory)(card),
   })
 
 const dashboardMetricsFromSummary = (
   summary: SummaryViewModel,
   homeChartHistory: Maybe<HomeMetricChartHistoryInput>,
+  reportWeekIso: Maybe<string>,
 ): readonly DashboardMetricViewModel[] =>
-  summary.cards.filter(isDashboardMetricCard).map(dashboardMetricFromCard(homeChartHistory))
+  summary.cards.filter(isDashboardMetricCard).map(dashboardMetricFromCard(homeChartHistory, reportWeekIso))
 
 const maybeCardByKind =
   (cards: readonly SummaryCardViewModel[]) =>
@@ -666,10 +701,11 @@ const balanceSnapshotMetricKinds: readonly SummaryCardKind[] = ['availableSupply
 
 const balanceSnapshotRows = (
   summary: SummaryViewModel,
+  reportWeekIso: Maybe<string>,
 ): readonly DashboardMetricViewModel[] =>
   balanceSnapshotMetricKinds.flatMap(kind =>
     matchMaybe<SummaryCardViewModel, readonly DashboardMetricViewModel[]>({
-      Some: card => [dashboardMetricFromCard(none())(card)],
+      Some: card => [dashboardMetricFromCard(none(), reportWeekIso)(card)],
       None: () => [],
     })(maybeCardByKind(summary.cards)(kind)),
   )
@@ -680,11 +716,11 @@ const balanceSnapshotResultLabel = (summary: SummaryViewModel): string =>
     None: () => 'Balance snapshot is waiting on supply and refinery data.',
   })(maybeCardByKind(summary.cards)('system'))
 
-const balanceSnapshotViewModel = (summary: SummaryViewModel): BalanceSnapshotViewModel => ({
+const balanceSnapshotViewModel = (summary: SummaryViewModel, reportWeekIso: Maybe<string>): BalanceSnapshotViewModel => ({
   title: 'Weekly balance snapshot',
-  rows: balanceSnapshotRows(summary),
+  rows: balanceSnapshotRows(summary, reportWeekIso),
   resultLabel: balanceSnapshotResultLabel(summary),
-  href: '/balance',
+  href: appendReportWeekToHref(reportWeekIso)('/balance'),
   linkLabel: 'See full balance',
 })
 
@@ -719,6 +755,16 @@ const homeFooterNotes: readonly string[] = [
   'See the Balance page for methodology notes.',
 ]
 
+const homeNavigationCardWithReportWeek =
+  (reportWeekIso: Maybe<string>) =>
+  (card: HomeNavigationCardViewModel): HomeNavigationCardViewModel => ({
+    ...card,
+    href: appendReportWeekToHref(reportWeekIso)(card.href),
+  })
+
+const homeNavigationCardsWithReportWeek = (reportWeekIso: Maybe<string>): readonly HomeNavigationCardViewModel[] =>
+  homeNavigationCards.map(homeNavigationCardWithReportWeek(reportWeekIso))
+
 const emptyContentSections: readonly DetailContentSectionViewModel[] = []
 
 const emptyNavigationNudges: readonly HomeNavigationCardViewModel[] = []
@@ -730,6 +776,7 @@ const detailPage = (
   cards: readonly SummaryCardViewModel[],
   charts: readonly ChartPanelViewModel[],
   summary: SummaryViewModel,
+  reportWeekIso: Maybe<string>,
   contentSections: readonly DetailContentSectionViewModel[] = emptyContentSections,
   navigationNudges: readonly HomeNavigationCardViewModel[] = emptyNavigationNudges,
 ): DetailPageViewModel => ({
@@ -741,7 +788,7 @@ const detailPage = (
   rows: detailRowsFromCards(cards),
   charts,
   contentSections,
-  navigationNudges,
+  navigationNudges: navigationNudges.map(homeNavigationCardWithReportWeek(reportWeekIso)),
   caveats: summary.caveats,
   state: presentationStateFromSummaryState(summary.displayState),
   accessibilitySummary: `${title} page for ${summary.reportWeekText}, ${summary.geographyText}.`,
@@ -852,6 +899,7 @@ export const mapSummaryWithChartsToInventoryDetailViewModel = (
   gallery: ChartsGalleryViewModel,
 ): InventoryDetailViewModel => {
   const inventoryCards = summary.cards.filter(card => card.kind === 'inventory')
+  const reportWeekIso = some(summaryReportWeekIso(summary))
 
   return detailPage(
     'Crude Stocks',
@@ -862,6 +910,7 @@ export const mapSummaryWithChartsToInventoryDetailViewModel = (
       ...panelsByKind(gallery, 'AreaChart'),
     ],
     summary,
+    reportWeekIso,
     inventoryContextSections,
     inventoryNavigationNudges,
   )
@@ -878,6 +927,7 @@ export const mapSummaryWithChartsToPriceDetailViewModel = (
   gallery: ChartsGalleryViewModel,
 ): PriceDetailViewModel => {
   const priceCards = summary.cards.filter(card => card.kind === 'price')
+  const reportWeekIso = some(summaryReportWeekIso(summary))
 
   return detailPage(
     'WTI Spot Price',
@@ -892,6 +942,7 @@ export const mapSummaryWithChartsToPriceDetailViewModel = (
       ...panelsByKind(gallery, 'BoxPlot'),
     ],
     summary,
+    reportWeekIso,
     priceContextSections,
     priceNavigationNudges,
   )
@@ -908,6 +959,7 @@ export const mapSummaryWithChartsToBalanceDetailViewModel = (
   gallery: ChartsGalleryViewModel,
 ): BalanceDetailViewModel => {
   const balanceCards = summary.cards.filter(card => card.kind === 'system')
+  const reportWeekIso = some(summaryReportWeekIso(summary))
 
   return detailPage(
     'Weekly Crude Balance',
@@ -919,6 +971,7 @@ export const mapSummaryWithChartsToBalanceDetailViewModel = (
       ...panelsByKind(gallery, 'VarianceChart'),
     ],
     summary,
+    reportWeekIso,
     balanceContextSections,
     balanceNavigationNudges,
   )
@@ -938,6 +991,7 @@ export const mapSummaryWithChartsToAnalysisDetailViewModel = (
     summary.cards,
     gallery.panels,
     summary,
+    some(summaryReportWeekIso(summary)),
     analysisContextSections,
     analysisNavigationNudges,
   )
@@ -958,13 +1012,13 @@ export const mapSummaryWithChartsToHomePageViewModel = (
   hero: homeHeroViewModel(summary),
   reportWeekControl: matchMaybe<string, HomeReportWeekControlViewModel>({
     Some: homeReportWeekControlViewModel,
-    None: () => homeReportWeekControlViewModel(summary.reportWeekText),
+    None: () => homeReportWeekControlFromSummary(summary),
   })(reportWeekIso),
-  metrics: dashboardMetricsFromSummary(summary, homeChartHistory),
-  balanceSnapshot: balanceSnapshotViewModel(summary),
-  navigationCards: homeNavigationCards,
+  metrics: dashboardMetricsFromSummary(summary, homeChartHistory, reportWeekIso),
+  balanceSnapshot: balanceSnapshotViewModel(summary, reportWeekIso),
+  navigationCards: homeNavigationCardsWithReportWeek(reportWeekIso),
   footerNotes: homeFooterNotes,
-  navigation: createAppNavigationViewModel('home'),
+  navigation: createAppNavigationViewModelWithReportWeek('home', reportWeekIso),
   controls: createAnalysisControlViewModel(summary),
   primaryCharts: [
     ...panelsByKind(gallery, 'MetricCard'),

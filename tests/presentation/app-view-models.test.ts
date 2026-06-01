@@ -8,6 +8,7 @@ import {
   mapSummaryToInventoryDetailViewModel,
   mapSummaryToPriceDetailViewModel,
   mapSummaryToHomePageViewModel,
+  mapSummaryWithChartsToHomePageViewModel,
 } from '@/presentation/mappers'
 import { none, some } from '@/shared/maybe'
 
@@ -102,6 +103,7 @@ describe('app view models', () => {
 
     expect(viewModel.navigation.items.map(item => item.href)).toEqual(['/', '/inventory', '/price', '/balance', '/analysis', '/charts'])
     expect(viewModel.controls.submitLabel).toBe('Refresh live data')
+    expect(viewModel.reportWeekControl.value).toBe('2026-05-19')
     expect(viewModel.controls.comparisonWindowLabel).toBe('Latest weekly comparison window')
     expect(viewModel.primaryCharts.map(panel => panel.chartKind)).toEqual(['MetricCard', 'Sparkline', 'TimeSeries'])
     expect(viewModel.caveatPanel.caveats).toHaveLength(1)
@@ -119,6 +121,16 @@ describe('app view models', () => {
       'BarSequence',
     ])
     expect(viewModel.metrics.map(metric => metric.chart.points.length)).toEqual([12, 12, 12, 12])
+  })
+
+  it('keeps the selected report week on homepage navigation targets', () => {
+    const gallery = mapSummaryToChartsGalleryViewModel(dashboardSummary)
+    const viewModel = mapSummaryWithChartsToHomePageViewModel(dashboardSummary, gallery, none(), some('2026-05-19'))
+
+    expect(viewModel.navigation.items.map(item => item.href)).toContain('/inventory?reportWeek=2026-05-19')
+    expect(viewModel.navigationCards.map(card => card.href)).toContain('/analysis?reportWeek=2026-05-19')
+    expect(viewModel.balanceSnapshot.href).toBe('/balance?reportWeek=2026-05-19')
+    expect(viewModel.metrics.map(metric => metric.href)).toContainEqual(some('/price?reportWeek=2026-05-19'))
   })
 
   it('creates a gallery with the active chart kinds and honest unavailable states', () => {
